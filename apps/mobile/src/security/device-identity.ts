@@ -11,3 +11,7 @@ export async function getDeviceIdentity() {
   identity ??= createDeviceIdentity();
   return identity;
 }
+
+export async function removeDeviceIdentity() {
+  identity = undefined;
+}

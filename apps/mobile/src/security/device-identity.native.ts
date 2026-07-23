@@ -25,3 +25,7 @@ export async function getDeviceIdentity(): Promise<DeviceIdentity> {
   await SecureStore.setItemAsync(key, JSON.stringify(identity));
   return identity;
 }
+
+export async function removeDeviceIdentity() {
+  await SecureStore.deleteItemAsync(key);
+}

@@ -107,11 +107,17 @@ export function openOrganaDatabase(namespace = "local") {
 }
 
 export async function deleteOrganaDatabase(namespace: string) {
-  const existing = databasePromises.get(namespace);
-  if (existing) {
-    (await existing).close();
-    databasePromises.delete(namespace);
+  const database = await openOrganaDatabase(namespace);
+  const storeNames = Array.from(database.objectStoreNames);
+  if (storeNames.length > 0) {
+    const transaction = database.transaction(storeNames, "readwrite");
+    await Promise.all(
+      storeNames.map((storeName) => transaction.objectStore(storeName).clear()),
+    );
+    await transaction.done;
   }
+  database.close();
+  databasePromises.delete(namespace);
   await new Promise<void>((resolve, reject) => {
     const request = indexedDB.deleteDatabase(`organa:${namespace}`);
     request.onsuccess = () => resolve();

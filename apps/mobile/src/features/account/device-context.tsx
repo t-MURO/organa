@@ -11,6 +11,7 @@ import { useAuth } from "../../auth/auth-context";
 import { supabase } from "../../auth/supabase";
 import { deleteLocalAccountData } from "../../data/delete-local-account-data";
 import { contentKeyVault } from "../../security/content-key-vault";
+import { removeDeviceIdentity } from "../../security/device-identity";
 import { useSecurity } from "../../security/security-context";
 
 export interface TrustedDevice {
@@ -138,6 +139,7 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     void Promise.all([
       contentKeyVault.remove(userId),
       deleteLocalAccountData(userId),
+      removeDeviceIdentity(),
     ])
       .then(() => auth.signOut())
       .catch(() => {

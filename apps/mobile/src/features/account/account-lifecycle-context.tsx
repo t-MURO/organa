@@ -11,6 +11,7 @@ import { useAuth } from "../../auth/auth-context";
 import { supabase } from "../../auth/supabase";
 import { deleteLocalAccountData } from "../../data/delete-local-account-data";
 import { contentKeyVault } from "../../security/content-key-vault";
+import { removeDeviceIdentity } from "../../security/device-identity";
 import { useSecurity } from "../../security/security-context";
 
 interface DeletionRequest {
@@ -112,6 +113,7 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
     await Promise.all([
       contentKeyVault.remove(userId),
       deleteLocalAccountData(userId),
+      removeDeviceIdentity(),
     ]);
     await auth.signOut();
   }

@@ -72,6 +72,8 @@ Implemented user-facing areas:
   devices require explicit enablement.
 - Revoked devices clear local Organa data and sign out when revocation is
   observed.
+- Revocation and final account deletion remove the local device proof secret
+  and clear all known SQLite/IndexedDB stores before database removal.
 - The migration enables RLS, validates trusted-device writes, retains encrypted
   record history temporarily, and restricts private Realtime topics by user.
 - The client contains no product analytics, advertising identifiers, session
@@ -145,6 +147,7 @@ Major implementation commits:
 - Recovery-authorized device enrollment and per-device write proofs
 - Atomic account-key/first-device enrollment
 - Server-enforced deletion read-only state
+- Resilient local-data and device-secret erasure on revocation/deletion
 - Security-contract regression tests and updated security documentation
 
 ## Remaining Acceptance Gates

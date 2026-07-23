@@ -26,3 +26,9 @@ export async function getDeviceIdentity(): Promise<DeviceIdentity> {
   }
   return identity;
 }
+
+export async function removeDeviceIdentity() {
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(key);
+  }
+}

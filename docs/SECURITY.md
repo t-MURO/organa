@@ -96,10 +96,11 @@ user-entered content.
   account-deletion request is active.
 
 Trusted-device revocation is enforced when the target reconnects: local Organa
-data and its key are removed, its session signs out, and encrypted writes from
-the revoked device ID are rejected. Revoking also expires refresh tokens for
-other sessions. Existing access-token JWTs remain valid until expiry, and
-revocation is not retroactive against data already copied from a device.
+data, content key, and per-device proof secret are removed, its session signs
+out, and encrypted writes from the revoked device ID are rejected. Revoking
+also expires refresh tokens for other sessions. Existing access-token JWTs
+remain valid until expiry, and revocation is not retroactive against data
+already copied from a device.
 
 Content-key rotation after device compromise is not implemented in this MVP.
 Treat that as a production threat-model decision, not as a guaranteed remote
@@ -127,6 +128,9 @@ wipe.
 - The scheduled Edge Function deletes the Auth user, causing account rows to
   cascade. The app removes its local database and content key when deletion is
   due.
+- Local deletion clears every known SQLite/IndexedDB store before attempting
+  database-file removal, so an open database handle cannot silently preserve
+  readable records. The per-device proof secret is removed at the same time.
 - Files exported by the user are outside Organa's deletion boundary.
 
 ## Logging And Telemetry
