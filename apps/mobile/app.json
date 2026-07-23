@@ -3,20 +3,35 @@
     "name": "Organa",
     "slug": "organa",
     "version": "0.1.0",
+    "icon": "./assets/branding/icon.png",
     "orientation": "default",
     "scheme": "organa",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.organa.mobile"
+      "bundleIdentifier": "app.organa.mobile",
+      "buildNumber": "1"
     },
     "android": {
       "package": "app.organa.mobile",
+      "versionCode": 1,
+      "allowBackup": false,
       "permissions": [
         "SCHEDULE_EXACT_ALARM"
       ],
+      "blockedPermissions": [
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
-        "backgroundColor": "#e8efe6"
+        "backgroundColor": "#f4f0e7",
+        "foregroundImage": "./assets/branding/adaptive-icon.png",
+        "monochromeImage": "./assets/branding/adaptive-icon.png"
       }
     },
     "web": {
@@ -31,7 +46,14 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "color": "#327061",
+          "defaultChannel": "gentle-reminders",
+          "icon": "./assets/branding/notification-icon.png"
+        }
+      ],
       "expo-web-browser",
       "expo-secure-store",
       "expo-sharing",
@@ -41,10 +63,28 @@
           "faceIDPermission": "Allow Organa to use Face ID to unlock your private space."
         }
       ],
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false,
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#f4f0e7",
+          "image": "./assets/branding/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain"
+        }
+      ],
       [
         "expo-widgets",
         {
+          "bundleIdentifier": "app.organa.mobile.widgets",
           "groupIdentifier": "group.app.organa.mobile",
           "widgets": [
             {

@@ -30,7 +30,15 @@ Local evidence:
 
 - strict TypeScript passes for all packages
 - 38 automated tests pass
-- Expo Doctor passes 20/20 checks
+- Expo Doctor passes 19/20 checks after native project generation; the only
+  remaining check is host tooling because CocoaPods/full Xcode are not
+  installed on this machine
+- clean Expo Prebuild succeeds without configuration warnings
+- generated Android configuration disables application backup and removes
+  recording, background-audio, broad-storage, and overlay permissions
+- generated iOS configuration has no microphone or background-audio
+  declarations, uses the explicit widget bundle ID, and produces an opaque
+  1024-pixel App Store icon
 - iOS and Android Hermes bundle exports succeed
 - production web export succeeds
 - Workbox precaches 15 URLs
