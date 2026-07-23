@@ -77,6 +77,7 @@ Expo Go.
 ```sh
 pnpm typecheck
 pnpm test
+pnpm build:native
 pnpm build:web
 pnpm dlx expo-doctor@latest apps/mobile
 pnpm audit --prod

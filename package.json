@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.28.2",
   "scripts": {
+    "build:native": "pnpm --filter @organa/app build:native",
     "build:web": "pnpm --filter @organa/app build:web",
     "dev": "turbo dev",
     "dev:web": "pnpm --filter @organa/app web",

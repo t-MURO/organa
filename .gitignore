@@ -2,6 +2,7 @@ node_modules/
 .turbo/
 .expo/
 dist/
+apps/mobile/dist-*/
 coverage/
 *.log
 .DS_Store

@@ -31,6 +31,7 @@ Local evidence:
 - strict TypeScript passes for all packages
 - 38 automated tests pass
 - Expo Doctor passes 20/20 checks
+- iOS and Android Hermes bundle exports succeed
 - production web export succeeds
 - Workbox precaches 15 URLs
 - production dependency audit reports no known vulnerabilities
