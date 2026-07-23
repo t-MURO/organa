@@ -185,6 +185,9 @@ Major implementation commits:
 - `8a7b71d` - restore encrypted backups
 - `fec1e70` - configure reminders per subtask
 - `d707d0c` - show the actual next reminder in the widget
+- `45aaaa7` - approve new trusted devices
+- `f7adffe` - verify account deletion finalization
+- `955adf5` - keep the signed-in PWA usable offline
 
 ## Latest Security Hardening
 
@@ -216,13 +219,47 @@ This milestone includes:
 - Checked-in local confirmation and returning-user email templates that send
   the six-digit code expected by Organa
 - Web-storage and email-template regression tests; the complete automated suite
-  currently passes 61 tests
+  currently passes 64 tests
 
 Local Supabase has been reset successfully from all three migrations, database
 lint reports no schema errors, and all 43 live backend checks pass.
 Configured production web export and both native Hermes exports succeed. The
 combined two-device approval UI and encrypted realtime task propagation were
 also exercised in separate browser origins against the local backend.
+
+## Account-Deletion Finalization Milestone
+
+This milestone includes:
+
+- A scheduler-authorized, POST-only Edge Function for final account deletion
+- A narrow database privilege grant that lets the service-role finalizer read
+  due deletion requests without widening authenticated-client access
+- A reproducible local verifier that creates a real Auth user, content key,
+  trusted device, encrypted record, session, and deletion request
+- Verification that deletion remains cancellable for one hour and that the
+  finalizer removes the Auth user, active session, account key, trusted device,
+  encrypted record, and deletion request after the deadline
+- Twelve live Edge Function checks run as part of `pnpm verify:supabase`
+
+## Offline PWA Milestone
+
+This milestone includes:
+
+- Immediate restoration of cached per-user account-deletion state so a signed-in
+  user is not blocked while Supabase is unreachable
+- A revisioned Workbox precache containing the application shell, install
+  assets, four render-critical Manrope font files, and optional interaction
+  sounds
+- A web-build verifier covering document metadata, the manifest, install icons,
+  JavaScript bundles, fonts, sounds, and service-worker precache entries
+- A production browser drill in which a signed-in app reloaded after both the
+  static server and Supabase stopped, retained its encrypted local data, queued
+  a new task offline, preserved that outbox across another reload, and synced
+  automatically when Supabase returned
+- Database inspection confirming that the synced cloud rows did not contain the
+  plaintext titles used during the offline drill
+- Lighthouse accessibility and best-practices scores of 100% on the configured
+  production sign-in screen
 
 ## Remaining Acceptance Gates
 
