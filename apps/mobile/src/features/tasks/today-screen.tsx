@@ -1,0 +1,1113 @@
+import {
+  buildDayPlan,
+  formatLocalDate,
+  type Task,
+  type TaskPriority,
+} from "@organa/domain";
+import { useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Animated,
+  Easing,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from "react-native";
+
+import { useAppTheme } from "../../components/app-shell";
+import type { OrganaTheme } from "../../theme";
+import { useTasks } from "./task-context";
+
+const priorities: Array<{
+  key: TaskPriority;
+  label: string;
+  hint: string;
+}> = [
+  { key: "must", label: "Must do", hint: "Keep the day steady" },
+  { key: "should", label: "Should do", hint: "Helpful, not urgent" },
+  { key: "nice", label: "Nice to do", hint: "Only if there is room" },
+];
+
+const COMPLETION_GRACE_MS = 5_000;
+
+export function TodayScreen() {
+  const theme = useAppTheme();
+  const styles = createStyles(theme);
+  const { width } = useWindowDimensions();
+  const { loading, tasks, addTask, toggleTask } = useTasks();
+  const [title, setTitle] = useState("");
+  const [priority, setPriority] = useState<TaskPriority>("should");
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [recentlyCompletedIds, setRecentlyCompletedIds] = useState<string[]>(
+    [],
+  );
+  const completionTimers = useRef(
+    new Map<string, ReturnType<typeof setTimeout>>(),
+  );
+  const today = formatLocalDate(new Date());
+  const plan = buildDayPlan(tasks, today);
+  const recentlyCompleted = new Set(recentlyCompletedIds);
+  const visibleLanes = {
+    must: visibleTasksForLane(tasks, today, "must", recentlyCompleted),
+    should: visibleTasksForLane(tasks, today, "should", recentlyCompleted),
+    nice: visibleTasksForLane(tasks, today, "nice", recentlyCompleted),
+  };
+  const visibleTimed = tasks
+    .filter(
+      (task) =>
+        task.plannedFor === today &&
+        Boolean(task.scheduledTime) &&
+        (!task.completedAt || recentlyCompleted.has(task.id)),
+    )
+    .sort((left, right) =>
+      (left.scheduledTime ?? "").localeCompare(right.scheduledTime ?? ""),
+    );
+  const settledCompleted = plan.completed.filter(
+    (task) => !recentlyCompleted.has(task.id),
+  );
+  const visibleTaskCount =
+    visibleLanes.must.length +
+    visibleLanes.should.length +
+    visibleLanes.nice.length;
+  const isWide = width >= 1180;
+  const isCompact = width < 620;
+
+  useEffect(() => {
+    const timers = completionTimers.current;
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, []);
+
+  function submitTask() {
+    if (!title.trim()) return;
+    addTask(title, priority);
+    setTitle("");
+  }
+
+  function toggleTaskWithGrace(task: Task) {
+    if (task.completedAt) {
+      const timer = completionTimers.current.get(task.id);
+      if (timer) {
+        clearTimeout(timer);
+        completionTimers.current.delete(task.id);
+      }
+      setRecentlyCompletedIds((current) =>
+        current.filter((id) => id !== task.id),
+      );
+      toggleTask(task);
+      return;
+    }
+
+    toggleTask(task);
+    setRecentlyCompletedIds((current) =>
+      current.includes(task.id) ? current : [...current, task.id],
+    );
+    const timer = setTimeout(() => {
+      completionTimers.current.delete(task.id);
+      setRecentlyCompletedIds((current) =>
+        current.filter((id) => id !== task.id),
+      );
+    }, COMPLETION_GRACE_MS);
+    completionTimers.current.set(task.id, timer);
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator color={theme.accentStrong} />
+        <Text style={styles.loadingText}>Making space for today...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <ScrollView
+      contentContainerStyle={[
+        styles.page,
+        isCompact ? styles.pageCompact : undefined,
+      ]}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={[styles.hero, isCompact ? styles.heroCompact : undefined]}>
+        <View style={styles.heroCopy}>
+          <Text style={styles.eyebrow}>{formatFriendlyDate(new Date())}</Text>
+          <Text style={styles.title}>Make room for today.</Text>
+          <Text style={styles.subtitle}>
+            A short list is still a real plan. Choose what feels possible.
+          </Text>
+        </View>
+        <View style={styles.progressCard}>
+          <Text style={styles.progressNumber}>{plan.completed.length}</Text>
+          <Text style={styles.progressLabel}>gentle wins</Text>
+        </View>
+      </View>
+
+      <QuickAdd
+        compact={isCompact}
+        priority={priority}
+        styles={styles}
+        theme={theme}
+        title={title}
+        onChangePriority={setPriority}
+        onChangeTitle={setTitle}
+        onSubmit={submitTask}
+      />
+
+      <View style={[styles.board, isWide && styles.boardWide]}>
+        <View style={styles.priorityColumn}>
+          <SectionHeading
+            styles={styles}
+            eyebrow="PRIORITY LANE"
+            title="What matters"
+            count={visibleTaskCount}
+          />
+          <View style={styles.priorityStack}>
+            {priorities.map((lane) => (
+              <PriorityLane
+                key={lane.key}
+                hint={lane.hint}
+                label={lane.label}
+                priority={lane.key}
+                styles={styles}
+                tasks={visibleLanes[lane.key]}
+                theme={theme}
+                onToggle={toggleTaskWithGrace}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.timeColumn}>
+          <SectionHeading
+            styles={styles}
+            eyebrow="TIME LANE"
+            title="Anchors"
+            count={visibleTimed.length}
+          />
+          <View style={styles.timelineCard}>
+            {visibleTimed.length > 0 ? (
+              visibleTimed.map((task, index) => (
+                <View key={task.id} style={styles.timelineRow}>
+                  <View style={styles.timelineTimeWrap}>
+                    <Text style={styles.timelineTime}>
+                      {task.scheduledTime}
+                    </Text>
+                    {index < visibleTimed.length - 1 ? (
+                      <View style={styles.timelineLine} />
+                    ) : null}
+                  </View>
+                  <TimelineTask
+                    styles={styles}
+                    task={task}
+                    theme={theme}
+                    onToggle={toggleTaskWithGrace}
+                  />
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyTime}>
+                <Text style={styles.emptyTimeTitle}>No fixed times</Text>
+                <Text style={styles.emptyTimeText}>
+                  Your day has room to move. Scheduled tasks will appear here.
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.completedWrap}>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.completedHeader}
+          onPress={() => setShowCompleted((current) => !current)}
+        >
+          <Text style={styles.completedTitle}>
+            Completed today ({settledCompleted.length})
+          </Text>
+          <Text style={styles.completedToggle}>
+            {showCompleted ? "Hide" : "Show"}
+          </Text>
+        </Pressable>
+        {showCompleted ? (
+          <View style={styles.completedList}>
+            {settledCompleted.length > 0 ? (
+              settledCompleted.map((task) => (
+                <Pressable
+                  key={task.id}
+                  style={styles.completedTask}
+                  onPress={() => toggleTaskWithGrace(task)}
+                >
+                  <View style={styles.completedCheck}>
+                    <Text style={styles.completedCheckText}>✓</Text>
+                  </View>
+                  <Text style={styles.completedTaskTitle}>{task.title}</Text>
+                  <Text style={styles.reopenLabel}>Reopen</Text>
+                </Pressable>
+              ))
+            ) : (
+              <Text style={styles.completedEmpty}>
+                Nothing here yet. Starting counts, too.
+              </Text>
+            )}
+          </View>
+        ) : null}
+      </View>
+    </ScrollView>
+  );
+}
+
+function QuickAdd({
+  compact,
+  priority,
+  styles,
+  theme,
+  title,
+  onChangePriority,
+  onChangeTitle,
+  onSubmit,
+}: {
+  compact: boolean;
+  priority: TaskPriority;
+  styles: ReturnType<typeof createStyles>;
+  theme: OrganaTheme;
+  title: string;
+  onChangePriority(priority: TaskPriority): void;
+  onChangeTitle(title: string): void;
+  onSubmit(): void;
+}) {
+  return (
+    <View style={styles.quickAdd}>
+      <View style={styles.quickAddTop}>
+        <View>
+          <Text style={styles.quickAddEyebrow}>QUICK CAPTURE</Text>
+          <Text style={styles.quickAddTitle}>What is on your mind?</Text>
+        </View>
+        {!compact ? (
+          <Text style={styles.quickAddHint}>Press enter to add</Text>
+        ) : null}
+      </View>
+      <View style={styles.inputRow}>
+        <TextInput
+          accessibilityLabel="New task title"
+          enterKeyHint="done"
+          placeholder="Add one small thing..."
+          placeholderTextColor={theme.textMuted}
+          returnKeyType="done"
+          style={styles.input}
+          value={title}
+          onChangeText={onChangeTitle}
+          onSubmitEditing={onSubmit}
+        />
+        <Pressable
+          accessibilityRole="button"
+          style={({ pressed }) => [
+            styles.addButton,
+            pressed && styles.addButtonPressed,
+          ]}
+          onPress={onSubmit}
+        >
+          <Text style={styles.addButtonText}>Add</Text>
+        </Pressable>
+      </View>
+      <View style={styles.priorityChips}>
+        {priorities.map((item) => (
+          <Pressable
+            key={item.key}
+            style={[
+              styles.priorityChip,
+              priority === item.key && styles.priorityChipActive,
+            ]}
+            onPress={() => onChangePriority(item.key)}
+          >
+            <Text
+              style={[
+                styles.priorityChipText,
+                priority === item.key && styles.priorityChipTextActive,
+              ]}
+            >
+              {item.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function SectionHeading({
+  count,
+  eyebrow,
+  styles,
+  title,
+}: {
+  count: number;
+  eyebrow: string;
+  styles: ReturnType<typeof createStyles>;
+  title: string;
+}) {
+  return (
+    <View style={styles.sectionHeading}>
+      <View>
+        <Text style={styles.sectionEyebrow}>{eyebrow}</Text>
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      <View style={styles.countPill}>
+        <Text style={styles.countText}>{count}</Text>
+      </View>
+    </View>
+  );
+}
+
+function PriorityLane({
+  hint,
+  label,
+  priority,
+  styles,
+  tasks,
+  theme,
+  onToggle,
+}: {
+  hint: string;
+  label: string;
+  priority: TaskPriority;
+  styles: ReturnType<typeof createStyles>;
+  tasks: Task[];
+  theme: OrganaTheme;
+  onToggle(task: Task): void;
+}) {
+  const colors = priorityColors(theme, priority);
+
+  return (
+    <View style={[styles.lane, { backgroundColor: colors.soft }]}>
+      <View style={styles.laneHeader}>
+        <View style={[styles.laneDot, { backgroundColor: colors.strong }]} />
+        <View style={styles.laneHeaderCopy}>
+          <Text style={styles.laneTitle}>{label}</Text>
+          <Text style={styles.laneHint}>{hint}</Text>
+        </View>
+        <Text style={[styles.laneCount, { color: colors.strong }]}>
+          {tasks.length}
+        </Text>
+      </View>
+      <View style={styles.taskList}>
+        {tasks.length > 0 ? (
+          tasks.map((task) => (
+            <PriorityTask
+              key={task.id}
+              colors={colors}
+              styles={styles}
+              task={task}
+              onToggle={onToggle}
+            />
+          ))
+        ) : (
+          <Text style={styles.emptyLane}>Nothing asking for attention.</Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function PriorityTask({
+  colors,
+  styles,
+  task,
+  onToggle,
+}: {
+  colors: ReturnType<typeof priorityColors>;
+  styles: ReturnType<typeof createStyles>;
+  task: Task;
+  onToggle(task: Task): void;
+}) {
+  const fade = useCompletionFade(Boolean(task.completedAt));
+
+  return (
+    <View style={styles.taskRow}>
+      <Animated.View style={[styles.taskMain, { opacity: fade }]}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityLabel={task.title}
+          accessibilityState={{ checked: Boolean(task.completedAt) }}
+          style={({ pressed }) => [
+            styles.taskCheck,
+            { borderColor: colors.strong },
+            task.completedAt
+              ? { backgroundColor: colors.strong }
+              : undefined,
+            pressed ? styles.taskCheckPressed : undefined,
+          ]}
+          onPress={() => onToggle(task)}
+        >
+          {task.completedAt ? (
+            <Text style={styles.taskCheckText}>✓</Text>
+          ) : null}
+        </Pressable>
+        <View style={styles.taskCopy}>
+          <Text
+            style={[
+              styles.taskTitle,
+              task.completedAt ? styles.taskTitleCompleted : undefined,
+            ]}
+          >
+            {task.title}
+          </Text>
+          <Text
+            style={[
+              styles.taskMeta,
+              task.completedAt ? styles.taskMetaCompleted : undefined,
+            ]}
+          >
+            {formatTaskMeta(task)}
+          </Text>
+        </View>
+      </Animated.View>
+      {task.completedAt ? (
+        <UndoButton styles={styles} task={task} onToggle={onToggle} />
+      ) : (
+        <Text style={[styles.taskKind, { color: colors.strong }]}>
+          {formatKind(task.kind)}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function TimelineTask({
+  styles,
+  task,
+  theme,
+  onToggle,
+}: {
+  styles: ReturnType<typeof createStyles>;
+  task: Task;
+  theme: OrganaTheme;
+  onToggle(task: Task): void;
+}) {
+  const fade = useCompletionFade(Boolean(task.completedAt));
+
+  return (
+    <View style={styles.timelineTask}>
+      <Animated.View style={[styles.timelineTaskMain, { opacity: fade }]}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityLabel={task.title}
+          accessibilityState={{ checked: Boolean(task.completedAt) }}
+          style={({ pressed }) => [
+            styles.taskCheck,
+            { borderColor: theme.accentStrong },
+            task.completedAt
+              ? { backgroundColor: theme.accentStrong }
+              : undefined,
+            pressed ? styles.taskCheckPressed : undefined,
+          ]}
+          onPress={() => onToggle(task)}
+        >
+          {task.completedAt ? (
+            <Text style={styles.taskCheckText}>✓</Text>
+          ) : null}
+        </Pressable>
+        <View style={styles.timelineTaskCopy}>
+          <Text
+            style={[
+              styles.timelineTaskTitle,
+              task.completedAt
+                ? styles.timelineTaskTitleCompleted
+                : undefined,
+            ]}
+          >
+            {task.title}
+          </Text>
+          <Text style={styles.timelineTaskMeta}>{formatTaskMeta(task)}</Text>
+        </View>
+      </Animated.View>
+      {task.completedAt ? (
+        <UndoButton styles={styles} task={task} onToggle={onToggle} />
+      ) : null}
+    </View>
+  );
+}
+
+function UndoButton({
+  styles,
+  task,
+  onToggle,
+}: {
+  styles: ReturnType<typeof createStyles>;
+  task: Task;
+  onToggle(task: Task): void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Undo ${task.title}`}
+      style={styles.undoButton}
+      onPress={() => onToggle(task)}
+    >
+      <Text style={styles.undoButtonText}>Undo</Text>
+    </Pressable>
+  );
+}
+
+function useCompletionFade(completed: boolean) {
+  const fade = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    fade.stopAnimation();
+
+    if (!completed) {
+      fade.setValue(1);
+      return;
+    }
+
+    fade.setValue(1);
+    Animated.timing(fade, {
+      duration: COMPLETION_GRACE_MS,
+      easing: Easing.linear,
+      toValue: 0.25,
+      useNativeDriver: false,
+    }).start();
+
+    return () => fade.stopAnimation();
+  }, [completed, fade]);
+
+  return fade;
+}
+
+function visibleTasksForLane(
+  tasks: Task[],
+  date: string,
+  priority: TaskPriority,
+  recentlyCompleted: Set<string>,
+) {
+  return tasks.filter(
+    (task) =>
+      task.plannedFor === date &&
+      task.priority === priority &&
+      (!task.completedAt || recentlyCompleted.has(task.id)),
+  );
+}
+
+function formatFriendlyDate(date: Date) {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  })
+    .format(date)
+    .toUpperCase();
+}
+
+function formatKind(kind: Task["kind"]) {
+  if (kind === "medication") return "Medication";
+  if (kind === "habit") return "Routine";
+  return "Task";
+}
+
+function formatTaskMeta(task: Task) {
+  const details: string[] = [];
+  if (task.scheduledTime) details.push(task.scheduledTime);
+  if (task.estimatedMinutes) details.push(`${task.estimatedMinutes} min`);
+  if (details.length === 0) return "No fixed time";
+  return details.join(" / ");
+}
+
+function priorityColors(theme: OrganaTheme, priority: TaskPriority) {
+  if (priority === "must") {
+    return { strong: theme.must, soft: theme.mustSoft };
+  }
+  if (priority === "nice") {
+    return { strong: theme.nice, soft: theme.niceSoft };
+  }
+  return { strong: theme.should, soft: theme.shouldSoft };
+}
+
+function createStyles(theme: OrganaTheme) {
+  return StyleSheet.create({
+    loading: {
+      alignItems: "center",
+      flex: 1,
+      gap: 12,
+      justifyContent: "center",
+    },
+    loadingText: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 13,
+    },
+    page: {
+      alignSelf: "center",
+      maxWidth: 1400,
+      paddingBottom: 60,
+      paddingHorizontal: 24,
+      paddingTop: 30,
+    },
+    pageCompact: {
+      alignSelf: "stretch",
+      paddingHorizontal: 16,
+      paddingTop: 18,
+    },
+    hero: {
+      alignItems: "flex-end",
+      flexDirection: "row",
+      gap: 20,
+      justifyContent: "space-between",
+      marginBottom: 26,
+    },
+    heroCompact: {
+      alignItems: "stretch",
+      flexDirection: "column",
+    },
+    heroCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    eyebrow: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 10,
+      letterSpacing: 1.8,
+      marginBottom: 8,
+    },
+    title: {
+      color: theme.text,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 34,
+      letterSpacing: -1.5,
+      lineHeight: 40,
+    },
+    subtitle: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 14,
+      lineHeight: 21,
+      marginTop: 8,
+      maxWidth: 530,
+    },
+    progressCard: {
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      borderColor: theme.border,
+      borderRadius: 18,
+      borderWidth: 1,
+      minWidth: 96,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+    },
+    progressNumber: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 24,
+    },
+    progressLabel: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 10,
+    },
+    quickAdd: {
+      backgroundColor: theme.surface,
+      borderColor: theme.border,
+      borderRadius: 22,
+      borderWidth: 1,
+      marginBottom: 28,
+      padding: 20,
+    },
+    quickAddTop: {
+      alignItems: "flex-end",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 14,
+    },
+    quickAddEyebrow: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 9,
+      letterSpacing: 1.5,
+      marginBottom: 3,
+    },
+    quickAddTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 15,
+    },
+    quickAddHint: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 10,
+    },
+    inputRow: {
+      flexDirection: "row",
+      gap: 10,
+    },
+    input: {
+      backgroundColor: theme.background,
+      borderColor: theme.border,
+      borderRadius: 14,
+      borderWidth: 1,
+      color: theme.text,
+      flex: 1,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 14,
+      minHeight: 48,
+      paddingHorizontal: 16,
+    },
+    addButton: {
+      alignItems: "center",
+      backgroundColor: theme.accentStrong,
+      borderRadius: 14,
+      justifyContent: "center",
+      minHeight: 48,
+      paddingHorizontal: 22,
+    },
+    addButtonPressed: {
+      opacity: 0.82,
+    },
+    addButtonText: {
+      color: theme.background,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 13,
+    },
+    priorityChips: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      marginTop: 12,
+    },
+    priorityChip: {
+      borderColor: theme.border,
+      borderRadius: 20,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+    },
+    priorityChipActive: {
+      backgroundColor: theme.shouldSoft,
+      borderColor: theme.should,
+    },
+    priorityChipText: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 10,
+    },
+    priorityChipTextActive: {
+      color: theme.text,
+    },
+    board: {
+      gap: 28,
+    },
+    boardWide: {
+      alignItems: "flex-start",
+      flexDirection: "row",
+    },
+    priorityColumn: {
+      flex: 1.65,
+      minWidth: 0,
+    },
+    timeColumn: {
+      flex: 1,
+      minWidth: 0,
+    },
+    sectionHeading: {
+      alignItems: "flex-end",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 14,
+    },
+    sectionEyebrow: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 9,
+      letterSpacing: 1.6,
+      marginBottom: 3,
+    },
+    sectionTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 21,
+      letterSpacing: -0.7,
+    },
+    countPill: {
+      alignItems: "center",
+      backgroundColor: theme.surfaceMuted,
+      borderRadius: 14,
+      height: 28,
+      justifyContent: "center",
+      width: 36,
+    },
+    countText: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 11,
+    },
+    priorityStack: {
+      gap: 12,
+    },
+    lane: {
+      borderRadius: 18,
+      padding: 15,
+    },
+    laneHeader: {
+      alignItems: "center",
+      flexDirection: "row",
+      marginBottom: 11,
+    },
+    laneDot: {
+      borderRadius: 5,
+      height: 9,
+      marginRight: 10,
+      width: 9,
+    },
+    laneHeaderCopy: {
+      flex: 1,
+    },
+    laneTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 13,
+    },
+    laneHint: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 10,
+      marginTop: 1,
+    },
+    laneCount: {
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 12,
+    },
+    taskList: {
+      gap: 7,
+    },
+    taskRow: {
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      borderRadius: 13,
+      flexDirection: "row",
+      gap: 10,
+      minHeight: 58,
+      paddingHorizontal: 13,
+      paddingVertical: 10,
+    },
+    taskMain: {
+      alignItems: "center",
+      flex: 1,
+      flexDirection: "row",
+      gap: 11,
+      minWidth: 0,
+    },
+    taskCheck: {
+      alignItems: "center",
+      borderRadius: 8,
+      borderWidth: 1.5,
+      height: 23,
+      justifyContent: "center",
+      width: 23,
+    },
+    taskCheckPressed: {
+      opacity: 0.6,
+      transform: [{ scale: 0.92 }],
+    },
+    taskCheckText: {
+      color: theme.background,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 7,
+    },
+    taskCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    taskTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 12,
+    },
+    taskTitleCompleted: {
+      color: theme.textMuted,
+      textDecorationLine: "line-through",
+    },
+    taskMeta: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 9,
+      marginTop: 3,
+    },
+    taskMetaCompleted: {
+      textDecorationLine: "line-through",
+    },
+    taskKind: {
+      fontFamily: "Manrope_700Bold",
+      fontSize: 9,
+    },
+    undoButton: {
+      backgroundColor: theme.surfaceMuted,
+      borderColor: theme.border,
+      borderRadius: 10,
+      borderWidth: 1,
+      paddingHorizontal: 11,
+      paddingVertical: 7,
+    },
+    undoButtonText: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 9,
+    },
+    emptyLane: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 11,
+      paddingHorizontal: 4,
+      paddingVertical: 7,
+    },
+    timelineCard: {
+      backgroundColor: theme.surface,
+      borderColor: theme.border,
+      borderRadius: 20,
+      borderWidth: 1,
+      padding: 18,
+    },
+    timelineRow: {
+      alignItems: "stretch",
+      flexDirection: "row",
+      gap: 12,
+      minHeight: 78,
+    },
+    timelineTimeWrap: {
+      alignItems: "center",
+      width: 48,
+    },
+    timelineTime: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 11,
+      marginTop: 4,
+    },
+    timelineLine: {
+      backgroundColor: theme.border,
+      flex: 1,
+      marginVertical: 8,
+      width: 1,
+    },
+    timelineTask: {
+      alignItems: "center",
+      backgroundColor: theme.surfaceMuted,
+      borderRadius: 14,
+      flex: 1,
+      flexDirection: "row",
+      gap: 10,
+      marginBottom: 10,
+      padding: 13,
+    },
+    timelineTaskMain: {
+      alignItems: "center",
+      flex: 1,
+      flexDirection: "row",
+      gap: 10,
+      minWidth: 0,
+    },
+    timelineTaskCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    timelineTaskTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 12,
+    },
+    timelineTaskTitleCompleted: {
+      color: theme.textMuted,
+      textDecorationLine: "line-through",
+    },
+    timelineTaskMeta: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 9,
+      marginTop: 4,
+    },
+    emptyTime: {
+      paddingHorizontal: 4,
+      paddingVertical: 18,
+    },
+    emptyTimeTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 13,
+    },
+    emptyTimeText: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 11,
+      lineHeight: 17,
+      marginTop: 5,
+    },
+    completedWrap: {
+      borderTopColor: theme.border,
+      borderTopWidth: 1,
+      marginTop: 30,
+      paddingTop: 14,
+    },
+    completedHeader: {
+      alignItems: "center",
+      flexDirection: "row",
+      justifyContent: "space-between",
+      paddingVertical: 8,
+    },
+    completedTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 12,
+    },
+    completedToggle: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 10,
+    },
+    completedList: {
+      gap: 7,
+      paddingTop: 7,
+    },
+    completedTask: {
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      flexDirection: "row",
+      gap: 10,
+      padding: 11,
+    },
+    completedCheck: {
+      alignItems: "center",
+      backgroundColor: theme.shouldSoft,
+      borderRadius: 8,
+      height: 24,
+      justifyContent: "center",
+      width: 24,
+    },
+    completedCheckText: {
+      color: theme.should,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 7,
+    },
+    completedTaskTitle: {
+      color: theme.textMuted,
+      flex: 1,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 11,
+      textDecorationLine: "line-through",
+    },
+    reopenLabel: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 9,
+    },
+    completedEmpty: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 11,
+      paddingVertical: 10,
+    },
+  });
+}

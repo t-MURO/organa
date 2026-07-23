@@ -1,0 +1,17 @@
+{
+  "name": "organa",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.28.2",
+  "scripts": {
+    "build:web": "pnpm --filter @organa/app build:web",
+    "dev": "turbo dev",
+    "dev:web": "pnpm --filter @organa/app web",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "turbo": "2.10.6",
+    "typescript": "~6.0.3"
+  }
+}

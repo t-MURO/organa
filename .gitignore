@@ -1,0 +1,17 @@
+node_modules/
+.turbo/
+.expo/
+dist/
+coverage/
+*.log
+.DS_Store
+.idea/
+
+# Native build output
+apps/mobile/android/
+apps/mobile/ios/
+
+# Local environment
+.env
+.env.local
+.env.*.local

@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Organa",
+    "slug": "organa",
+    "version": "0.1.0",
+    "orientation": "default",
+    "scheme": "organa",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.organa.mobile"
+    },
+    "android": {
+      "package": "app.organa.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#e8efe6"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "name": "Organa",
+      "shortName": "Organa",
+      "themeColor": "#f4f0e7",
+      "backgroundColor": "#f4f0e7",
+      "display": "standalone"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
