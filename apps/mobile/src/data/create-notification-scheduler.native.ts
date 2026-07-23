@@ -1,18 +1,15 @@
-import {
-  buildSubtaskReminderSchedule,
-  buildTaskReminderSchedule,
-  type Task,
-} from "@organa/domain";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
+import {
+  buildNativeTaskNotificationPlan,
+  gentleReminderChannelId,
+} from "./native-notification-plan";
 import type {
   NotificationCapability,
   NotificationScheduler,
   NotificationSyncResult,
 } from "./notification-scheduler.types";
-
-const channelId = "gentle-reminders";
 
 export const notificationCapability: NotificationCapability = {
   supported: true,
@@ -33,20 +30,22 @@ export function createNotificationScheduler(): NotificationScheduler {
       });
 
       if (Platform.OS === "android") {
-        await Notifications.setNotificationChannelAsync(channelId, {
-          description: "Pressure-free task reminders from Organa.",
-          importance: Notifications.AndroidImportance.DEFAULT,
-          name: "Gentle reminders",
-          sound: null,
-          vibrationPattern: [0, 180],
-        });
+        await Notifications.setNotificationChannelAsync(
+          gentleReminderChannelId,
+          {
+            description: "Pressure-free task reminders from Organa.",
+            importance: Notifications.AndroidImportance.DEFAULT,
+            name: "Gentle reminders",
+            sound: null,
+            vibrationPattern: [0, 180],
+          },
+        );
       }
     },
     async syncTask(task, requestPermission = false) {
       await cancelTaskNotifications(task.id);
-      const schedule = buildTaskReminderSchedule(task);
-      const subtaskSchedule = buildSubtaskReminderSchedule(task);
-      if (schedule.length === 0 && subtaskSchedule.length === 0) {
+      const plan = buildNativeTaskNotificationPlan(task);
+      if (plan.requests.length === 0) {
         return { permission: "not_requested", scheduled: 0 };
       }
 
@@ -55,78 +54,34 @@ export function createNotificationScheduler(): NotificationScheduler {
         return { permission, scheduled: 0 };
       }
 
-      const categoryIdentifier = categoryId(task.id);
       await Notifications.setNotificationCategoryAsync(
-        categoryIdentifier,
-        [
-          {
-            buttonTitle: "Focus",
-            identifier: "focus",
-            options: { opensAppToForeground: true },
+        plan.category.identifier,
+        plan.category.actions.map((action) => ({
+          buttonTitle: action.buttonTitle,
+          identifier: action.identifier,
+          options: {
+            opensAppToForeground: action.opensAppToForeground,
           },
-          ...task.snoozePresets.slice(0, 2).map((minutes) => ({
-            buttonTitle: `Snooze ${minutes}m`,
-            identifier: `snooze-${minutes}`,
-            options: { opensAppToForeground: false },
-          })),
-        ],
+        })),
       );
 
       await Promise.all(
-        [
-          ...schedule.map(({ reminder, triggerAt }) => ({
-            identifier: notificationId(task.id, reminder.id),
-            content: {
-              body: task.title,
-              categoryIdentifier,
-              data: {
-                taskId: task.id,
-                taskTitle: task.title,
-                snoozePresets: task.snoozePresets,
-              },
-              sound: false,
-              subtitle: reminderSubtitle(reminder.stage),
-              title: reminderTitle(reminder.stage),
-            },
+        plan.requests.map((request) =>
+          Notifications.scheduleNotificationAsync({
+            content: request.content,
+            identifier: request.identifier,
             trigger: {
-              channelId,
-              date: triggerAt,
+              channelId: gentleReminderChannelId,
+              date: request.triggerAt,
               type: Notifications.SchedulableTriggerInputTypes.DATE,
             },
-          })),
-          ...subtaskSchedule.map(
-            ({ reminder, subtaskId, subtaskTitle, triggerAt }) => ({
-              identifier: notificationId(
-                task.id,
-                `${reminder.id}:subtask:${subtaskId}`,
-              ),
-              content: {
-                body: subtaskTitle,
-                categoryIdentifier,
-                data: {
-                  subtaskId,
-                  taskId: task.id,
-                  taskTitle: task.title,
-                },
-                sound: false,
-                subtitle: task.title,
-                title: "A next step is ready",
-              },
-              trigger: {
-                channelId,
-                date: triggerAt,
-                type: Notifications.SchedulableTriggerInputTypes.DATE,
-              },
-            }),
-          ),
-        ].map((request) =>
-          Notifications.scheduleNotificationAsync(request),
+          }),
         ),
       );
 
       return {
         permission: "granted",
-        scheduled: schedule.length + subtaskSchedule.length,
+        scheduled: plan.requests.length,
       };
     },
     cancelTask: cancelTaskNotifications,
@@ -168,24 +123,4 @@ async function cancelTaskNotifications(taskId: string) {
       Notifications.cancelScheduledNotificationAsync(request.identifier),
     ),
   );
-}
-
-function categoryId(taskId: string) {
-  return `organa-${taskId.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-}
-
-function notificationId(taskId: string, reminderId: string) {
-  return `organa:${taskId}:${reminderId}`;
-}
-
-function reminderTitle(stage: Task["reminders"][number]["stage"]) {
-  if (stage === "before_due") return "Coming up gently";
-  if (stage === "after_due") return "A gentle follow-up";
-  return "Ready when you are";
-}
-
-function reminderSubtitle(stage: Task["reminders"][number]["stage"]) {
-  if (stage === "before_due") return "Before its due time";
-  if (stage === "after_due") return "After its due time";
-  return "Due now";
 }

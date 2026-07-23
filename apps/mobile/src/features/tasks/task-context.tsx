@@ -333,9 +333,12 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
   function toggleSubtask(task: Task, subtaskId: string) {
     const nextTask = toggleSubtaskCompletion(task, subtaskId);
+    if (nextTask === task) return;
+
     dispatch({ type: "upserted", task: nextTask });
     void repository.upsert(nextTask);
     void sync.queueUpsert("task", nextTask.id, nextTask, task);
+    syncNotifications(nextTask, false, devices.remindersAllowed);
   }
 
   return (

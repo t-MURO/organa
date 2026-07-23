@@ -1,6 +1,9 @@
 import * as SQLite from "expo-sqlite";
 
+import { clearPrivatePlatformState } from "./clear-private-platform-state";
+
 export async function deleteLocalAccountData(namespace: string) {
+  await clearPrivatePlatformState();
   const name = `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
   const database = await SQLite.openDatabaseAsync(name);
   await database.execAsync(`
