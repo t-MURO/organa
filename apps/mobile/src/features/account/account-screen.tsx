@@ -460,8 +460,9 @@ export function AccountScreen() {
               <Pressable
                 key={choice}
                 accessibilityLabel={`Use ${choice} theme`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: settings.theme === choice }}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: settings.theme === choice }}
+                aria-checked={settings.theme === choice}
                 style={[
                   styles.themeChoice,
                   settings.theme === choice
@@ -698,6 +699,8 @@ function SettingToggle({
       accessibilityLabel={label}
       accessibilityRole="switch"
       accessibilityState={{ checked: enabled, disabled }}
+      aria-checked={enabled}
+      aria-disabled={disabled}
       disabled={disabled}
       style={[styles.settingRow, disabled ? styles.buttonDisabled : undefined]}
       onPress={onPress}

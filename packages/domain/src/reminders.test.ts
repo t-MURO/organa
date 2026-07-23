@@ -124,4 +124,53 @@ describe("buildTaskReminderSchedule", () => {
       ),
     ).toEqual([]);
   });
+
+  it("uses each subtask's selected reminder timings", () => {
+    const task = createTask(
+      {
+        dueAt: "2026-08-01T12:00:00.000Z",
+        reminders: [],
+        subtaskRemindersEnabled: true,
+        subtasks: [
+          {
+            id: "before-step",
+            reminders: [
+              {
+                enabled: true,
+                id: "before",
+                offsetMinutes: 15,
+                stage: "before_due",
+              },
+            ],
+            title: "Prepare first",
+          },
+          {
+            id: "after-step",
+            reminders: [
+              {
+                enabled: true,
+                id: "after",
+                offsetMinutes: 30,
+                stage: "after_due",
+              },
+            ],
+            title: "Follow up",
+          },
+          { id: "quiet-step", reminders: [], title: "No reminder" },
+        ],
+        title: "Prepare",
+      },
+      "task-4",
+    );
+
+    expect(
+      buildSubtaskReminderSchedule(
+        task,
+        new Date("2026-08-01T10:00:00.000Z"),
+      ).map((item) => [item.subtaskId, item.triggerAt.toISOString()]),
+    ).toEqual([
+      ["before-step", "2026-08-01T11:45:00.000Z"],
+      ["after-step", "2026-08-01T12:30:00.000Z"],
+    ]);
+  });
 });

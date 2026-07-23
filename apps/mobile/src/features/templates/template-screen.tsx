@@ -174,8 +174,9 @@ export function TemplateScreen() {
             {filters.map((item) => (
               <Pressable
                 key={item.value}
-                accessibilityRole="button"
-                accessibilityState={{ selected: filter === item.value }}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: filter === item.value }}
+                aria-checked={filter === item.value}
                 style={[
                   styles.filterChip,
                   filter === item.value ? styles.filterChipActive : undefined,
@@ -488,6 +489,7 @@ function TemplateEditor({
                 accessibilityLabel="Repeat this template task"
                 accessibilityRole="switch"
                 accessibilityState={{ checked: recurrenceEnabled }}
+                aria-checked={recurrenceEnabled}
                 style={[
                   styles.toggle,
                   recurrenceEnabled ? styles.toggleActive : undefined,
@@ -602,8 +604,9 @@ function ChipRow({
       {items.map((item) => (
         <Pressable
           key={item.value}
-          accessibilityRole="button"
-          accessibilityState={{ selected: selected === item.value }}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: selected === item.value }}
+          aria-checked={selected === item.value}
           style={[
             styles.chip,
             selected === item.value ? styles.chipActive : undefined,

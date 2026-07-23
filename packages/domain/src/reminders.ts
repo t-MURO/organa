@@ -19,7 +19,45 @@ export function buildTaskReminderSchedule(
   const dueAt = new Date(task.dueAt);
   if (Number.isNaN(dueAt.getTime())) return [];
 
-  return task.reminders
+  return buildReminderSchedule(task.reminders, dueAt, now);
+}
+
+export function buildSubtaskReminderSchedule(
+  task: Task,
+  now = new Date(),
+): ScheduledSubtaskReminder[] {
+  if (
+    task.completedAt ||
+    !task.subtaskRemindersEnabled ||
+    !task.dueAt
+  ) {
+    return [];
+  }
+
+  const dueAt = new Date(task.dueAt);
+  if (Number.isNaN(dueAt.getTime())) return [];
+
+  return task.subtasks
+    .filter((subtask) => !subtask.completedAt)
+    .flatMap((subtask) =>
+      buildReminderSchedule(
+        subtask.reminders ?? task.reminders,
+        dueAt,
+        now,
+      ).map((scheduled) => ({
+        ...scheduled,
+        subtaskId: subtask.id,
+        subtaskTitle: subtask.title,
+      })),
+    );
+}
+
+function buildReminderSchedule(
+  reminders: Reminder[],
+  dueAt: Date,
+  now: Date,
+): ScheduledTaskReminder[] {
+  return reminders
     .filter((reminder) => reminder.enabled)
     .map((reminder) => ({
       reminder,
@@ -33,23 +71,6 @@ export function buildTaskReminderSchedule(
     }))
     .filter(({ triggerAt }) => triggerAt.getTime() > now.getTime())
     .sort((left, right) => left.triggerAt.getTime() - right.triggerAt.getTime());
-}
-
-export function buildSubtaskReminderSchedule(
-  task: Task,
-  now = new Date(),
-): ScheduledSubtaskReminder[] {
-  if (!task.subtaskRemindersEnabled) return [];
-  const taskSchedule = buildTaskReminderSchedule(task, now);
-  return task.subtasks
-    .filter((subtask) => !subtask.completedAt)
-    .flatMap((subtask) =>
-      taskSchedule.map((scheduled) => ({
-        ...scheduled,
-        subtaskId: subtask.id,
-        subtaskTitle: subtask.title,
-      })),
-    );
 }
 
 function reminderDirection(reminder: Reminder) {

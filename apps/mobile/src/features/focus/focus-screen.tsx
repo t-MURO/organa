@@ -222,6 +222,7 @@ export function FocusScreen() {
                 key={subtask.id}
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: Boolean(subtask.completedAt) }}
+                aria-checked={Boolean(subtask.completedAt)}
                 style={styles.step}
                 onPress={() => toggleSubtask(task, subtask.id)}
               >
@@ -253,6 +254,7 @@ export function FocusScreen() {
             <Pressable
               accessibilityRole="checkbox"
               accessibilityState={{ checked: Boolean(task.completedAt) }}
+              aria-checked={Boolean(task.completedAt)}
               style={[
                 styles.completeButton,
                 task.completedAt ? styles.completeButtonDone : undefined,

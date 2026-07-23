@@ -13,6 +13,7 @@ Implemented user-facing areas:
 - One-off, repeating routine, and medication tasks
 - Optional due dates, scheduled dates and times, priorities, duration,
   recurrence, reminders, subtasks, snooze presets, and grace-day settings
+- Per-subtask before/due/after reminder choices with explicit quiet steps
 - Checkbox-only completion, visible completed state, delayed fade, and Undo
 - Separate optional medication dose confirmation
 - Priority and scheduled-time lanes
@@ -112,10 +113,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 49 automated tests pass:
-  - 27 domain tests
+- 52 automated tests pass:
+  - 28 domain tests
   - 4 cryptography tests
-  - 18 application integration tests
+  - 20 application integration tests
 - iOS Hermes export succeeds.
 - Android Hermes export succeeds.
 - Production web export succeeds.
@@ -126,6 +127,9 @@ Latest verified repository checks:
 - A browser recovery drill selected a real AES-GCM backup through the web file
   picker, rejected an invalid backup, restored a task and theme, and verified
   both persisted after reload.
+- A browser subtask-reminder drill created two steps with different timings,
+  reopened the task to verify persistence, and confirmed explicit ARIA checked
+  and selected states.
 - Expo Doctor passes 19 of 20 checks with generated native projects. The only
   failure is host tooling because CocoaPods/full Xcode are not installed on
   this machine.

@@ -46,7 +46,7 @@ export function createNotificationScheduler(): NotificationScheduler {
       await cancelTaskNotifications(task.id);
       const schedule = buildTaskReminderSchedule(task);
       const subtaskSchedule = buildSubtaskReminderSchedule(task);
-      if (schedule.length === 0) {
+      if (schedule.length === 0 && subtaskSchedule.length === 0) {
         return { permission: "not_requested", scheduled: 0 };
       }
 

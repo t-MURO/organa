@@ -6,8 +6,8 @@ Status recorded on 2026-07-23.
 
 - [x] Task creation, editing, scheduling, recurrence, completion, Undo, search,
   priority/time lanes, week/month calendar, inbox, and history
-- [x] One-off, routine, medication, dose confirmation, subtasks, and optional
-  subtask reminder models
+- [x] One-off, routine, medication, dose confirmation, subtasks, and
+  independently configurable optional subtask reminders
 - [x] Multiple reminder stages and per-task snooze presets
 - [x] Templates browse/copy/create/edit/delete
 - [x] Focus mode and reminder deep links
@@ -30,7 +30,7 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 49 automated tests pass
+- 52 automated tests pass
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
 - Expo Doctor passes 19/20 checks after native project generation; the only
@@ -52,6 +52,8 @@ Local evidence:
 - browser backup drill rejected an invalid file, restored a real AES-GCM
   backup through the file chooser, and verified the imported task and settings
   persisted after reload
+- browser subtask-reminder drill verified independent timing choices,
+  persistence after reopening, and explicit checked/selected ARIA states
 
 ## Requires Connected Backend Validation
 

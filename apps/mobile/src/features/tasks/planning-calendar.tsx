@@ -82,8 +82,9 @@ export function PlanningCalendar({
             {(["week", "month"] as const).map((item) => (
               <Pressable
                 key={item}
-                accessibilityRole="button"
-                accessibilityState={{ selected: mode === item }}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: mode === item }}
+                aria-checked={mode === item}
                 style={[
                   styles.modeButton,
                   mode === item ? styles.modeButtonActive : undefined,
@@ -131,6 +132,7 @@ export function PlanningCalendar({
               accessibilityRole="button"
               accessibilityLabel={`${formatAccessibleDate(date)}, ${taskCount} active tasks`}
               accessibilityState={{ selected: selectedDay }}
+              aria-selected={selectedDay}
               style={[
                 styles.day,
                 mode === "month" ? styles.monthDay : styles.weekDay,

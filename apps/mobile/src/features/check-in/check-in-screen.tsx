@@ -140,10 +140,11 @@ export function CheckInScreen() {
                 <Pressable
                   key={time}
                   accessibilityLabel={`Set Check-In reminder for ${time}`}
-                  accessibilityRole="button"
+                  accessibilityRole="radio"
                   accessibilityState={{
-                    selected: settings.checkInReminder.time === time,
+                    checked: settings.checkInReminder.time === time,
                   }}
+                  aria-checked={settings.checkInReminder.time === time}
                   disabled={!settings.checkInReminder.enabled}
                   style={[
                     styles.timeChip,
@@ -171,6 +172,7 @@ export function CheckInScreen() {
             accessibilityState={{
               checked: settings.checkInReminder.enabled,
             }}
+            aria-checked={settings.checkInReminder.enabled}
             style={[
               styles.reminderToggle,
               settings.checkInReminder.enabled
@@ -223,6 +225,7 @@ export function CheckInScreen() {
                   key={option.value}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: selected }}
+                  aria-checked={selected}
                   accessibilityLabel={`Mood ${option.value}, ${option.label}`}
                   style={({ pressed }) => [
                     styles.moodButton,
@@ -308,6 +311,7 @@ export function CheckInScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ disabled: !mood }}
+              aria-disabled={!mood}
               disabled={!mood}
               style={({ pressed }) => [
                 styles.saveButton,
@@ -333,8 +337,9 @@ export function CheckInScreen() {
               {([7, 30] as const).map((days) => (
                 <Pressable
                   key={days}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: trendDays === days }}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: trendDays === days }}
+                  aria-checked={trendDays === days}
                   style={[
                     styles.trendToggleButton,
                     trendDays === days

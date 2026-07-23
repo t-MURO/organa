@@ -147,6 +147,8 @@ function Sidebar({
             <Pressable
               key={item.href}
               accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              aria-selected={active}
               style={[
                 styles.navItem,
                 active ? styles.navItemActive : undefined,
@@ -241,6 +243,8 @@ function MobileNavigation({
           <Pressable
             key={item.href}
             accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            aria-selected={active}
             style={styles.mobileNavItem}
             onPress={() => router.push(item.href)}
           >

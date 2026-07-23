@@ -84,8 +84,9 @@ export function TaskInbox({
           return (
             <Pressable
               key={item}
-              accessibilityRole="button"
-              accessibilityState={{ selected: filter === item }}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: filter === item }}
+              aria-checked={filter === item}
               style={[
                 styles.filterButton,
                 filter === item ? styles.filterButtonActive : undefined,

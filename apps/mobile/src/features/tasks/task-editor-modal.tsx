@@ -124,7 +124,13 @@ export function TaskEditorModal({
         : ["at"],
     );
     setSnoozePresets(task?.snoozePresets ?? [10, 30, 60]);
-    setSubtasks(task?.subtasks ?? []);
+    setSubtasks(
+      task?.subtasks.map((subtask) =>
+        task.subtaskRemindersEnabled && subtask.reminders === undefined
+          ? { ...subtask, reminders: task.reminders }
+          : subtask,
+      ) ?? [],
+    );
     setSubtaskDraft("");
     setSubtaskRemindersEnabled(task?.subtaskRemindersEnabled ?? false);
     setGraceDays(task?.graceDays ?? 3);
@@ -166,10 +172,40 @@ export function TaskEditorModal({
         id: `step-${Date.now().toString(36)}-${Math.random()
           .toString(36)
           .slice(2, 6)}`,
+        reminders: [],
         title: nextTitle,
       },
     ]);
     setSubtaskDraft("");
+  }
+
+  function toggleSubtaskReminder(subtaskId: string, optionId: string) {
+    const option = reminderOptions.find((item) => item.id === optionId);
+    if (!option) return;
+
+    setSubtasks((current) =>
+      current.map((subtask) => {
+        if (subtask.id !== subtaskId) return subtask;
+        const reminders = subtask.reminders ?? [];
+        const matches = (reminder: Reminder) =>
+          reminder.stage === option.stage &&
+          reminder.offsetMinutes === option.offset;
+        return {
+          ...subtask,
+          reminders: reminders.some(matches)
+            ? reminders.filter((reminder) => !matches(reminder))
+            : [
+                ...reminders,
+                {
+                  enabled: true,
+                  id: `subtask-${option.stage}-${option.offset}`,
+                  offsetMinutes: option.offset,
+                  stage: option.stage,
+                },
+              ],
+        };
+      }),
+    );
   }
 
   function submit() {
@@ -327,6 +363,7 @@ export function TaskEditorModal({
                     key={option.value}
                     accessibilityRole="radio"
                     accessibilityState={{ checked: kind === option.value }}
+                    aria-checked={kind === option.value}
                     style={[
                       styles.kindCard,
                       kind === option.value ? styles.kindCardActive : undefined,
@@ -540,6 +577,7 @@ export function TaskEditorModal({
                     key={option.id}
                     active={selectedReminders.includes(option.id)}
                     label={option.label}
+                    role="checkbox"
                     styles={styles}
                     onPress={() => toggleReminder(option.id)}
                   />
@@ -553,6 +591,7 @@ export function TaskEditorModal({
                     accessibilityLabel={`Toggle ${minutes} minute snooze`}
                     active={snoozePresets.includes(minutes)}
                     label={`${minutes} min`}
+                    role="checkbox"
                     styles={styles}
                     onPress={() => toggleSnooze(minutes)}
                   />
@@ -587,34 +626,75 @@ export function TaskEditorModal({
               {subtasks.length > 0 ? (
                 <View style={styles.subtaskList}>
                   {subtasks.map((subtask, index) => (
-                    <View key={subtask.id} style={styles.subtaskRow}>
-                      <View style={styles.subtaskNumber}>
-                        <Text style={styles.subtaskNumberText}>{index + 1}</Text>
+                    <View key={subtask.id} style={styles.subtaskPanel}>
+                      <View style={styles.subtaskRow}>
+                        <View style={styles.subtaskNumber}>
+                          <Text style={styles.subtaskNumberText}>
+                            {index + 1}
+                          </Text>
+                        </View>
+                        <Text style={styles.subtaskTitle}>{subtask.title}</Text>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Remove subtask ${subtask.title}`}
+                          onPress={() =>
+                            setSubtasks((current) =>
+                              current.filter(
+                                (item) => item.id !== subtask.id,
+                              ),
+                            )
+                          }
+                        >
+                          <Text style={styles.removeText}>Remove</Text>
+                        </Pressable>
                       </View>
-                      <Text style={styles.subtaskTitle}>{subtask.title}</Text>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remove subtask ${subtask.title}`}
-                        onPress={() =>
-                          setSubtasks((current) =>
-                            current.filter((item) => item.id !== subtask.id),
-                          )
-                        }
-                      >
-                        <Text style={styles.removeText}>Remove</Text>
-                      </Pressable>
+                      {subtaskRemindersEnabled ? (
+                        <>
+                          <Text style={styles.subtaskReminderLabel}>
+                            REMIND FOR THIS STEP
+                          </Text>
+                          <View style={styles.chipRow}>
+                            {reminderOptions.map((option) => (
+                              <ChoiceChip
+                                key={option.id}
+                                accessibilityLabel={`Set ${option.label} reminder for ${subtask.title}`}
+                                active={(subtask.reminders ?? []).some(
+                                  (reminder) =>
+                                    reminder.stage === option.stage &&
+                                    reminder.offsetMinutes === option.offset,
+                                )}
+                                label={option.label}
+                                role="checkbox"
+                                styles={styles}
+                                onPress={() =>
+                                  toggleSubtaskReminder(
+                                    subtask.id,
+                                    option.id,
+                                  )
+                                }
+                              />
+                            ))}
+                          </View>
+                        </>
+                      ) : null}
                     </View>
                   ))}
                 </View>
               ) : null}
               <ToggleRow
                 active={subtaskRemindersEnabled}
-                label="Allow reminders on individual steps"
+                label="Configure reminders for individual steps"
                 styles={styles}
                 onPress={() =>
                   setSubtaskRemindersEnabled((current) => !current)
                 }
               />
+              {subtaskRemindersEnabled ? (
+                <Text style={styles.sectionHint}>
+                  Each selected timing uses the task due date and time as its
+                  anchor.
+                </Text>
+              ) : null}
             </Section>
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -714,20 +794,23 @@ function ChoiceChip({
   accessibilityLabel,
   active,
   label,
+  role = "radio",
   styles,
   onPress,
 }: {
   accessibilityLabel?: string;
   active: boolean;
   label: string;
+  role?: "checkbox" | "radio";
   styles: ReturnType<typeof createStyles>;
   onPress(): void;
 }) {
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
+      accessibilityRole={role}
+      accessibilityState={{ checked: active }}
+      aria-checked={active}
       style={[styles.chip, active ? styles.chipActive : undefined]}
       onPress={onPress}
     >
@@ -753,6 +836,7 @@ function ToggleRow({
     <Pressable
       accessibilityRole="switch"
       accessibilityState={{ checked: active }}
+      aria-checked={active}
       style={styles.toggleRow}
       onPress={onPress}
     >
@@ -1085,13 +1169,16 @@ function createStyles(theme: OrganaTheme) {
     subtaskList: {
       gap: 6,
     },
-    subtaskRow: {
-      alignItems: "center",
+    subtaskPanel: {
       backgroundColor: theme.background,
       borderRadius: 11,
+      gap: 8,
+      padding: 10,
+    },
+    subtaskRow: {
+      alignItems: "center",
       flexDirection: "row",
       gap: 9,
-      padding: 10,
     },
     subtaskNumber: {
       alignItems: "center",
@@ -1111,6 +1198,13 @@ function createStyles(theme: OrganaTheme) {
       flex: 1,
       fontFamily: "Manrope_600SemiBold",
       fontSize: 10,
+    },
+    subtaskReminderLabel: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 7,
+      letterSpacing: 1,
+      marginLeft: 32,
     },
     removeText: {
       color: theme.textMuted,

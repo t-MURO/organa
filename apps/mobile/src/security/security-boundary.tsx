@@ -101,6 +101,7 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
               <Pressable
                 accessibilityRole="checkbox"
                 accessibilityState={{ checked: confirmed }}
+                aria-checked={confirmed}
                 style={styles.confirmRow}
                 onPress={() => setConfirmed((current) => !current)}
               >

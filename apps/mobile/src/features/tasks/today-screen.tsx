@@ -322,6 +322,7 @@ export function TodayScreen() {
                     accessibilityLabel={`Reopen ${task.title}`}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: true }}
+                    aria-checked
                     style={styles.completedCheck}
                     onPress={() => toggleTaskWithGrace(task)}
                   >
@@ -429,8 +430,9 @@ function QuickAdd({
         {priorities.map((item) => (
           <Pressable
             key={item.key}
-            accessibilityRole="button"
-            accessibilityState={{ selected: priority === item.key }}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: priority === item.key }}
+            aria-checked={priority === item.key}
             style={[
               styles.priorityChip,
               priority === item.key && styles.priorityChipActive,
@@ -566,6 +568,7 @@ function PriorityTask({
           accessibilityRole="checkbox"
           accessibilityLabel={task.title}
           accessibilityState={{ checked: Boolean(task.completedAt) }}
+          aria-checked={Boolean(task.completedAt)}
           style={({ pressed }) => [
             styles.taskCheck,
             { borderColor: colors.strong },
@@ -609,6 +612,7 @@ function PriorityTask({
                     accessibilityState={{
                       checked: Boolean(subtask.completedAt),
                     }}
+                    aria-checked={Boolean(subtask.completedAt)}
                     style={[
                       styles.subtaskCheck,
                       subtask.completedAt
@@ -685,6 +689,7 @@ function TimelineTask({
           accessibilityRole="checkbox"
           accessibilityLabel={task.title}
           accessibilityState={{ checked: Boolean(task.completedAt) }}
+          aria-checked={Boolean(task.completedAt)}
           style={({ pressed }) => [
             styles.taskCheck,
             { borderColor: theme.accentStrong },
