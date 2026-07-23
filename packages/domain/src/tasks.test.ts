@@ -6,6 +6,7 @@ import {
   completeTaskOccurrence,
   confirmMedicationDose,
   createTask,
+  getTaskTimingState,
   reopenTask,
   toggleSubtaskCompletion,
   updateTask,
@@ -239,7 +240,245 @@ describe("task transitions", () => {
       now,
     );
     const result = completeTaskOccurrence(task, "occurrence-2", now);
+    const nextResult = completeTaskOccurrence(
+      result.nextTask!,
+      "occurrence-3",
+      now,
+    );
 
     expect(result.nextTask?.plannedFor).toBe("2027-02-28");
+    expect(result.nextTask?.recurrence?.anchorDay).toBe(31);
+    expect(nextResult.nextTask?.plannedFor).toBe("2027-03-31");
+  });
+
+  it("preserves a monthly anchor on ordinary edits and resets it after a move", () => {
+    const january = createTask(
+      {
+        plannedFor: "2027-01-31",
+        recurrence: { frequency: "monthly", interval: 1 },
+        title: "Monthly review",
+      },
+      "occurrence-1",
+      now,
+    );
+    const february = completeTaskOccurrence(
+      january,
+      "occurrence-2",
+      now,
+    ).nextTask!;
+    const renamed = updateTask(
+      february,
+      {
+        plannedFor: "2027-02-28",
+        recurrence: { frequency: "monthly", interval: 1 },
+        title: "Renamed review",
+      },
+      now,
+    );
+    const moved = updateTask(
+      renamed,
+      {
+        plannedFor: "2027-02-15",
+        recurrence: { frequency: "monthly", interval: 1 },
+        title: "Moved review",
+      },
+      now,
+    );
+
+    expect(renamed.recurrence?.anchorDay).toBe(31);
+    expect(moved.recurrence?.anchorDay).toBe(15);
+  });
+
+  it("moves through selected weekdays and then skips interval weeks", () => {
+    const task = createTask(
+      {
+        plannedFor: "2026-07-21",
+        recurrence: {
+          frequency: "weekly",
+          interval: 2,
+          weekdays: [4, 2, 4],
+        },
+        title: "Movement",
+      },
+      "occurrence-1",
+      now,
+    );
+    const thursday = completeTaskOccurrence(
+      task,
+      "occurrence-2",
+      new Date("2026-07-21T18:00:00.000Z"),
+    );
+    const followingTuesday = completeTaskOccurrence(
+      thursday.nextTask!,
+      "occurrence-3",
+      new Date("2026-07-23T18:00:00.000Z"),
+    );
+
+    expect(task.recurrence?.weekdays).toEqual([2, 4]);
+    expect(thursday.nextTask?.plannedFor).toBe("2026-07-23");
+    expect(followingTuesday.nextTask?.plannedFor).toBe("2026-08-04");
+  });
+
+  it("shifts the due time by the same calendar distance as the occurrence", () => {
+    const task = createTask(
+      {
+        dueAt: "2026-07-21T18:30:00.000Z",
+        plannedFor: "2026-07-21",
+        recurrence: {
+          frequency: "weekly",
+          interval: 1,
+          weekdays: [2, 4],
+        },
+        title: "Evening routine",
+      },
+      "occurrence-1",
+      now,
+    );
+
+    const result = completeTaskOccurrence(
+      task,
+      "occurrence-2",
+      new Date("2026-07-21T19:00:00.000Z"),
+    );
+
+    expect(result.nextTask?.plannedFor).toBe("2026-07-23");
+    expect(result.nextTask?.dueAt).toBe("2026-07-23T18:30:00.000Z");
+  });
+
+  it("does not materialize a backlog of missed recurring dates", () => {
+    const task = createTask(
+      {
+        plannedFor: "2026-07-01",
+        recurrence: { frequency: "daily", interval: 1 },
+        title: "Daily reset",
+      },
+      "occurrence-1",
+      now,
+    );
+
+    const result = completeTaskOccurrence(
+      task,
+      "occurrence-2",
+      new Date("2026-07-23T18:00:00.000Z"),
+    );
+
+    expect(result.nextTask?.plannedFor).toBe("2026-07-24");
+    expect(result.nextTask?.occurrenceNumber).toBe(2);
+  });
+
+  it("rejects invalid recurrence rules at the domain boundary", () => {
+    expect(() =>
+      createTask(
+        {
+          plannedFor: "2026-07-23",
+          recurrence: { frequency: "daily", interval: 0 },
+          title: "Invalid interval",
+        },
+        "invalid",
+        now,
+      ),
+    ).toThrow("positive whole number");
+    expect(() =>
+      createTask(
+        {
+          plannedFor: "2026-07-23",
+          recurrence: {
+            frequency: "weekly",
+            interval: 1,
+            weekdays: [7],
+          },
+          title: "Invalid weekday",
+        },
+        "invalid",
+        now,
+      ),
+    ).toThrow("between 0 and 6");
+  });
+});
+
+describe("task timing", () => {
+  it("uses recurring grace days as a calendar cushion before overdue", () => {
+    const task = createTask(
+      {
+        graceDays: 3,
+        kind: "habit",
+        plannedFor: "2026-07-23",
+        recurrence: { frequency: "daily", interval: 1 },
+        title: "Brush teeth",
+      },
+      "routine",
+      now,
+    );
+
+    expect(
+      getTaskTimingState(task, new Date("2026-07-26T20:00:00.000Z")),
+    ).toEqual({
+      graceDaysRemaining: 0,
+      graceDaysUsed: 3,
+      inGracePeriod: true,
+      status: "active",
+    });
+    expect(
+      getTaskTimingState(task, new Date("2026-07-27T00:01:00.000Z")),
+    ).toEqual({
+      graceDaysRemaining: 0,
+      graceDaysUsed: 3,
+      inGracePeriod: false,
+      status: "overdue",
+    });
+  });
+
+  it("applies the cushion to due times without changing one-off deadlines", () => {
+    const recurring = createTask(
+      {
+        dueAt: "2026-07-23T12:00:00.000Z",
+        graceDays: 1,
+        kind: "medication",
+        plannedFor: "2026-07-23",
+        recurrence: { frequency: "daily", interval: 1 },
+        title: "Medication",
+      },
+      "medication",
+      now,
+    );
+    const oneOff = createTask(
+      {
+        dueAt: "2026-07-23T12:00:00.000Z",
+        graceDays: 3,
+        title: "Submit form",
+      },
+      "form",
+      now,
+    );
+
+    expect(
+      getTaskTimingState(
+        recurring,
+        new Date("2026-07-24T11:59:00.000Z"),
+      ).status,
+    ).toBe("active");
+    expect(
+      getTaskTimingState(
+        recurring,
+        new Date("2026-07-24T12:01:00.000Z"),
+      ),
+    ).toEqual({
+      graceDaysRemaining: 0,
+      graceDaysUsed: 1,
+      inGracePeriod: false,
+      status: "overdue",
+    });
+    expect(
+      getTaskTimingState(oneOff, new Date("2026-07-23T12:01:00.000Z")).status,
+    ).toBe("overdue");
+    expect(oneOff.graceDays).toBeUndefined();
+  });
+
+  it("keeps completed and undated tasks in explicit states", () => {
+    const undated = createTask({ title: "A thought" }, "undated", now);
+    const completed = completeTask(undated, now);
+
+    expect(getTaskTimingState(undated, now).status).toBe("active");
+    expect(getTaskTimingState(completed, now).status).toBe("completed");
   });
 });

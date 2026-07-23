@@ -38,7 +38,7 @@ const priorities: Array<{
   { key: "nice", label: "Nice to do", hint: "Only if there is room" },
 ];
 
-const COMPLETION_GRACE_MS = 5_000;
+const COMPLETION_TRANSITION_MS = 5_000;
 
 export function TodayScreen() {
   const router = useRouter();
@@ -169,7 +169,7 @@ export function TodayScreen() {
       setRecentlyCompletedIds((current) =>
         current.filter((id) => id !== task.id),
       );
-    }, COMPLETION_GRACE_MS);
+    }, COMPLETION_TRANSITION_MS);
     completionTimers.current.set(task.id, timer);
   }
 
@@ -854,7 +854,7 @@ function useCompletionFade(completed: boolean) {
       return;
     }
     Animated.timing(fade, {
-      duration: COMPLETION_GRACE_MS,
+      duration: COMPLETION_TRANSITION_MS,
       easing: Easing.linear,
       toValue: 0.25,
       useNativeDriver: false,

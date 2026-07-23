@@ -34,7 +34,13 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 72 automated tests pass: 28 domain, 6 cryptography, and 38 application tests
+- 83 automated tests pass: 36 domain, 6 cryptography, and 41 application tests
+- domain tests cover grace-window exhaustion, recurring task-type eligibility,
+  multiple selected weekdays, multi-week intervals, monthly short-month
+  clamping and anchor recovery, due-time shifting, invalid recurrence rules,
+  and stale-schedule catch-up without backlog creation
+- task inbox tests cover undated, today, future, grace-window, overdue, and
+  completed placement plus searchability
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
 - all three migrations apply from scratch to local Supabase/PostgreSQL and
@@ -90,6 +96,10 @@ Local evidence:
   persisted after reload
 - browser subtask-reminder drill verified independent timing choices,
   persistence after reopening, and explicit checked/selected ARIA states
+- browser recurrence drill persisted a two-week Monday/Thursday/Saturday
+  routine, kept an undated task searchable but out of dated lanes, classified a
+  stale routine inside its three-day grace window, and advanced its completion
+  directly to the next future occurrence without creating a backlog
 - a production PWA drill signed in, persisted an encrypted task, stopped both
   the app server and Supabase, reloaded successfully, created another task
   offline, reloaded with the outbox still queued, restored Supabase, and

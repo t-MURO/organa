@@ -151,7 +151,8 @@ Repeating tasks must support common routine patterns required for activities suc
 
 The recurrence model must be calendar-aware and preserve historical completion records rather than rewriting prior occurrences.
 
-Exact recurrence rules, including end conditions and skipped-occurrence behavior, will be finalized in the domain-model specification.
+Exact recurrence rules, including end conditions and skipped-occurrence
+behavior, are defined in `docs/DOMAIN_MODEL.md`.
 
 ### 7.4 Subtasks
 
@@ -159,7 +160,8 @@ Exact recurrence rules, including end conditions and skipped-occurrence behavior
 - All task types may have subtasks.
 - Subtasks must not turn the MVP into a full project-management system.
 - Subtask reminders are optional and configurable per task.
-- Parent-task completion behavior must be defined explicitly in the domain model.
+- Parent-task completion behavior is defined explicitly in
+  `docs/DOMAIN_MODEL.md`.
 
 ### 7.5 Reminders
 
@@ -239,7 +241,9 @@ Organa may show lightweight consistency information through:
 - Optional streak representation
 - Grace days
 
-Grace days are configured per task. The initial product direction allows three grace days per applicable task; the reset period and consumption rules must be finalized in the domain model.
+Grace days are configured per task. The initial product direction allows three
+grace days per applicable task; reset and consumption rules are defined in
+`docs/DOMAIN_MODEL.md`.
 
 Consistency features must:
 
@@ -694,12 +698,10 @@ The MVP is ready for controlled beta when:
 
 ## 21. Open Decisions
 
-These items are not blockers for beginning the domain model and prototype:
+Resolved recurrence, grace-day, and parent/subtask decisions are recorded in
+`docs/DOMAIN_MODEL.md`. The remaining product and launch decisions are:
 
 - Final product name and trademark validation
-- Exact recurrence-rule grammar and edge cases
-- Grace-day reset period and consumption rules
-- Parent-task completion behavior when subtasks are incomplete
 - Supported OS and browser version matrix
 - Exact cryptographic library and key-envelope format
 - Conflict-free document library for Brain Dump
@@ -714,9 +716,6 @@ These items are not blockers for beginning the domain model and prototype:
 
 ## 22. Recommended Next Documents
 
-1. Domain model and glossary
-2. Database and encrypted-record schema
-3. Recurrence and reminder behavior specification
-4. Screen map and critical user flows
-5. Security and key-management design
-6. MVP delivery plan and milestone backlog
+1. Database and encrypted-record schema
+2. Screen map and critical user flows
+3. MVP delivery plan and milestone backlog

@@ -124,10 +124,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 72 automated tests pass:
-  - 28 domain tests
+- 83 automated tests pass:
+  - 36 domain tests
   - 6 cryptography tests
-  - 38 application integration tests
+  - 41 application integration tests
 - All three migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
@@ -225,7 +225,7 @@ This milestone includes:
 - Checked-in local confirmation and returning-user email templates that send
   the six-digit code expected by Organa
 - Web-storage and email-template regression tests; the complete automated suite
-  currently passes 72 tests
+  currently passes 83 tests
 
 Local Supabase has been reset successfully from all three migrations, database
 lint reports no schema errors, and all 43 live backend checks pass.
@@ -286,6 +286,63 @@ This milestone includes:
   notifications after revocation or deletion, plus content-free iOS widget
   timelines before local database removal
 - Successful iOS and Android Hermes exports after the platform-specific changes
+
+## Task Semantics Milestone
+
+This milestone includes:
+
+- A documented task domain model in `docs/DOMAIN_MODEL.md`, including recurrence,
+  grace-day, parent/subtask, medication, history, and conflict-resolution rules
+- Derived pressure-free task timing states for active, grace-window, overdue,
+  and completed tasks without mutating their dates, reminders, or history
+- Grace days limited to repeating routine and medication tasks, with zero to
+  three local calendar days configured per task
+- Upcoming inbox behavior that keeps every active task discoverable, including
+  undated, today, future, and grace-window tasks
+- Explicit overdue and completed filters backed by the same shared timing model
+- Search support across undated and dated active tasks, with dated tasks sorted
+  before undated tasks
+- Weekly recurrence on multiple selected weekdays and configurable one-to-four
+  week intervals
+- Monthly recurrence anchored to the intended day of month, clamping in short
+  months and returning to that anchor in a later month
+- Recurring due times shifted by the same local-day distance as their planned
+  dates
+- Pressure-free recurrence catch-up that skips unmaterialized missed
+  occurrences rather than creating a backlog after a late completion
+- Recurrence validation and backup validation for intervals, weekdays, and
+  monthly anchor days
+- Intentional undated tasks from the detailed editor; Quick Add and templates
+  continue to provide an explicit selected or current date
+- Completion-transition naming separated from the task grace-day concept so
+  the five-second checked/fade/Undo behavior remains unambiguous
+
+Automated coverage added in this milestone includes:
+
+- Grace-window and overdue timing-state tests
+- Monthly short-month clamp, anchor recovery, and edited-anchor tests
+- Multi-week and multiple-weekday recurrence tests
+- Due-time shifting and stale-schedule catch-up tests
+- Invalid recurrence rejection tests
+- Inbox placement, search, overdue, completed, undated, and grace-window tests
+
+The final implementation passes 83 automated tests: 36 domain, 6 cryptography,
+and 41 application tests. Strict TypeScript, `git diff --check`, the configured
+production PWA build with all 12 artifact checks, and iOS and Android Hermes
+exports also pass.
+
+The browser walkthrough already verified:
+
+- A weekly routine persisted a two-week interval and Monday, Thursday, and
+  Saturday selections
+- An undated task stayed in Upcoming, remained searchable, displayed
+  `No date attached`, and did not appear in a dated calendar lane
+- A daily task planned three days earlier remained in Upcoming during its
+  configured three-day grace window and was not classified as overdue
+- Completing that stale recurring task created the next future occurrence
+  instead of materializing a missed-occurrence backlog
+- Checkbox completion retained the visible checked state and Undo control
+  during the delayed fade transition
 
 ## Remaining Acceptance Gates
 

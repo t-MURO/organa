@@ -49,6 +49,15 @@ const reminderOptions = [
 
 const snoozeOptions = [5, 10, 30, 60];
 const durationOptions = [5, 10, 15, 30, 60];
+const weekdayOptions = [
+  { label: "Monday", shortLabel: "Mon", value: 1 },
+  { label: "Tuesday", shortLabel: "Tue", value: 2 },
+  { label: "Wednesday", shortLabel: "Wed", value: 3 },
+  { label: "Thursday", shortLabel: "Thu", value: 4 },
+  { label: "Friday", shortLabel: "Fri", value: 5 },
+  { label: "Saturday", shortLabel: "Sat", value: 6 },
+  { label: "Sunday", shortLabel: "Sun", value: 0 },
+];
 
 export function TaskEditorModal({
   defaultPlannedFor,
@@ -83,6 +92,7 @@ export function TaskEditorModal({
   const [frequency, setFrequency] =
     useState<TaskRecurrence["frequency"]>("daily");
   const [interval, setInterval] = useState(1);
+  const [weekdays, setWeekdays] = useState<number[]>([]);
   const [selectedReminders, setSelectedReminders] = useState<string[]>(["at"]);
   const [snoozePresets, setSnoozePresets] = useState<number[]>([10, 30, 60]);
   const [subtasks, setSubtasks] = useState<TaskSubtask[]>([]);
@@ -110,6 +120,11 @@ export function TaskEditorModal({
     setRecurrenceEnabled(Boolean(task?.recurrence));
     setFrequency(task?.recurrence?.frequency ?? "daily");
     setInterval(task?.recurrence?.interval ?? 1);
+    setWeekdays(
+      task?.recurrence?.weekdays ?? [
+        weekdayForLocalDate(task?.plannedFor ?? defaultPlannedFor),
+      ],
+    );
     setSelectedReminders(
       task
         ? reminderOptions
@@ -160,6 +175,24 @@ export function TaskEditorModal({
         ? current.filter((item) => item !== minutes)
         : [...current, minutes].sort((left, right) => left - right),
     );
+  }
+
+  function selectFrequency(nextFrequency: TaskRecurrence["frequency"]) {
+    setFrequency(nextFrequency);
+    if (nextFrequency === "weekly" && weekdays.length === 0) {
+      setWeekdays([weekdayForLocalDate(plannedFor || defaultPlannedFor)]);
+    }
+  }
+
+  function toggleWeekday(weekday: number) {
+    setWeekdays((current) => {
+      if (!current.includes(weekday)) {
+        return [...current, weekday].sort((left, right) => left - right);
+      }
+      return current.length === 1
+        ? current
+        : current.filter((item) => item !== weekday);
+    });
   }
 
   function addSubtask() {
@@ -273,7 +306,11 @@ export function TaskEditorModal({
         dueAt,
         estimatedMinutes,
         recurrence: recurrenceEnabled
-          ? { frequency, interval }
+          ? {
+              frequency,
+              interval,
+              weekdays: frequency === "weekly" ? weekdays : undefined,
+            }
           : undefined,
         reminders,
         subtasks,
@@ -507,7 +544,7 @@ export function TaskEditorModal({
                         active={frequency === item}
                         label={capitalize(item)}
                         styles={styles}
-                        onPress={() => setFrequency(item)}
+                        onPress={() => selectFrequency(item)}
                       />
                     ))}
                   </View>
@@ -523,6 +560,24 @@ export function TaskEditorModal({
                       />
                     ))}
                   </View>
+                  {frequency === "weekly" ? (
+                    <>
+                      <FieldLabel styles={styles} label="Repeat on" />
+                      <View style={styles.chipRow}>
+                        {weekdayOptions.map((option) => (
+                          <ChoiceChip
+                            key={option.value}
+                            accessibilityLabel={`Repeat on ${option.label}`}
+                            active={weekdays.includes(option.value)}
+                            label={option.shortLabel}
+                            role="checkbox"
+                            styles={styles}
+                            onPress={() => toggleWeekday(option.value)}
+                          />
+                        ))}
+                      </View>
+                    </>
+                  ) : null}
                 </>
               ) : null}
               {kind !== "one_off" ? (
@@ -880,6 +935,12 @@ function frequencyUnit(
   const singular =
     frequency === "daily" ? "day" : frequency === "weekly" ? "week" : "month";
   return interval === 1 ? singular : `${singular}s`;
+}
+
+function weekdayForLocalDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? new Date().getDay() : date.getDay();
 }
 
 function createStyles(theme: OrganaTheme) {

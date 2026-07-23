@@ -22,6 +22,7 @@ export interface TaskRecurrence {
   frequency: "daily" | "weekly" | "monthly";
   interval: number;
   weekdays?: number[];
+  anchorDay?: number;
 }
 
 export interface Task {
@@ -76,6 +77,15 @@ export interface TaskCompletionResult {
   nextTask?: Task;
 }
 
+export type TaskTimingStatus = "active" | "completed" | "overdue";
+
+export interface TaskTimingState {
+  graceDaysRemaining: number;
+  graceDaysUsed: number;
+  inGracePeriod: boolean;
+  status: TaskTimingStatus;
+}
+
 export interface DayPlan {
   date: LocalDate;
   active: Task[];
@@ -91,6 +101,75 @@ export function formatLocalDate(date: Date): LocalDate {
   return `${year}-${month}-${day}`;
 }
 
+export function getTaskTimingState(
+  task: Task,
+  now = new Date(),
+): TaskTimingState {
+  if (task.completedAt) {
+    return {
+      graceDaysRemaining: 0,
+      graceDaysUsed: 0,
+      inGracePeriod: false,
+      status: "completed",
+    };
+  }
+
+  const graceDays =
+    task.recurrence && task.kind !== "one_off" ? (task.graceDays ?? 0) : 0;
+  const dueAt = task.dueAt ? new Date(task.dueAt) : undefined;
+  if (dueAt && !Number.isNaN(dueAt.getTime())) {
+    const overdueAt = addCalendarDays(dueAt, graceDays);
+    const isOverdue = now.getTime() > overdueAt.getTime();
+    const inGracePeriod =
+      graceDays > 0 &&
+      now.getTime() > dueAt.getTime() &&
+      now.getTime() <= overdueAt.getTime();
+    const graceDaysUsed = isOverdue
+      ? graceDays
+      : inGracePeriod
+        ? Math.min(
+            graceDays,
+            localDateDistance(
+              formatLocalDate(dueAt),
+              formatLocalDate(now),
+            ),
+          )
+        : 0;
+    return {
+      graceDaysRemaining: isOverdue ? 0 : graceDays - graceDaysUsed,
+      graceDaysUsed,
+      inGracePeriod,
+      status: isOverdue ? "overdue" : "active",
+    };
+  }
+
+  if (task.plannedFor && isLocalDate(task.plannedFor)) {
+    const today = formatLocalDate(now);
+    const lastGraceDate = addDaysToLocalDate(task.plannedFor, graceDays);
+    const isOverdue = today > lastGraceDate;
+    const inGracePeriod =
+      graceDays > 0 && today > task.plannedFor && today <= lastGraceDate;
+    const graceDaysUsed = isOverdue
+      ? graceDays
+      : inGracePeriod
+        ? Math.min(graceDays, localDateDistance(task.plannedFor, today))
+        : 0;
+    return {
+      graceDaysRemaining: isOverdue ? 0 : graceDays - graceDaysUsed,
+      graceDaysUsed,
+      inGracePeriod,
+      status: isOverdue ? "overdue" : "active",
+    };
+  }
+
+  return {
+    graceDaysRemaining: graceDays,
+    graceDaysUsed: 0,
+    inGracePeriod: false,
+    status: "active",
+  };
+}
+
 export function createTask(
   input: CreateTaskInput,
   id: string,
@@ -103,30 +182,35 @@ export function createTask(
   }
 
   const timestamp = now.toISOString();
+  const kind = input.kind ?? "one_off";
+  const recurrence = normalizeRecurrence(input.recurrence, input.plannedFor);
 
   return {
     id,
     title,
     details: input.details?.trim() || undefined,
-    kind: input.kind ?? "one_off",
+    kind,
     priority: input.priority ?? "should",
     plannedFor: input.plannedFor,
     scheduledTime: input.scheduledTime,
     dueAt: input.dueAt,
     estimatedMinutes: input.estimatedMinutes,
-    recurrence: input.recurrence,
+    recurrence,
     reminders: input.reminders ?? [],
     subtasks: input.subtasks ?? [],
     snoozePresets: normalizeSnoozePresets(input.snoozePresets),
-    graceDays: normalizeGraceDays(input.graceDays),
+    graceDays:
+      recurrence && kind !== "one_off"
+        ? normalizeGraceDays(input.graceDays)
+        : undefined,
     requireDoseConfirmation:
       input.kind === "medication"
         ? (input.requireDoseConfirmation ?? false)
         : undefined,
     subtaskRemindersEnabled: input.subtaskRemindersEnabled ?? false,
-    seriesId: input.seriesId ?? (input.recurrence ? id : undefined),
+    seriesId: input.seriesId ?? (recurrence ? id : undefined),
     previousOccurrenceId: input.previousOccurrenceId,
-    occurrenceNumber: input.occurrenceNumber ?? (input.recurrence ? 1 : undefined),
+    occurrenceNumber: input.occurrenceNumber ?? (recurrence ? 1 : undefined),
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -137,7 +221,17 @@ export function updateTask(
   input: CreateTaskInput,
   now = new Date(),
 ): Task {
-  const replacement = createTask(input, task.id, now);
+  const recurrence =
+    input.recurrence?.frequency === "monthly" &&
+    task.recurrence?.frequency === "monthly" &&
+    input.plannedFor === task.plannedFor &&
+    input.recurrence.anchorDay === undefined
+      ? {
+          ...input.recurrence,
+          anchorDay: task.recurrence.anchorDay,
+        }
+      : input.recurrence;
+  const replacement = createTask({ ...input, recurrence }, task.id, now);
 
   return {
     ...replacement,
@@ -167,9 +261,10 @@ export function completeTaskOccurrence(
     return { completedTask };
   }
 
-  const nextPlannedFor = addRecurrenceToLocalDate(
+  const nextPlannedFor = nextRecurrenceAfterCompletion(
     task.plannedFor,
     task.recurrence,
+    now,
   );
   const nextTask = createTask(
     {
@@ -180,7 +275,11 @@ export function completeTaskOccurrence(
       plannedFor: nextPlannedFor,
       scheduledTime: task.scheduledTime,
       dueAt: task.dueAt
-        ? addRecurrenceToDate(new Date(task.dueAt), task.recurrence).toISOString()
+        ? shiftDateByLocalDays(
+            new Date(task.dueAt),
+            task.plannedFor,
+            nextPlannedFor,
+          ).toISOString()
         : undefined,
       estimatedMinutes: task.estimatedMinutes,
       recurrence: task.recurrence,
@@ -306,6 +405,59 @@ function normalizeGraceDays(graceDays?: number) {
   return graceDays;
 }
 
+function normalizeRecurrence(
+  recurrence: TaskRecurrence | undefined,
+  plannedFor: LocalDate | undefined,
+): TaskRecurrence | undefined {
+  if (!recurrence) return undefined;
+  if (!Number.isInteger(recurrence.interval) || recurrence.interval <= 0) {
+    throw new Error("A recurrence interval must be a positive whole number.");
+  }
+
+  if (recurrence.frequency === "weekly") {
+    const weekdays = recurrence.weekdays
+      ? [...new Set(recurrence.weekdays)].sort((left, right) => left - right)
+      : undefined;
+    if (
+      weekdays?.some(
+        (weekday) =>
+          !Number.isInteger(weekday) || weekday < 0 || weekday > 6,
+      )
+    ) {
+      throw new Error("Weekly recurrence days must be between 0 and 6.");
+    }
+    return {
+      frequency: recurrence.frequency,
+      interval: recurrence.interval,
+      weekdays: weekdays?.length ? weekdays : undefined,
+    };
+  }
+
+  if (recurrence.frequency === "monthly") {
+    const plannedDay =
+      plannedFor && isLocalDate(plannedFor)
+        ? Number(plannedFor.slice(-2))
+        : undefined;
+    const anchorDay = recurrence.anchorDay ?? plannedDay;
+    if (
+      anchorDay !== undefined &&
+      (!Number.isInteger(anchorDay) || anchorDay < 1 || anchorDay > 31)
+    ) {
+      throw new Error("A monthly recurrence anchor must be from 1 to 31.");
+    }
+    return {
+      anchorDay,
+      frequency: recurrence.frequency,
+      interval: recurrence.interval,
+    };
+  }
+
+  return {
+    frequency: recurrence.frequency,
+    interval: recurrence.interval,
+  };
+}
+
 function addRecurrenceToLocalDate(
   date: LocalDate,
   recurrence: TaskRecurrence,
@@ -314,6 +466,26 @@ function addRecurrenceToLocalDate(
   return formatLocalDate(
     addRecurrenceToDate(new Date(year, month - 1, day), recurrence),
   );
+}
+
+function nextRecurrenceAfterCompletion(
+  date: LocalDate,
+  recurrence: TaskRecurrence,
+  completedAt: Date,
+) {
+  let nextDate = addRecurrenceToLocalDate(date, recurrence);
+  const completedDate = formatLocalDate(completedAt);
+  let skipped = 0;
+
+  while (date < completedDate && nextDate <= completedDate) {
+    nextDate = addRecurrenceToLocalDate(nextDate, recurrence);
+    skipped += 1;
+    if (skipped > 10_000) {
+      throw new Error("The recurrence is too far behind to advance safely.");
+    }
+  }
+
+  return nextDate;
 }
 
 function addRecurrenceToDate(date: Date, recurrence: TaskRecurrence) {
@@ -325,11 +497,26 @@ function addRecurrenceToDate(date: Date, recurrence: TaskRecurrence) {
   }
 
   if (recurrence.frequency === "weekly") {
-    next.setDate(next.getDate() + recurrence.interval * 7);
+    const weekdays = recurrence.weekdays;
+    if (!weekdays?.length) {
+      next.setDate(next.getDate() + recurrence.interval * 7);
+      return next;
+    }
+
+    const currentWeekday = next.getDay();
+    const laterThisWeek = weekdays.find(
+      (weekday) => weekday > currentWeekday,
+    );
+    const daysUntilNext =
+      laterThisWeek !== undefined
+        ? laterThisWeek - currentWeekday
+        : (recurrence.interval - 1) * 7 +
+          (7 - currentWeekday + weekdays[0]);
+    next.setDate(next.getDate() + daysUntilNext);
     return next;
   }
 
-  const originalDay = next.getDate();
+  const anchorDay = recurrence.anchorDay ?? next.getDate();
   next.setDate(1);
   next.setMonth(next.getMonth() + recurrence.interval);
   const lastDay = new Date(
@@ -337,6 +524,47 @@ function addRecurrenceToDate(date: Date, recurrence: TaskRecurrence) {
     next.getMonth() + 1,
     0,
   ).getDate();
-  next.setDate(Math.min(originalDay, lastDay));
+  next.setDate(Math.min(anchorDay, lastDay));
   return next;
+}
+
+function shiftDateByLocalDays(
+  value: Date,
+  from: LocalDate,
+  to: LocalDate,
+) {
+  const shifted = new Date(value);
+  shifted.setDate(shifted.getDate() + signedLocalDateDistance(from, to));
+  return shifted;
+}
+
+function addCalendarDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function addDaysToLocalDate(value: LocalDate, days: number) {
+  const [year, month, day] = value.split("-").map(Number);
+  return formatLocalDate(new Date(year, month - 1, day + days));
+}
+
+function isLocalDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  if (![year, month, day].every(Number.isInteger)) return false;
+  return formatLocalDate(new Date(year, month - 1, day)) === value;
+}
+
+function localDateDistance(from: LocalDate, to: LocalDate) {
+  return Math.max(0, signedLocalDateDistance(from, to));
+}
+
+function signedLocalDateDistance(from: LocalDate, to: LocalDate) {
+  const [fromYear, fromMonth, fromDay] = from.split("-").map(Number);
+  const [toYear, toMonth, toDay] = to.split("-").map(Number);
+  return Math.round(
+    (Date.UTC(toYear, toMonth - 1, toDay) -
+      Date.UTC(fromYear, fromMonth - 1, fromDay)) /
+      86_400_000,
+  );
 }

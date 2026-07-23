@@ -1,4 +1,4 @@
-import { formatLocalDate, type Task } from "@organa/domain";
+import { getTaskTimingState, type Task } from "@organa/domain";
 import { useState } from "react";
 import {
   Pressable,
@@ -11,8 +11,11 @@ import {
 
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
-
-type InboxFilter = "upcoming" | "overdue" | "completed";
+import {
+  filterTasksForInbox,
+  taskMatchesInboxFilter,
+  type InboxFilter,
+} from "./task-inbox-model";
 
 export function TaskInbox({
   tasks,
@@ -28,15 +31,7 @@ export function TaskInbox({
   const [query, setQuery] = useState("");
   const compact = width < 620;
   const now = new Date();
-  const today = formatLocalDate(now);
-  const filtered = tasks
-    .filter((task) => matchesFilter(task, filter, now, today))
-    .filter((task) =>
-      `${task.title} ${task.details ?? ""}`
-        .toLocaleLowerCase()
-        .includes(query.trim().toLocaleLowerCase()),
-    )
-    .sort((left, right) => taskSortKey(left).localeCompare(taskSortKey(right)));
+  const filtered = filterTasksForInbox(tasks, filter, query, now);
 
   return (
     <View style={styles.wrap}>
@@ -78,7 +73,7 @@ export function TaskInbox({
       <View style={styles.filterRow}>
         {(["upcoming", "overdue", "completed"] as const).map((item) => {
           const count = tasks.filter((task) =>
-            matchesFilter(task, item, now, today),
+            taskMatchesInboxFilter(task, item, now),
           ).length;
 
           return (
@@ -125,7 +120,9 @@ export function TaskInbox({
                 >
                   {task.title}
                 </Text>
-                <Text style={styles.taskMeta}>{inboxTaskMeta(task)}</Text>
+                <Text style={styles.taskMeta}>
+                  {inboxTaskMeta(task, now)}
+                </Text>
               </View>
               <Pressable
                 accessibilityRole="button"
@@ -156,32 +153,14 @@ export function TaskInbox({
   );
 }
 
-function matchesFilter(
-  task: Task,
-  filter: InboxFilter,
-  now: Date,
-  today: string,
-) {
-  if (filter === "completed") return Boolean(task.completedAt);
-  if (task.completedAt) return false;
-  if (filter === "overdue") {
-    return Boolean(task.dueAt && new Date(task.dueAt) < now);
-  }
-  return Boolean(
-    (task.plannedFor && task.plannedFor > today) ||
-      (task.dueAt && new Date(task.dueAt) >= now),
-  );
-}
-
-function taskSortKey(task: Task) {
-  return task.plannedFor ?? task.dueAt ?? task.updatedAt;
-}
-
-function inboxTaskMeta(task: Task) {
+function inboxTaskMeta(task: Task, now: Date) {
   const details: string[] = [];
   if (task.plannedFor) details.push(formatDate(task.plannedFor));
   if (task.scheduledTime) details.push(task.scheduledTime);
   if (task.recurrence) details.push(capitalize(task.recurrence.frequency));
+  if (getTaskTimingState(task, now).inGracePeriod) {
+    details.push("Grace window");
+  }
   if (task.completedAt) details.push("Completed");
   return details.length > 0 ? details.join(" / ") : "No date attached";
 }

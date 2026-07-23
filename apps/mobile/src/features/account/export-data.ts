@@ -209,6 +209,13 @@ function isRecurrence(value: unknown) {
       value.frequency === "weekly" ||
       value.frequency === "monthly") &&
     isPositiveInteger(value.interval) &&
+    isOptional(
+      value.anchorDay,
+      (anchorDay) =>
+        Number.isInteger(anchorDay) &&
+        Number(anchorDay) >= 1 &&
+        Number(anchorDay) <= 31,
+    ) &&
     isOptional(value.weekdays, (item) =>
       isArrayOf(
         item,

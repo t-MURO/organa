@@ -227,13 +227,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
   );
 
   function addTask(input: CreateTaskInput) {
-    const task = createTask(
-      {
-        ...input,
-        plannedFor: input.plannedFor ?? formatLocalDate(new Date()),
-      },
-      makeId(),
-    );
+    const task = createTask(input, makeId());
     dispatch({ type: "upserted", task });
     void repository.upsert(task);
     void sync.queueUpsert("task", task.id, task);

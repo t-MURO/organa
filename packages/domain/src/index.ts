@@ -29,6 +29,7 @@ export {
   confirmMedicationDose,
   createTask,
   formatLocalDate,
+  getTaskTimingState,
   reopenTask,
   toggleSubtaskCompletion,
   updateTask,
@@ -76,4 +77,6 @@ export type {
   TaskPriority,
   TaskRecurrence,
   TaskSubtask,
+  TaskTimingState,
+  TaskTimingStatus,
 } from "./tasks";
