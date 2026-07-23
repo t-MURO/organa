@@ -32,7 +32,8 @@ Implemented user-facing areas:
 - One-hour cancellable account-deletion flow
 - iOS Today Tasks and Next Reminder widgets; Next Reminder uses the earliest
   actual enabled task or subtask reminder trigger, including configured offsets
-- Installable PWA with a Workbox offline application shell
+- Installable PWA with a Workbox offline application shell, cached render
+  fonts, durable local mutations, and automatic reconnecting outbox
 
 ## Persistence And Synchronization
 
@@ -118,10 +119,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 61 automated tests pass:
+- 64 automated tests pass:
   - 28 domain tests
   - 6 cryptography tests
-  - 27 application integration tests
+  - 30 application integration tests
 - All three migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
@@ -134,8 +135,13 @@ Latest verified repository checks:
 - iOS Hermes export succeeds.
 - Android Hermes export succeeds.
 - Production web export succeeds.
+- Production web artifact verification passes 12 installability and offline
+  cache checks.
 - Eight static web routes are generated.
-- Workbox precaches 15 URLs.
+- Workbox precaches 21 URLs, including the render-critical Manrope fonts and
+  optional interaction sounds.
+- Production Lighthouse scores 100% for accessibility and 100% for best
+  practices on the configured sign-in screen.
 - Production dependency audit reports no known vulnerabilities.
 - `git diff --check` passes.
 - A browser recovery drill selected a real AES-GCM backup through the web file
@@ -149,6 +155,10 @@ Latest verified repository checks:
   claim, quiet secondary enrollment, and post-claim code removal.
 - A task created on the newly approved browser appeared on the original browser
   through encrypted realtime synchronization without a reload.
+- A production PWA remained signed in with its cached task after both the app
+  server and Supabase stopped, persisted a new offline task and outbox across
+  another reload, then reconciled automatically when Supabase returned. The
+  resulting cloud rows contained no task-title plaintext.
 - Expo Doctor passes 19 of 20 checks with generated native projects. The only
   failure is host tooling because CocoaPods/full Xcode are not installed on
   this machine.

@@ -5,6 +5,7 @@ import {
   Manrope_800ExtraBold,
   useFonts,
 } from "@expo-google-fonts/manrope";
+import Head from "expo-router/head";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthBoundary } from "../auth/auth-boundary";
@@ -37,47 +38,56 @@ export default function RootLayout() {
   });
 
   if (!fontsLoaded) {
-    return null;
+    return (
+      <Head>
+        <title>Organa</title>
+      </Head>
+    );
   }
 
   return (
-    <SafeAreaProvider>
-      <PwaUpdateCoordinator />
-      <AuthProvider>
-        <AuthBoundary>
-          <AppLockProvider>
-            <AppLockBoundary>
-              <SecurityProvider>
-                <SecurityBoundary>
-                  <AccountLifecycleProvider>
-                    <AccountLifecycleBoundary>
-                      <SyncProvider>
-                        <DeviceProvider>
-                          <SettingsProvider>
-                            <InteractionFeedbackProvider>
-                              <TaskProvider>
-                                <TemplateProvider>
-                                  <BrainDumpProvider>
-                                    <CheckInProvider>
-                                      <NotificationCoordinator />
-                                      <WidgetCoordinator />
-                                      <AppShell />
-                                    </CheckInProvider>
-                                  </BrainDumpProvider>
-                                </TemplateProvider>
-                              </TaskProvider>
-                            </InteractionFeedbackProvider>
-                          </SettingsProvider>
-                        </DeviceProvider>
-                      </SyncProvider>
-                    </AccountLifecycleBoundary>
-                  </AccountLifecycleProvider>
-                </SecurityBoundary>
-              </SecurityProvider>
-            </AppLockBoundary>
-          </AppLockProvider>
-        </AuthBoundary>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <>
+      <Head>
+        <title>Organa</title>
+      </Head>
+      <SafeAreaProvider>
+        <PwaUpdateCoordinator />
+        <AuthProvider>
+          <AuthBoundary>
+            <AppLockProvider>
+              <AppLockBoundary>
+                <SecurityProvider>
+                  <SecurityBoundary>
+                    <AccountLifecycleProvider>
+                      <AccountLifecycleBoundary>
+                        <SyncProvider>
+                          <DeviceProvider>
+                            <SettingsProvider>
+                              <InteractionFeedbackProvider>
+                                <TaskProvider>
+                                  <TemplateProvider>
+                                    <BrainDumpProvider>
+                                      <CheckInProvider>
+                                        <NotificationCoordinator />
+                                        <WidgetCoordinator />
+                                        <AppShell />
+                                      </CheckInProvider>
+                                    </BrainDumpProvider>
+                                  </TemplateProvider>
+                                </TaskProvider>
+                              </InteractionFeedbackProvider>
+                            </SettingsProvider>
+                          </DeviceProvider>
+                        </SyncProvider>
+                      </AccountLifecycleBoundary>
+                    </AccountLifecycleProvider>
+                  </SecurityBoundary>
+                </SecurityProvider>
+              </AppLockBoundary>
+            </AppLockProvider>
+          </AuthBoundary>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </>
   );
 }

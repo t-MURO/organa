@@ -25,7 +25,8 @@ Status recorded on 2026-07-23.
 - [x] Light/dark/system themes, reduced motion, sounds, haptics, and app lock
 - [x] iOS widget sources for today's tasks and the next actual enabled task or
   subtask reminder trigger
-- [x] Installable PWA manifest, icons, static routes, and offline app shell
+- [x] Installable PWA manifest, icons, static routes, signed-in offline reload,
+  local mutation persistence, and reconnecting outbox
 - [x] Explicit active-tab-only web reminder fallback
 - [x] Keyboard roles/labels, visible focus, semantic state, reduced motion, and
   AA light/dark theme token contrast
@@ -33,7 +34,7 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 61 automated tests pass: 28 domain, 6 cryptography, and 27 application tests
+- 64 automated tests pass: 28 domain, 6 cryptography, and 30 application tests
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
 - all three migrations apply from scratch to local Supabase/PostgreSQL and
@@ -64,7 +65,12 @@ Local evidence:
   1024-pixel App Store icon
 - iOS and Android Hermes bundle exports succeed
 - production web export succeeds
-- Workbox precaches 15 URLs
+- production web artifact verification passes 12 installability and offline
+  cache checks
+- Workbox precaches 21 URLs, including every font weight loaded before render
+  and both optional interaction sounds
+- production Lighthouse scores 100% for accessibility and 100% for best
+  practices on the configured sign-in screen
 - production dependency audit reports no known vulnerabilities
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
@@ -74,6 +80,10 @@ Local evidence:
   persisted after reload
 - browser subtask-reminder drill verified independent timing choices,
   persistence after reopening, and explicit checked/selected ARIA states
+- a production PWA drill signed in, persisted an encrypted task, stopped both
+  the app server and Supabase, reloaded successfully, created another task
+  offline, reloaded with the outbox still queued, restored Supabase, and
+  reconciled automatically; both cloud rows remained ciphertext-only
 
 ## Requires Connected Backend Validation
 

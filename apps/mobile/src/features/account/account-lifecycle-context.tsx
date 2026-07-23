@@ -13,6 +13,7 @@ import { deleteLocalAccountData } from "../../data/delete-local-account-data";
 import { contentKeyVault } from "../../security/content-key-vault";
 import { removeDeviceIdentity } from "../../security/device-identity";
 import { useSecurity } from "../../security/security-context";
+import { accountDeletionCache } from "./account-deletion-cache";
 
 interface DeletionRequest {
   executeAfter: string;
@@ -55,29 +56,59 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
       .is("completed_at", null)
       .maybeSingle();
     if (result.error) throw result.error;
-    setDeletionRequest(
-      result.data
-        ? {
-            executeAfter: result.data.execute_after,
-            requestedAt: result.data.requested_at,
-          }
-        : null,
-    );
+    const nextRequest = result.data
+      ? {
+          executeAfter: result.data.execute_after,
+          requestedAt: result.data.requested_at,
+        }
+      : null;
+    setDeletionRequest(nextRequest);
+    if (nextRequest) {
+      await accountDeletionCache.set(auth.user.id, nextRequest);
+    } else {
+      await accountDeletionCache.remove(auth.user.id);
+    }
     setLoading(false);
   }
 
   useEffect(() => {
-    setLoading(Boolean(auth.user));
-    void refresh().catch(() => setLoading(false));
+    let active = true;
 
-    const interval = setInterval(() => void refresh(), 30_000);
+    async function initialize() {
+      if (!auth.user || auth.localPreview) {
+        if (active) {
+          setDeletionRequest(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      setLoading(true);
+      const cached = await accountDeletionCache.get(auth.user.id);
+      if (!active) return;
+      setDeletionRequest(cached);
+      setLoading(false);
+      void refresh().catch(() => undefined);
+    }
+
+    void initialize().catch(() => {
+      if (active) setLoading(false);
+    });
+
+    const interval = setInterval(
+      () => void refresh().catch(() => undefined),
+      30_000,
+    );
     const appState =
       Platform.OS === "web"
         ? undefined
         : AppState.addEventListener("change", (state) => {
-            if (state === "active") void refresh();
+            if (state === "active") {
+              void refresh().catch(() => undefined);
+            }
           });
     return () => {
+      active = false;
       clearInterval(interval);
       appState?.remove();
     };
@@ -111,6 +142,7 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
     if (!auth.user) return;
     const userId = auth.user.id;
     await Promise.all([
+      accountDeletionCache.remove(userId),
       contentKeyVault.remove(userId),
       deleteLocalAccountData(userId),
       removeDeviceIdentity(),

@@ -55,3 +55,16 @@ For each browser:
 8. Confirm every primary action is keyboard reachable with visible focus.
 9. Test light/dark/system themes and reduced motion.
 10. Confirm the reminder limitation is visible before enabling reminders.
+
+## Latest Local Evidence
+
+On 2026-07-23, the configured production PWA:
+
+- scored 100% for Lighthouse accessibility and best practices
+- passed 12 deterministic production artifact checks
+- precached the static routes, JavaScript, manifest, install icons, four
+  render-critical Manrope weights, and optional interaction sounds
+- reloaded a signed-in account with both the static server and Supabase stopped
+- retained existing encrypted local task data
+- created and retained a new task plus outbox mutation while fully offline
+- reconciled the queued mutation automatically after Supabase returned

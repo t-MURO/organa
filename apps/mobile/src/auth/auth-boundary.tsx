@@ -143,9 +143,7 @@ function SignInScreen() {
                             )
                           }
                         >
-                          <Text style={styles.providerGlyph}>
-                            {provider.charAt(0).toUpperCase()}
-                          </Text>
+                          <View style={styles.providerGlyph} />
                           <Text style={styles.providerText}>
                             {capitalize(provider)}
                           </Text>
@@ -425,9 +423,12 @@ function stylesFor(theme: OrganaTheme) {
       paddingVertical: 11,
     },
     providerGlyph: {
-      color: theme.accentStrong,
-      fontFamily: "Manrope_800ExtraBold",
-      fontSize: 13,
+      borderColor: theme.accentStrong,
+      borderRadius: 3,
+      borderWidth: 2,
+      height: 10,
+      transform: [{ rotate: "45deg" }],
+      width: 10,
     },
     providerText: {
       color: theme.text,
