@@ -194,6 +194,7 @@ Major implementation commits:
 - `f7adffe` - verify account deletion finalization
 - `955adf5` - keep the signed-in PWA usable offline
 - `950f1a0` - keep native reminders and widgets current
+- `70ec45a` - complete recurring task semantics
 
 ## Latest Security Hardening
 
