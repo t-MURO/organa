@@ -31,7 +31,45 @@
     "plugins": [
       "expo-router",
       "expo-sqlite",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-web-browser",
+      "expo-secure-store",
+      "expo-sharing",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Organa to use Face ID to unlock your private space."
+        }
+      ],
+      "expo-audio",
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.app.organa.mobile",
+          "widgets": [
+            {
+              "name": "TodayTasksWidget",
+              "displayName": "Organa Today",
+              "description": "See today's calm task list.",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "systemLarge"
+              ]
+            },
+            {
+              "name": "NextReminderWidget",
+              "displayName": "Organa Next Reminder",
+              "description": "See the next task reminder.",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ]
+            }
+          ]
+        }
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

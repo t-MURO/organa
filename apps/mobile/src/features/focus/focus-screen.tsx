@@ -91,7 +91,11 @@ export function FocusScreen() {
         <Text style={styles.missingText}>
           It may have been removed on another screen.
         </Text>
-        <Pressable style={styles.exitButton} onPress={() => router.replace("/")}>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.exitButton}
+          onPress={() => router.replace("/")}
+        >
           <Text style={styles.exitButtonText}>Return to today</Text>
         </Pressable>
       </View>
@@ -111,6 +115,7 @@ export function FocusScreen() {
         </View>
         <Pressable
           accessibilityLabel="Exit focus mode"
+          accessibilityRole="button"
           style={styles.exitButton}
           onPress={() => router.back()}
         >
@@ -147,6 +152,7 @@ export function FocusScreen() {
                 {timerOptions.map((option) => (
                   <Pressable
                     key={option.minutes}
+                    accessibilityRole="button"
                     style={styles.timerOption}
                     onPress={() => chooseTimer(option.minutes)}
                   >
@@ -177,6 +183,7 @@ export function FocusScreen() {
               <View style={styles.timerControls}>
                 {mode === "break" ? (
                   <Pressable
+                    accessibilityRole="button"
                     style={styles.primaryControl}
                     onPress={returnToTask}
                   >
@@ -185,6 +192,7 @@ export function FocusScreen() {
                 ) : (
                   <>
                     <Pressable
+                      accessibilityRole="button"
                       style={styles.primaryControl}
                       onPress={toggleTimer}
                     >
@@ -192,7 +200,11 @@ export function FocusScreen() {
                         {running ? "Pause" : timerFinished ? "Restart" : "Start"}
                       </Text>
                     </Pressable>
-                    <Pressable style={styles.softControl} onPress={resetTimer}>
+                    <Pressable
+                      accessibilityRole="button"
+                      style={styles.softControl}
+                      onPress={resetTimer}
+                    >
                       <Text style={styles.softControlText}>Reset</Text>
                     </Pressable>
                   </>
@@ -261,7 +273,11 @@ export function FocusScreen() {
                 {task.completedAt ? "Completed. Undo?" : "Mark task complete"}
               </Text>
             </Pressable>
-            <Pressable style={styles.breakButton} onPress={takeBreak}>
+            <Pressable
+              accessibilityRole="button"
+              style={styles.breakButton}
+              onPress={takeBreak}
+            >
               <Text style={styles.breakButtonText}>Take a five-minute break</Text>
             </Pressable>
           </View>

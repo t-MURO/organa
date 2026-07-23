@@ -7,8 +7,8 @@ interface TaskRow {
   payload: string;
 }
 
-export function createTaskRepository(): TaskRepository {
-  const databasePromise = SQLite.openDatabaseAsync("organa.db");
+export function createTaskRepository(namespace = "local"): TaskRepository {
+  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
 
   return {
     async initialize() {
@@ -47,4 +47,8 @@ export function createTaskRepository(): TaskRepository {
       await database.runAsync("DELETE FROM tasks WHERE id = ?", id);
     },
   };
+}
+
+function databaseName(namespace: string) {
+  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

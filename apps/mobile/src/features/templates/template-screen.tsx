@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 
+import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
 import { useTasks } from "../tasks/task-context";
@@ -47,6 +48,7 @@ const priorities: Array<{ value: TaskPriority; label: string }> = [
 
 export function TemplateScreen() {
   const theme = useAppTheme();
+  const reducedMotion = useReducedMotion();
   const styles = createStyles(theme);
   const { width } = useWindowDimensions();
   const compact = width < 700;
@@ -150,7 +152,11 @@ export function TemplateScreen() {
               the way your day actually works.
             </Text>
           </View>
-          <Pressable style={styles.primaryButton} onPress={createNew}>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.primaryButton}
+            onPress={createNew}
+          >
             <Text style={styles.primaryButtonText}>New template</Text>
           </Pressable>
         </View>
@@ -168,6 +174,8 @@ export function TemplateScreen() {
             {filters.map((item) => (
               <Pressable
                 key={item.value}
+                accessibilityRole="button"
+                accessibilityState={{ selected: filter === item.value }}
                 style={[
                   styles.filterChip,
                   filter === item.value ? styles.filterChipActive : undefined,
@@ -217,7 +225,8 @@ export function TemplateScreen() {
           </View>
         ) : null}
       </ScrollView>
-      <TemplateEditor
+        <TemplateEditor
+          reducedMotion={reducedMotion}
         template={editingTemplate}
         visible={editorVisible}
         onClose={() => {
@@ -279,12 +288,15 @@ function TemplateCard({
       <View style={styles.cardActions}>
         <Pressable
           accessibilityLabel={`Use ${template.name}`}
+          accessibilityRole="button"
           style={styles.useButton}
           onPress={() => onUse(template)}
         >
           <Text style={styles.useButtonText}>Add to today</Text>
         </Pressable>
         <Pressable
+          accessibilityLabel={`${isOfficial ? "Customize" : "Edit"} ${template.name}`}
+          accessibilityRole="button"
           style={styles.secondaryButton}
           onPress={() =>
             isOfficial ? onCustomize(template) : onEdit(template)
@@ -300,12 +312,14 @@ function TemplateCard({
 }
 
 function TemplateEditor({
+  reducedMotion,
   template,
   visible,
   onClose,
   onDelete,
   onSave,
 }: {
+  reducedMotion: boolean;
   template?: TaskTemplate;
   visible: boolean;
   onClose(): void;
@@ -380,13 +394,13 @@ function TemplateEditor({
 
   return (
     <Modal
-      animationType="fade"
+      animationType={reducedMotion ? "none" : "fade"}
       onRequestClose={onClose}
       transparent
       visible={visible}
     >
       <View style={styles.overlay}>
-        <View style={styles.modal}>
+        <View accessibilityViewIsModal style={styles.modal}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
               <Text style={styles.eyebrow}>
@@ -396,7 +410,12 @@ function TemplateEditor({
                 {template ? "Adjust your starting point." : "Save a shortcut."}
               </Text>
             </View>
-            <Pressable style={styles.closeButton} onPress={onClose}>
+            <Pressable
+              accessibilityLabel="Close template editor"
+              accessibilityRole="button"
+              style={styles.closeButton}
+              onPress={onClose}
+            >
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
           </View>
@@ -466,6 +485,7 @@ function TemplateEditor({
                 <Text style={styles.hint}>Create the next occurrence.</Text>
               </View>
               <Pressable
+                accessibilityLabel="Repeat this template task"
                 accessibilityRole="switch"
                 accessibilityState={{ checked: recurrenceEnabled }}
                 style={[
@@ -501,20 +521,28 @@ function TemplateEditor({
               {template ? (
                 confirmDelete ? (
                   <Pressable
+                    accessibilityRole="button"
                     style={styles.deleteConfirm}
                     onPress={() => onDelete(template)}
                   >
                     <Text style={styles.deleteConfirmText}>Delete template</Text>
                   </Pressable>
                 ) : (
-                  <Pressable onPress={() => setConfirmDelete(true)}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setConfirmDelete(true)}
+                  >
                     <Text style={styles.deleteText}>Delete</Text>
                   </Pressable>
                 )
               ) : (
                 <View />
               )}
-              <Pressable style={styles.saveButton} onPress={submit}>
+              <Pressable
+                accessibilityRole="button"
+                style={styles.saveButton}
+                onPress={submit}
+              >
                 <Text style={styles.saveText}>Save template</Text>
               </Pressable>
             </View>
@@ -546,6 +574,7 @@ function Field({
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
+        accessibilityLabel={label}
         keyboardType={keyboardType}
         placeholder={placeholder}
         placeholderTextColor={theme.textMuted}
@@ -573,6 +602,8 @@ function ChipRow({
       {items.map((item) => (
         <Pressable
           key={item.value}
+          accessibilityRole="button"
+          accessibilityState={{ selected: selected === item.value }}
           style={[
             styles.chip,
             selected === item.value ? styles.chipActive : undefined,

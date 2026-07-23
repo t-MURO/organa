@@ -18,7 +18,9 @@ import {
 } from "react-native";
 
 import { useAppTheme } from "../../components/app-shell";
+import { checkInReminderCapability } from "../../data/create-check-in-reminder-scheduler";
 import type { OrganaTheme } from "../../theme";
+import { useSettings } from "../settings/settings-context";
 import { useCheckIns } from "./check-in-context";
 
 const moodOptions: Array<{
@@ -37,6 +39,7 @@ export function CheckInScreen() {
   const styles = createStyles(theme);
   const { width } = useWindowDimensions();
   const { loading, entries, saveEntry } = useCheckIns();
+  const { settings, update: updateSettings } = useSettings();
   const today = formatLocalDate(new Date());
   const todayEntry = entries.find((entry) => entry.date === today);
   const [mood, setMood] = useState<MoodRating>();
@@ -118,6 +121,80 @@ export function CheckInScreen() {
         </View>
         <View style={styles.optionalPill}>
           <Text style={styles.optionalPillText}>Always optional</Text>
+        </View>
+      </View>
+
+      <View style={styles.reminderCard}>
+        <View style={styles.reminderCopy}>
+          <Text style={styles.cardEyebrow}>OPTIONAL EVENING REMINDER</Text>
+          <Text style={styles.reminderTitle}>A gentle nudge, only if useful.</Text>
+          <Text style={styles.reminderText}>
+            {checkInReminderCapability.reason ??
+              "Scheduled privately on this device and kept separate from task reminders."}
+          </Text>
+        </View>
+        <View style={styles.reminderControls}>
+          <View style={styles.timeChips}>
+            {["18:00", "19:00", "20:00", "21:00", "22:00"].map(
+              (time) => (
+                <Pressable
+                  key={time}
+                  accessibilityLabel={`Set Check-In reminder for ${time}`}
+                  accessibilityRole="button"
+                  accessibilityState={{
+                    selected: settings.checkInReminder.time === time,
+                  }}
+                  disabled={!settings.checkInReminder.enabled}
+                  style={[
+                    styles.timeChip,
+                    settings.checkInReminder.time === time
+                      ? styles.timeChipActive
+                      : undefined,
+                    !settings.checkInReminder.enabled
+                      ? styles.timeChipDisabled
+                      : undefined,
+                  ]}
+                  onPress={() =>
+                    updateSettings({
+                      checkInReminder: { enabled: true, time },
+                    })
+                  }
+                >
+                  <Text style={styles.timeChipText}>{time}</Text>
+                </Pressable>
+              ),
+            )}
+          </View>
+          <Pressable
+            accessibilityLabel="Evening Check-In reminder"
+            accessibilityRole="switch"
+            accessibilityState={{
+              checked: settings.checkInReminder.enabled,
+            }}
+            style={[
+              styles.reminderToggle,
+              settings.checkInReminder.enabled
+                ? styles.reminderToggleActive
+                : undefined,
+            ]}
+            onPress={() =>
+              updateSettings({
+                checkInReminder: {
+                  ...settings.checkInReminder,
+                  enabled: !settings.checkInReminder.enabled,
+                },
+              })
+            }
+          >
+            <View
+              style={[
+                styles.reminderThumb,
+                settings.checkInReminder.enabled
+                  ? styles.reminderThumbActive
+                  : undefined,
+              ]}
+            />
+          </Pressable>
         </View>
       </View>
 
@@ -548,6 +625,78 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_700Bold",
       fontSize: 10,
     },
+    reminderCard: {
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      borderColor: theme.border,
+      borderRadius: 18,
+      borderWidth: 1,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 18,
+      justifyContent: "space-between",
+      marginBottom: 18,
+      padding: 17,
+    },
+    reminderCopy: {
+      flex: 1,
+      minWidth: 250,
+    },
+    reminderTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 12,
+    },
+    reminderText: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 9,
+      lineHeight: 14,
+      marginTop: 4,
+      maxWidth: 520,
+    },
+    reminderControls: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 12,
+    },
+    timeChips: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 5,
+    },
+    timeChip: {
+      borderColor: theme.border,
+      borderRadius: 12,
+      borderWidth: 1,
+      paddingHorizontal: 9,
+      paddingVertical: 7,
+    },
+    timeChipActive: {
+      backgroundColor: theme.shouldSoft,
+      borderColor: theme.accent,
+    },
+    timeChipDisabled: { opacity: 0.4 },
+    timeChipText: {
+      color: theme.text,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 8,
+    },
+    reminderToggle: {
+      backgroundColor: theme.surfaceMuted,
+      borderRadius: 15,
+      height: 30,
+      padding: 3,
+      width: 50,
+    },
+    reminderToggleActive: { backgroundColor: theme.accent },
+    reminderThumb: {
+      backgroundColor: theme.surface,
+      borderRadius: 12,
+      height: 24,
+      width: 24,
+    },
+    reminderThumbActive: { alignSelf: "flex-end" },
     topGrid: {
       gap: 18,
     },

@@ -7,8 +7,10 @@ interface CheckInRow {
   payload: string;
 }
 
-export function createCheckInRepository(): CheckInRepository {
-  const databasePromise = SQLite.openDatabaseAsync("organa.db");
+export function createCheckInRepository(
+  namespace = "local",
+): CheckInRepository {
+  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
 
   return {
     async initialize() {
@@ -46,4 +48,8 @@ export function createCheckInRepository(): CheckInRepository {
       );
     },
   };
+}
+
+function databaseName(namespace: string) {
+  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

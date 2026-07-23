@@ -146,6 +146,29 @@ describe("task transitions", () => {
     expect(updated.completedAt).toBeUndefined();
   });
 
+  it("records optional medication dose confirmation from the checkbox action", () => {
+    const medication = createTask(
+      {
+        kind: "medication",
+        requireDoseConfirmation: true,
+        title: "Take medication",
+      },
+      "medication-1",
+      now,
+    );
+    const completedAt = new Date("2026-07-23T12:00:00.000Z");
+    const completed = completeTask(medication, completedAt);
+
+    expect(completed.doseConfirmedAt).toBe(completedAt.toISOString());
+    expect(reopenTask(completed, now).doseConfirmedAt).toBeUndefined();
+    expect(
+      completeTask(
+        { ...medication, requireDoseConfirmation: false },
+        completedAt,
+      ).doseConfirmedAt,
+    ).toBeUndefined();
+  });
+
   it("completes a recurring occurrence and creates the next one", () => {
     const task = createTask(
       {

@@ -1,4 +1,8 @@
-import { buildTaskReminderSchedule, type Task } from "@organa/domain";
+import {
+  buildSubtaskReminderSchedule,
+  buildTaskReminderSchedule,
+  type Task,
+} from "@organa/domain";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
@@ -41,6 +45,7 @@ export function createNotificationScheduler(): NotificationScheduler {
     async syncTask(task, requestPermission = false) {
       await cancelTaskNotifications(task.id);
       const schedule = buildTaskReminderSchedule(task);
+      const subtaskSchedule = buildSubtaskReminderSchedule(task);
       if (schedule.length === 0) {
         return { permission: "not_requested", scheduled: 0 };
       }
@@ -68,8 +73,8 @@ export function createNotificationScheduler(): NotificationScheduler {
       );
 
       await Promise.all(
-        schedule.map(({ reminder, triggerAt }) =>
-          Notifications.scheduleNotificationAsync({
+        [
+          ...schedule.map(({ reminder, triggerAt }) => ({
             identifier: notificationId(task.id, reminder.id),
             content: {
               body: task.title,
@@ -88,11 +93,41 @@ export function createNotificationScheduler(): NotificationScheduler {
               date: triggerAt,
               type: Notifications.SchedulableTriggerInputTypes.DATE,
             },
-          }),
+          })),
+          ...subtaskSchedule.map(
+            ({ reminder, subtaskId, subtaskTitle, triggerAt }) => ({
+              identifier: notificationId(
+                task.id,
+                `${reminder.id}:subtask:${subtaskId}`,
+              ),
+              content: {
+                body: subtaskTitle,
+                categoryIdentifier,
+                data: {
+                  subtaskId,
+                  taskId: task.id,
+                  taskTitle: task.title,
+                },
+                sound: false,
+                subtitle: task.title,
+                title: "A next step is ready",
+              },
+              trigger: {
+                channelId,
+                date: triggerAt,
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+              },
+            }),
+          ),
+        ].map((request) =>
+          Notifications.scheduleNotificationAsync(request),
         ),
       );
 
-      return { permission: "granted", scheduled: schedule.length };
+      return {
+        permission: "granted",
+        scheduled: schedule.length + subtaskSchedule.length,
+      };
     },
     cancelTask: cancelTaskNotifications,
   };

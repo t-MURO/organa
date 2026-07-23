@@ -39,9 +39,22 @@ export {
   updateTaskTemplate,
 } from "./templates";
 
-export { buildTaskReminderSchedule } from "./reminders";
+export {
+  buildSubtaskReminderSchedule,
+  buildTaskReminderSchedule,
+} from "./reminders";
+export { createUserSettings, updateUserSettings } from "./settings";
 
-export type { ScheduledTaskReminder } from "./reminders";
+export type {
+  ScheduledSubtaskReminder,
+  ScheduledTaskReminder,
+} from "./reminders";
+export type {
+  CheckInReminderSettings,
+  ThemePreference,
+  UserSettings,
+  UserSettingsInput,
+} from "./settings";
 
 export type {
   TaskTemplate,

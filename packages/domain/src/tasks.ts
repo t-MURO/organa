@@ -35,6 +35,7 @@ export interface Task {
   dueAt?: string;
   estimatedMinutes?: number;
   completedAt?: string;
+  doseConfirmedAt?: string;
   recurrence?: TaskRecurrence;
   reminders: Reminder[];
   subtasks: TaskSubtask[];
@@ -141,6 +142,7 @@ export function updateTask(
   return {
     ...replacement,
     completedAt: task.completedAt,
+    doseConfirmedAt: task.doseConfirmedAt,
     createdAt: task.createdAt,
     seriesId: task.seriesId,
     previousOccurrenceId: task.previousOccurrenceId,
@@ -211,6 +213,10 @@ export function completeTask(task: Task, now = new Date()): Task {
   return {
     ...task,
     completedAt: timestamp,
+    doseConfirmedAt:
+      task.kind === "medication" && task.requireDoseConfirmation
+        ? timestamp
+        : undefined,
     updatedAt: timestamp,
   };
 }
@@ -223,6 +229,7 @@ export function reopenTask(task: Task, now = new Date()): Task {
   return {
     ...task,
     completedAt: undefined,
+    doseConfirmedAt: undefined,
     updatedAt: now.toISOString(),
   };
 }

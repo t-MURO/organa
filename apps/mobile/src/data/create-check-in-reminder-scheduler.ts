@@ -1,0 +1,16 @@
+import type { CheckInReminderScheduler } from "./check-in-reminder-scheduler.types";
+
+export const checkInReminderCapability = {
+  supported: false,
+  reason: "System Check-In reminders are unavailable in this environment.",
+};
+
+export function createCheckInReminderScheduler(): CheckInReminderScheduler {
+  return {
+    capability: checkInReminderCapability,
+    async initialize() {},
+    async sync() {
+      return false;
+    },
+  };
+}

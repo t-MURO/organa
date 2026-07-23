@@ -8,6 +8,10 @@ export function NotificationCoordinator() {
   useEffect(() => {
     function handle(response: Notifications.NotificationResponse) {
       const data = response.notification.request.content.data ?? {};
+      if (data.route === "/check-in") {
+        router.push("/check-in");
+        return;
+      }
       const taskId = typeof data.taskId === "string" ? data.taskId : undefined;
       if (!taskId) return;
 

@@ -13,11 +13,16 @@ import {
   type PropsWithChildren,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
 } from "react";
 
+import { useAuth } from "../../auth/auth-context";
 import { createNotificationScheduler } from "../../data/create-notification-scheduler";
 import { createTaskRepository } from "../../data/create-task-repository";
+import { useSync } from "../../sync/sync-context";
+import { useDevices } from "../account/device-context";
+import { useInteractionFeedback } from "../settings/interaction-feedback-context";
 
 interface TaskState {
   loading: boolean;
@@ -38,7 +43,6 @@ interface TaskContextValue extends TaskState {
 }
 
 const TaskContext = createContext<TaskContextValue | undefined>(undefined);
-const repository = createTaskRepository();
 const notificationScheduler = createNotificationScheduler();
 let notificationInitialization: Promise<void> | undefined;
 
@@ -49,7 +53,15 @@ function initializeNotifications() {
   return notificationInitialization;
 }
 
-function syncNotifications(task: Task, requestPermission = false) {
+function syncNotifications(
+  task: Task,
+  requestPermission = false,
+  enabled = true,
+) {
+  if (!enabled) {
+    cancelNotifications(task.id);
+    return;
+  }
   void initializeNotifications()
     .then(() => notificationScheduler.syncTask(task, requestPermission))
     .catch(() => undefined);
@@ -140,6 +152,15 @@ function seedTasks(today: string): Task[] {
 }
 
 export function TaskProvider({ children }: PropsWithChildren) {
+  const auth = useAuth();
+  const sync = useSync();
+  const devices = useDevices();
+  const feedback = useInteractionFeedback();
+  const namespace = auth.user?.id ?? "local-preview";
+  const repository = useMemo(
+    () => createTaskRepository(namespace),
+    [namespace],
+  );
   const [state, dispatch] = useReducer(taskReducer, {
     loading: true,
     tasks: [],
@@ -155,19 +176,45 @@ export function TaskProvider({ children }: PropsWithChildren) {
       if (tasks.length === 0) {
         tasks = seedTasks(formatLocalDate(new Date()));
         await Promise.all(tasks.map((task) => repository.upsert(task)));
+        await Promise.all(
+          tasks.map((task) => sync.queueUpsert("task", task.id, task)),
+        );
       }
 
       if (active) {
         dispatch({ type: "loaded", tasks });
       }
-      tasks.forEach((task) => syncNotifications(task));
+      tasks.forEach((task) =>
+        syncNotifications(task, false, devices.remindersAllowed),
+      );
     }
 
     void load();
     return () => {
       active = false;
     };
-  }, []);
+  }, [repository]);
+
+  useEffect(() => {
+    state.tasks.forEach((task) =>
+      syncNotifications(task, false, devices.remindersAllowed),
+    );
+  }, [devices.remindersAllowed]);
+
+  useEffect(
+    () =>
+      sync.subscribe<Task>("task", (change) => {
+        if (change.operation === "delete") {
+          dispatch({ type: "removed", id: change.recordId });
+          void repository.remove(change.recordId);
+          return;
+        }
+        if (!change.value) return;
+        dispatch({ type: "upserted", task: change.value });
+        void repository.upsert(change.value);
+      }),
+    [repository],
+  );
 
   function addTask(input: CreateTaskInput) {
     const task = createTask(
@@ -179,7 +226,9 @@ export function TaskProvider({ children }: PropsWithChildren) {
     );
     dispatch({ type: "upserted", task });
     void repository.upsert(task);
-    syncNotifications(task, true);
+    void sync.queueUpsert("task", task.id, task);
+    syncNotifications(task, true, devices.remindersAllowed);
+    feedback.created();
     return task;
   }
 
@@ -187,13 +236,15 @@ export function TaskProvider({ children }: PropsWithChildren) {
     const updated = updateTask(task, input);
     dispatch({ type: "upserted", task: updated });
     void repository.upsert(updated);
-    syncNotifications(updated, true);
+    void sync.queueUpsert("task", updated.id, updated, task);
+    syncNotifications(updated, true, devices.remindersAllowed);
     return updated;
   }
 
   function removeTask(id: string) {
     dispatch({ type: "removed", id });
     void repository.remove(id);
+    void sync.queueDelete("task", id);
     cancelNotifications(id);
   }
 
@@ -207,10 +258,12 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
       dispatch({ type: "upserted", task: reopened });
       void repository.upsert(reopened);
-      syncNotifications(reopened);
+      void sync.queueUpsert("task", reopened.id, reopened, task);
+      syncNotifications(reopened, false, devices.remindersAllowed);
       if (generatedOccurrence) {
         dispatch({ type: "removed", id: generatedOccurrence.id });
         void repository.remove(generatedOccurrence.id);
+        void sync.queueDelete("task", generatedOccurrence.id);
         cancelNotifications(generatedOccurrence.id);
       }
       return;
@@ -222,12 +275,24 @@ export function TaskProvider({ children }: PropsWithChildren) {
     const result = completeTaskOccurrence(task, makeId());
     dispatch({ type: "upserted", task: result.completedTask });
     void repository.upsert(result.completedTask);
-    syncNotifications(result.completedTask);
+    void sync.queueUpsert(
+      "task",
+      result.completedTask.id,
+      result.completedTask,
+      task,
+    );
+    syncNotifications(
+      result.completedTask,
+      false,
+      devices.remindersAllowed,
+    );
+    feedback.completed();
 
     if (result.nextTask && !existingOccurrence) {
       dispatch({ type: "upserted", task: result.nextTask });
       void repository.upsert(result.nextTask);
-      syncNotifications(result.nextTask);
+      void sync.queueUpsert("task", result.nextTask.id, result.nextTask);
+      syncNotifications(result.nextTask, false, devices.remindersAllowed);
     }
   }
 
@@ -235,6 +300,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     const nextTask = toggleSubtaskCompletion(task, subtaskId);
     dispatch({ type: "upserted", task: nextTask });
     void repository.upsert(nextTask);
+    void sync.queueUpsert("task", nextTask.id, nextTask, task);
   }
 
   return (

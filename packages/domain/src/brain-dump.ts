@@ -2,6 +2,7 @@ export interface BrainDumpBullet {
   id: string;
   text: string;
   rank: number;
+  crdtState?: string;
   createdAt: string;
   updatedAt: string;
 }

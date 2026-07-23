@@ -20,6 +20,7 @@ import {
   View,
 } from "react-native";
 
+import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import { notificationCapability } from "../../data/create-notification-scheduler";
 import type { OrganaTheme } from "../../theme";
@@ -65,6 +66,7 @@ export function TaskEditorModal({
   onSave(input: CreateTaskInput, task?: Task): void;
 }) {
   const theme = useAppTheme();
+  const reducedMotion = useReducedMotion();
   const styles = createStyles(theme);
   const { width } = useWindowDimensions();
   const compact = width < 700;
@@ -251,7 +253,7 @@ export function TaskEditorModal({
 
   return (
     <Modal
-      animationType="fade"
+      animationType={reducedMotion ? "none" : "fade"}
       onRequestClose={onClose}
       transparent
       visible={visible}

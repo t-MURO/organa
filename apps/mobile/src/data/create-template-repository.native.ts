@@ -7,8 +7,8 @@ interface TemplateRow {
   payload: string;
 }
 
-export function createTemplateRepository(): TemplateRepository {
-  const databasePromise = SQLite.openDatabaseAsync("organa.db");
+export function createTemplateRepository(namespace = "local"): TemplateRepository {
+  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
 
   return {
     async initialize() {
@@ -47,4 +47,8 @@ export function createTemplateRepository(): TemplateRepository {
       await database.runAsync("DELETE FROM task_templates WHERE id = ?", id);
     },
   };
+}
+
+function databaseName(namespace: string) {
+  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

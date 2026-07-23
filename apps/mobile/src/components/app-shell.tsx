@@ -1,6 +1,6 @@
 import { Slot, usePathname, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext } from "react";
 import {
   Platform,
   Pressable,
@@ -13,9 +13,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
+import { useSync } from "../sync/sync-context";
+import { useSettings } from "../features/settings/settings-context";
 
 interface NavItem {
-  href: "/" | "/check-in" | "/brain-dump" | "/templates";
+  href: "/" | "/check-in" | "/brain-dump" | "/templates" | "/account";
   shortLabel: string;
   label: string;
 }
@@ -25,6 +27,7 @@ const navigation: NavItem[] = [
   { href: "/check-in", shortLabel: "C", label: "Check-In" },
   { href: "/brain-dump", shortLabel: "B", label: "Brain Dump" },
   { href: "/templates", shortLabel: "L", label: "Library" },
+  { href: "/account", shortLabel: "A", label: "Account" },
 ];
 
 interface AppShellContext {
@@ -35,9 +38,9 @@ export function AppShell() {
   const systemScheme = useColorScheme();
   const { width } = useWindowDimensions();
   const pathname = usePathname();
-  const [themeMode, setThemeMode] = useState<"system" | "light" | "dark">(
-    "system",
-  );
+  const sync = useSync();
+  const { settings, update } = useSettings();
+  const themeMode = settings.theme;
   const isWide = width >= 900;
   const effectiveMode =
     themeMode === "system" ? (systemScheme ?? "light") : themeMode;
@@ -45,11 +48,13 @@ export function AppShell() {
   const styles = createStyles(theme, isWide);
 
   function cycleTheme() {
-    setThemeMode((current) => {
-      if (current === "system") return "light";
-      if (current === "light") return "dark";
-      return "system";
-    });
+    const next =
+      themeMode === "system"
+        ? "light"
+        : themeMode === "light"
+          ? "dark"
+          : "system";
+    update({ theme: next });
   }
 
   return (
@@ -67,6 +72,7 @@ export function AppShell() {
                 styles={styles}
                 theme={theme}
                 themeMode={themeMode}
+                syncLabel={formatSyncLabel(sync.status, sync.pending)}
                 onCycleTheme={cycleTheme}
               />
             ) : (
@@ -118,11 +124,13 @@ function Sidebar({
   styles,
   theme,
   themeMode,
+  syncLabel,
   onCycleTheme,
 }: {
   styles: ReturnType<typeof createStyles>;
   theme: OrganaTheme;
   themeMode: string;
+  syncLabel: string;
   onCycleTheme(): void;
 }) {
   const pathname = usePathname();
@@ -166,15 +174,31 @@ function Sidebar({
         })}
       </View>
       <View style={styles.sidebarSpacer} />
-      <Pressable style={styles.themeButton} onPress={onCycleTheme}>
+      <Pressable
+        accessibilityRole="button"
+        style={styles.themeButton}
+        onPress={onCycleTheme}
+      >
         <Text style={styles.themeButtonLabel}>Theme: {themeMode}</Text>
       </Pressable>
       <View style={styles.syncPill}>
         <View style={styles.syncDot} />
-        <Text style={styles.syncText}>Stored on this device</Text>
+        <Text style={styles.syncText}>{syncLabel}</Text>
       </View>
     </View>
   );
+}
+
+function formatSyncLabel(status: string, pending: number) {
+  if (status === "local") return "Stored on this device";
+  if (status === "syncing") return "Encrypting and syncing...";
+  if (status === "offline") {
+    return pending > 0
+      ? `${pending} encrypted ${pending === 1 ? "change" : "changes"} waiting`
+      : "Offline / up to date";
+  }
+  if (status === "error") return "Sync needs attention";
+  return "Encrypted sync is current";
 }
 
 function MobileHeader({
@@ -191,6 +215,7 @@ function MobileHeader({
       <BrandMark />
       <Pressable
         accessibilityLabel={`Theme is ${themeMode}. Change theme.`}
+        accessibilityRole="button"
         style={styles.mobileThemeButton}
         onPress={onCycleTheme}
       >

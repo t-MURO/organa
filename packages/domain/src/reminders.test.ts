@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildTaskReminderSchedule } from "./reminders";
+import {
+  buildSubtaskReminderSchedule,
+  buildTaskReminderSchedule,
+} from "./reminders";
 import { createTask } from "./tasks";
 
 describe("buildTaskReminderSchedule", () => {
@@ -77,6 +80,46 @@ describe("buildTaskReminderSchedule", () => {
     expect(
       buildTaskReminderSchedule(
         { ...task, completedAt: "2026-08-01T11:00:00.000Z" },
+        new Date("2026-08-01T10:00:00.000Z"),
+      ),
+    ).toEqual([]);
+  });
+
+  it("creates optional reminders only for incomplete subtasks", () => {
+    const task = createTask(
+      {
+        dueAt: "2026-08-01T12:00:00.000Z",
+        reminders: [
+          {
+            enabled: true,
+            id: "at",
+            offsetMinutes: 0,
+            stage: "at_due",
+          },
+        ],
+        subtaskRemindersEnabled: true,
+        subtasks: [
+          { id: "one", title: "First step" },
+          {
+            completedAt: "2026-07-31T10:00:00.000Z",
+            id: "two",
+            title: "Finished step",
+          },
+        ],
+        title: "Prepare",
+      },
+      "task-3",
+    );
+
+    expect(
+      buildSubtaskReminderSchedule(
+        task,
+        new Date("2026-08-01T10:00:00.000Z"),
+      ).map((item) => item.subtaskTitle),
+    ).toEqual(["First step"]);
+    expect(
+      buildSubtaskReminderSchedule(
+        { ...task, subtaskRemindersEnabled: false },
         new Date("2026-08-01T10:00:00.000Z"),
       ),
     ).toEqual([]);

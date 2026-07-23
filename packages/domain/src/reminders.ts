@@ -5,6 +5,11 @@ export interface ScheduledTaskReminder {
   triggerAt: Date;
 }
 
+export interface ScheduledSubtaskReminder extends ScheduledTaskReminder {
+  subtaskId: string;
+  subtaskTitle: string;
+}
+
 export function buildTaskReminderSchedule(
   task: Task,
   now = new Date(),
@@ -28,6 +33,23 @@ export function buildTaskReminderSchedule(
     }))
     .filter(({ triggerAt }) => triggerAt.getTime() > now.getTime())
     .sort((left, right) => left.triggerAt.getTime() - right.triggerAt.getTime());
+}
+
+export function buildSubtaskReminderSchedule(
+  task: Task,
+  now = new Date(),
+): ScheduledSubtaskReminder[] {
+  if (!task.subtaskRemindersEnabled) return [];
+  const taskSchedule = buildTaskReminderSchedule(task, now);
+  return task.subtasks
+    .filter((subtask) => !subtask.completedAt)
+    .flatMap((subtask) =>
+      taskSchedule.map((scheduled) => ({
+        ...scheduled,
+        subtaskId: subtask.id,
+        subtaskTitle: subtask.title,
+      })),
+    );
 }
 
 function reminderDirection(reminder: Reminder) {

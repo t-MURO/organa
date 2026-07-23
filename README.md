@@ -1,73 +1,100 @@
 # Organa
 
-Organa is a calm, offline-first productivity app designed for people with ADHD.
+Organa is a calm, offline-first organizer for people with ADHD. The MVP targets
+iOS, Android, responsive web, and installable PWA from one Expo codebase.
 
-The first implementation slice includes:
+## MVP Features
 
-- Expo application targeting iOS, Android, and web
-- Responsive Today screen with priority and time lanes
-- Quick Add plus full task creation and editing
-- One-off, routine, and medication task configuration
-- Scheduling, due dates, recurrence, reminders, snooze presets, and grace days
-- Independent subtasks, checkbox-only completion, undo, and confirmed deletion
-- Week-first calendar planning with a month toggle and selectable day plans
-- Searchable upcoming, overdue, and completed task inbox
-- Calendar-aware recurring occurrences with preserved completion history
-- SQLite persistence on native platforms
-- IndexedDB persistence on web
-- Light, dark, and system theme modes
-- Shared task domain with tested planning rules
-- Continuous Brain Dump with automatic bullet entry and local search
-- Offline Brain Dump persistence through SQLite and IndexedDB
-- Pressure-free daily Check-In with mood, feeling, and reflection
-- Local Check-In search with 7-day and 30-day mood views
-- Offline Check-In persistence through SQLite and IndexedDB
-- Searchable official and private task-template library
-- Private template creation, copying, editing, deletion, and offline persistence
-- Single-task Focus mode with optional timer, reset, break, and direct task entry
-- Offline iOS and Android reminders with before, due, and after stages
-- Task-specific notification actions for Focus and configurable snooze presets
-- Explicit in-app-only reminder fallback on web
+- One-off, routine, and medication tasks
+- Priority and scheduled-time lanes with week/month planning
+- Due dates, recurrence, subtasks, multiple reminder stages, snooze, and grace
+  days
+- Checkbox-only completion, a five-second fade, and immediate Undo
+- Searchable upcoming, overdue, completed, and recurring-task history
+- Official and private task templates
+- Single-task Focus mode with an optional timer and break
+- Optional daily Check-In with mood, reflection, reminder time, search, and
+  7/30-day trends
+- Continuous, searchable Brain Dump with Yjs conflict-free updates
+- SQLite persistence on native and IndexedDB persistence on web
+- Encrypted outbox sync, field-level merge, private Realtime broadcasts, and
+  seven-day encrypted record history
+- Google, Apple, GitHub, and email-code authentication
+- Recovery key onboarding, trusted reminder devices, local app lock, export,
+  and one-hour account deletion
+- Native local notifications and active-tab web reminder fallback
+- iOS widgets for today's tasks and the next reminder
+- Light, dark, and system themes, reduced motion, optional sounds, and haptics
+- Static PWA export with an app manifest and Workbox offline shell
 
-See [REQUIREMENTS.md](./REQUIREMENTS.md) for the complete product requirements.
+The full product contract is in [REQUIREMENTS.md](./REQUIREMENTS.md).
+
+## Architecture
+
+```text
+apps/mobile/       Expo Router app for iOS, Android, and web
+packages/domain/   Platform-independent entities and planning rules
+packages/crypto/   AES-256-GCM record and recovery-key envelopes
+supabase/          Database migration and deletion finalizer
+docs/              Security, compatibility, and acceptance gates
+```
+
+User content is stored locally first. Connected accounts encrypt changed fields
+before placing mutations in the outbox. PostgreSQL is the durable encrypted
+authority, while private Realtime Broadcast messages are only change signals.
 
 ## Development
 
 Requirements:
 
-- Node.js
+- Node.js 22 or newer
 - pnpm 10
-
-Install and run the web app:
+- Xcode for iOS development builds
+- Android Studio for Android development builds
+- Docker Desktop for the local Supabase stack
 
 ```sh
 pnpm install
+cp .env.example .env.local
 pnpm dev:web
 ```
 
-Run iOS or Android:
+Without Supabase environment values, development builds offer an explicitly
+local preview. Production builds always require an account.
+
+Run native development builds:
 
 ```sh
 pnpm --filter @organa/app ios
 pnpm --filter @organa/app android
 ```
 
+Expo widgets and some native modules require a development build rather than
+Expo Go.
+
 ## Verification
 
 ```sh
-pnpm test
 pnpm typecheck
+pnpm test
 pnpm build:web
 pnpm dlx expo-doctor@latest apps/mobile
+pnpm audit --prod
 ```
 
-## Workspace
+Backend verification additionally requires Docker:
 
-```text
-apps/mobile/       Expo app for iOS, Android, and web
-packages/domain/   Shared task and planning rules
+```sh
+pnpm dlx supabase start
+pnpm dlx supabase db reset
+pnpm dlx supabase db lint --local
 ```
 
-Supabase authentication, encrypted synchronization, Check-In reminder settings,
-widgets, and conflict-free Brain Dump synchronization are planned but not yet
-implemented.
+See [supabase/README.md](./supabase/README.md) for production setup and
+[docs/ACCEPTANCE.md](./docs/ACCEPTANCE.md) for the controlled-beta checklist.
+
+## Security
+
+Read [docs/SECURITY.md](./docs/SECURITY.md) before connecting real user data.
+An independent cryptographic and application security review is a mandatory
+production gate; repository tests are not a substitute for that review.

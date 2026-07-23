@@ -10,10 +10,13 @@ import {
   type PropsWithChildren,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
 } from "react";
 
+import { useAuth } from "../../auth/auth-context";
 import { createCheckInRepository } from "../../data/create-check-in-repository";
+import { useSync } from "../../sync/sync-context";
 
 interface CheckInState {
   loading: boolean;
@@ -31,7 +34,6 @@ interface CheckInContextValue extends CheckInState {
 const CheckInContext = createContext<CheckInContextValue | undefined>(
   undefined,
 );
-const repository = createCheckInRepository();
 
 function checkInReducer(
   state: CheckInState,
@@ -62,6 +64,13 @@ function checkInReducer(
 }
 
 export function CheckInProvider({ children }: PropsWithChildren) {
+  const auth = useAuth();
+  const sync = useSync();
+  const namespace = auth.user?.id ?? "local-preview";
+  const repository = useMemo(
+    () => createCheckInRepository(namespace),
+    [namespace],
+  );
   const [state, dispatch] = useReducer(checkInReducer, {
     loading: true,
     entries: [],
@@ -83,7 +92,17 @@ export function CheckInProvider({ children }: PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [repository]);
+
+  useEffect(
+    () =>
+      sync.subscribe<CheckInEntry>("check_in", (change) => {
+        if (change.operation === "delete" || !change.value) return;
+        dispatch({ type: "upserted", entry: change.value });
+        void repository.upsert(change.value);
+      }),
+    [repository],
+  );
 
   function saveEntry(input: CheckInInput) {
     const existing = state.entries.find((entry) => entry.date === input.date);
@@ -93,6 +112,7 @@ export function CheckInProvider({ children }: PropsWithChildren) {
 
     dispatch({ type: "upserted", entry });
     void repository.upsert(entry);
+    void sync.queueUpsert("check_in", entry.id, entry, existing);
     return entry;
   }
 

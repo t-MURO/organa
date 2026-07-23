@@ -20,6 +20,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
+import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
 import { PlanningCalendar } from "./planning-calendar";
@@ -315,6 +316,9 @@ export function TodayScreen() {
               settledCompleted.map((task) => (
                 <Pressable
                   key={task.id}
+                  accessibilityLabel={`Reopen ${task.title}`}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: true }}
                   style={styles.completedTask}
                   onPress={() => toggleTaskWithGrace(task)}
                 >
@@ -414,6 +418,8 @@ function QuickAdd({
         {priorities.map((item) => (
           <Pressable
             key={item.key}
+            accessibilityRole="button"
+            accessibilityState={{ selected: priority === item.key }}
             style={[
               styles.priorityChip,
               priority === item.key && styles.priorityChipActive,
@@ -759,6 +765,7 @@ function UndoButton({
 
 function useCompletionFade(completed: boolean) {
   const fade = useRef(new Animated.Value(1)).current;
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     fade.stopAnimation();
@@ -769,6 +776,10 @@ function useCompletionFade(completed: boolean) {
     }
 
     fade.setValue(1);
+    if (reducedMotion) {
+      fade.setValue(0.55);
+      return;
+    }
     Animated.timing(fade, {
       duration: COMPLETION_GRACE_MS,
       easing: Easing.linear,
@@ -777,7 +788,7 @@ function useCompletionFade(completed: boolean) {
     }).start();
 
     return () => fade.stopAnimation();
-  }, [completed, fade]);
+  }, [completed, fade, reducedMotion]);
 
   return fade;
 }

@@ -7,8 +7,10 @@ interface BrainDumpRow {
   payload: string;
 }
 
-export function createBrainDumpRepository(): BrainDumpRepository {
-  const databasePromise = SQLite.openDatabaseAsync("organa.db");
+export function createBrainDumpRepository(
+  namespace = "local",
+): BrainDumpRepository {
+  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
 
   return {
     async initialize() {
@@ -53,4 +55,8 @@ export function createBrainDumpRepository(): BrainDumpRepository {
       );
     },
   };
+}
+
+function databaseName(namespace: string) {
+  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

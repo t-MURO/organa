@@ -2,9 +2,11 @@ import type { TaskTemplate } from "@organa/domain";
 
 import type { TemplateRepository } from "./template-repository.types";
 
-const templates = new Map<string, TaskTemplate>();
+const stores = new Map<string, Map<string, TaskTemplate>>();
 
-export function createTemplateRepository(): TemplateRepository {
+export function createTemplateRepository(namespace = "local"): TemplateRepository {
+  const templates = stores.get(namespace) ?? new Map<string, TaskTemplate>();
+  stores.set(namespace, templates);
   return {
     async initialize() {},
     async list() {

@@ -9,10 +9,13 @@ import {
   type PropsWithChildren,
   useContext,
   useEffect,
+  useMemo,
   useReducer,
 } from "react";
 
+import { useAuth } from "../../auth/auth-context";
 import { createTemplateRepository } from "../../data/create-template-repository";
+import { useSync } from "../../sync/sync-context";
 
 interface TemplateState {
   loading: boolean;
@@ -35,7 +38,6 @@ interface TemplateContextValue extends TemplateState {
   removeTemplate(id: string): void;
 }
 
-const repository = createTemplateRepository();
 const TemplateContext = createContext<TemplateContextValue | undefined>(
   undefined,
 );
@@ -156,6 +158,13 @@ function makeId() {
 }
 
 export function TemplateProvider({ children }: PropsWithChildren) {
+  const auth = useAuth();
+  const sync = useSync();
+  const namespace = auth.user?.id ?? "local-preview";
+  const repository = useMemo(
+    () => createTemplateRepository(namespace),
+    [namespace],
+  );
   const [state, dispatch] = useReducer(reducer, {
     loading: true,
     userTemplates: [],
@@ -172,11 +181,27 @@ export function TemplateProvider({ children }: PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [repository]);
 
-  function persist(template: TaskTemplate) {
+  useEffect(
+    () =>
+      sync.subscribe<TaskTemplate>("template", (change) => {
+        if (change.operation === "delete") {
+          dispatch({ type: "removed", id: change.recordId });
+          void repository.remove(change.recordId);
+          return;
+        }
+        if (!change.value) return;
+        dispatch({ type: "upserted", template: change.value });
+        void repository.upsert(change.value);
+      }),
+    [repository],
+  );
+
+  function persist(template: TaskTemplate, previous?: TaskTemplate) {
     dispatch({ type: "upserted", template });
     void repository.upsert(template);
+    void sync.queueUpsert("template", template.id, template, previous);
     return template;
   }
 
@@ -199,12 +224,13 @@ export function TemplateProvider({ children }: PropsWithChildren) {
   }
 
   function editTemplate(template: TaskTemplate, input: TaskTemplateInput) {
-    return persist(updateTaskTemplate(template, input));
+    return persist(updateTaskTemplate(template, input), template);
   }
 
   function removeTemplate(id: string) {
     dispatch({ type: "removed", id });
     void repository.remove(id);
+    void sync.queueDelete("template", id);
   }
 
   return (

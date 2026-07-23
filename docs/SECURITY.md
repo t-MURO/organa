@@ -1,0 +1,134 @@
+# Security Design
+
+## Scope
+
+This document describes the controlled-beta implementation. It is not an
+independent security assessment. Production requires external review of the
+cryptography, authentication, database policies, web threat model, native
+storage, and deletion operations.
+
+## Encryption
+
+- Each account receives a random 256-bit content key.
+- User fields are encrypted independently with AES-256-GCM from `expo-crypto`.
+- Authenticated additional data binds each envelope to its record type,
+  record ID, and field name.
+- A random 256-bit recovery key encrypts the content key.
+- The displayed recovery code contains the recovery key plus a short checksum
+  for detecting transcription mistakes.
+- The recovery key is never uploaded. Supabase stores only its encrypted
+  content-key envelope.
+- Brain Dump Yjs updates are encrypted records just like other content.
+- Realtime payloads are notifications, not a source of truth.
+
+The implementation does not define custom encryption primitives. It composes
+the platform AES-GCM and secure-random APIs exposed by Expo.
+
+## Key Storage
+
+Native:
+
+- The content key is stored with Expo SecureStore.
+- Optional app lock uses platform local authentication and device fallback.
+
+Web:
+
+- A non-extractable Web Crypto AES-GCM wrapping key and wrapped content key are
+  stored in a separate IndexedDB database.
+- If durable CryptoKey storage is blocked, the key remains memory-only and the
+  recovery code is needed after the session is lost.
+- This protects against simple storage export, not malicious same-origin
+  JavaScript. XSS while Organa is unlocked can access decrypted application
+  state.
+
+Local task, Check-In, template, and Brain Dump repositories contain plaintext
+needed for offline use. They rely on device encryption, OS account security,
+and optional app lock. End-to-end encryption protects synchronized cloud
+payloads; it does not make a compromised unlocked device safe.
+
+## Server-Readable Metadata
+
+Supabase can read:
+
+- Auth account ID, email, provider identities, and session metadata
+- content-key ID and recovery-envelope metadata/ciphertext
+- device ID, display name, platform, trust/revocation time, last-seen time, and
+  reminder-device booleans
+- encrypted record type, opaque record ID, encrypted field names, ciphertext,
+  field-version timestamps, record version, deletion state, updater device,
+  and update time
+- mutation ID, operation, base/applied version, and synchronization timestamps
+- account-deletion request and execution timestamps
+- user-scoped Realtime topic plus opaque changed record/device identifiers
+
+Supabase must not receive task titles, details, medication text, reminder text,
+templates, Check-In content, mood values, Brain Dump text, or the plaintext
+content key.
+
+Field names and record types are operational metadata. They should not contain
+user-entered content.
+
+## Authorization
+
+- Every public user table has RLS.
+- Clients can directly read only their own rows.
+- Encrypted mutation, device configuration, and deletion writes use validated
+  RPCs.
+- Security-definer RPC execution is revoked from `public` and `anon`.
+- Mutation RPCs validate authentication, trusted-device state, record type,
+  patch shape, and future clock skew.
+- Private Realtime authorization compares the authenticated user ID with the
+  exact user-scoped topic.
+
+Trusted-device revocation is enforced when the target reconnects: local Organa
+data and its key are removed, its session signs out, and encrypted writes from
+the revoked device ID are rejected. Revoking also expires refresh tokens for
+other sessions. Existing access-token JWTs remain valid until expiry, and
+revocation is not retroactive against data already copied from a device.
+
+Content-key rotation after device compromise is not implemented in this MVP.
+Treat that as a production threat-model decision, not as a guaranteed remote
+wipe.
+
+## Conflict And Recovery
+
+- Structured changes encrypt only changed top-level fields.
+- PostgreSQL merges fields by field timestamp and uses last-write-wins for the
+  same field.
+- Previous encrypted versions are retained for seven days.
+- Mutation IDs make outbox retries idempotent.
+- Yjs updates make Brain Dump edits commutative and conflict-free.
+- Yjs update records currently accumulate and need a compaction policy before
+  high-volume production use.
+
+## Export And Deletion
+
+- Readable JSON and Markdown exports are assembled locally.
+- Full backups encrypt the complete export and include the recovery envelope.
+- The one-hour deletion period is read-only and cancellable.
+- The scheduled Edge Function deletes the Auth user, causing account rows to
+  cascade. The app removes its local database and content key when deletion is
+  due.
+- Files exported by the user are outside Organa's deletion boundary.
+
+## Logging And Telemetry
+
+The app includes no analytics, advertising identifiers, session recording, or
+automatic crash telemetry. Do not add logs containing:
+
+- user content
+- OAuth or Supabase tokens
+- recovery codes
+- content keys
+- encrypted envelopes paired with keys
+
+## Required External Review
+
+Before production:
+
+1. Review AES-GCM envelope construction, key lifecycle, and recovery UX.
+2. Execute cross-account RLS and RPC abuse tests on the deployed schema.
+3. Test token expiry and device revocation under offline/reconnect conditions.
+4. Review XSS/CSP, PWA caching, OAuth redirects, and browser key storage.
+5. Test native secure storage, biometrics, notifications, and backups.
+6. Resolve every critical or high finding and record the evidence.
