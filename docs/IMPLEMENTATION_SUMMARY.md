@@ -196,6 +196,7 @@ Major implementation commits:
 - `950f1a0` - keep native reminders and widgets current
 - `70ec45a` - complete recurring task semantics
 - `ca0bdbb` - support date-only task deadlines
+- `72ed273` - load Yjs once for Brain Dump
 
 ## Latest Security Hardening
 
