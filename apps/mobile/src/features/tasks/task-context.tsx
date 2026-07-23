@@ -1,5 +1,5 @@
 import {
-  completeTask,
+  completeTaskOccurrence,
   createTask,
   formatLocalDate,
   reopenTask,
@@ -172,9 +172,33 @@ export function TaskProvider({ children }: PropsWithChildren) {
   }
 
   function toggleTask(task: Task) {
-    const nextTask = task.completedAt ? reopenTask(task) : completeTask(task);
-    dispatch({ type: "upserted", task: nextTask });
-    void repository.upsert(nextTask);
+    if (task.completedAt) {
+      const reopened = reopenTask(task);
+      const generatedOccurrence = state.tasks.find(
+        (item) =>
+          item.previousOccurrenceId === task.id && !item.completedAt,
+      );
+
+      dispatch({ type: "upserted", task: reopened });
+      void repository.upsert(reopened);
+      if (generatedOccurrence) {
+        dispatch({ type: "removed", id: generatedOccurrence.id });
+        void repository.remove(generatedOccurrence.id);
+      }
+      return;
+    }
+
+    const existingOccurrence = state.tasks.find(
+      (item) => item.previousOccurrenceId === task.id,
+    );
+    const result = completeTaskOccurrence(task, makeId());
+    dispatch({ type: "upserted", task: result.completedTask });
+    void repository.upsert(result.completedTask);
+
+    if (result.nextTask && !existingOccurrence) {
+      dispatch({ type: "upserted", task: result.nextTask });
+      void repository.upsert(result.nextTask);
+    }
   }
 
   function toggleSubtask(task: Task, subtaskId: string) {

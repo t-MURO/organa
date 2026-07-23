@@ -25,6 +25,7 @@ export type {
 export {
   buildDayPlan,
   completeTask,
+  completeTaskOccurrence,
   createTask,
   formatLocalDate,
   reopenTask,
@@ -40,6 +41,7 @@ export type {
   Reminder,
   ReminderStage,
   Task,
+  TaskCompletionResult,
   TaskKind,
   TaskPriority,
   TaskRecurrence,

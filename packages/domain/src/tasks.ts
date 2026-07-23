@@ -42,6 +42,9 @@ export interface Task {
   graceDays?: number;
   requireDoseConfirmation?: boolean;
   subtaskRemindersEnabled?: boolean;
+  seriesId?: string;
+  previousOccurrenceId?: string;
+  occurrenceNumber?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,6 +65,14 @@ export interface CreateTaskInput {
   graceDays?: number;
   requireDoseConfirmation?: boolean;
   subtaskRemindersEnabled?: boolean;
+  seriesId?: string;
+  previousOccurrenceId?: string;
+  occurrenceNumber?: number;
+}
+
+export interface TaskCompletionResult {
+  completedTask: Task;
+  nextTask?: Task;
 }
 
 export interface DayPlan {
@@ -112,6 +123,9 @@ export function createTask(
         ? (input.requireDoseConfirmation ?? false)
         : undefined,
     subtaskRemindersEnabled: input.subtaskRemindersEnabled ?? false,
+    seriesId: input.seriesId ?? (input.recurrence ? id : undefined),
+    previousOccurrenceId: input.previousOccurrenceId,
+    occurrenceNumber: input.occurrenceNumber ?? (input.recurrence ? 1 : undefined),
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -128,8 +142,64 @@ export function updateTask(
     ...replacement,
     completedAt: task.completedAt,
     createdAt: task.createdAt,
+    seriesId: task.seriesId,
+    previousOccurrenceId: task.previousOccurrenceId,
+    occurrenceNumber: task.occurrenceNumber,
     updatedAt: now.toISOString(),
   };
+}
+
+export function completeTaskOccurrence(
+  task: Task,
+  nextId: string,
+  now = new Date(),
+): TaskCompletionResult {
+  const completedTask = {
+    ...completeTask(task, now),
+    seriesId: task.seriesId ?? (task.recurrence ? task.id : undefined),
+    occurrenceNumber:
+      task.occurrenceNumber ?? (task.recurrence ? 1 : undefined),
+  };
+
+  if (!task.recurrence || !task.plannedFor) {
+    return { completedTask };
+  }
+
+  const nextPlannedFor = addRecurrenceToLocalDate(
+    task.plannedFor,
+    task.recurrence,
+  );
+  const nextTask = createTask(
+    {
+      title: task.title,
+      details: task.details,
+      kind: task.kind,
+      priority: task.priority,
+      plannedFor: nextPlannedFor,
+      scheduledTime: task.scheduledTime,
+      dueAt: task.dueAt
+        ? addRecurrenceToDate(new Date(task.dueAt), task.recurrence).toISOString()
+        : undefined,
+      estimatedMinutes: task.estimatedMinutes,
+      recurrence: task.recurrence,
+      reminders: task.reminders,
+      subtasks: task.subtasks.map((subtask) => ({
+        ...subtask,
+        completedAt: undefined,
+      })),
+      snoozePresets: task.snoozePresets,
+      graceDays: task.graceDays,
+      requireDoseConfirmation: task.requireDoseConfirmation,
+      subtaskRemindersEnabled: task.subtaskRemindersEnabled,
+      seriesId: completedTask.seriesId,
+      previousOccurrenceId: task.id,
+      occurrenceNumber: (completedTask.occurrenceNumber ?? 1) + 1,
+    },
+    nextId,
+    now,
+  );
+
+  return { completedTask, nextTask };
 }
 
 export function completeTask(task: Task, now = new Date()): Task {
@@ -213,4 +283,39 @@ function normalizeGraceDays(graceDays?: number) {
     throw new Error("Grace days must be a whole number from 0 to 3.");
   }
   return graceDays;
+}
+
+function addRecurrenceToLocalDate(
+  date: LocalDate,
+  recurrence: TaskRecurrence,
+) {
+  const [year, month, day] = date.split("-").map(Number);
+  return formatLocalDate(
+    addRecurrenceToDate(new Date(year, month - 1, day), recurrence),
+  );
+}
+
+function addRecurrenceToDate(date: Date, recurrence: TaskRecurrence) {
+  const next = new Date(date);
+
+  if (recurrence.frequency === "daily") {
+    next.setDate(next.getDate() + recurrence.interval);
+    return next;
+  }
+
+  if (recurrence.frequency === "weekly") {
+    next.setDate(next.getDate() + recurrence.interval * 7);
+    return next;
+  }
+
+  const originalDay = next.getDate();
+  next.setDate(1);
+  next.setMonth(next.getMonth() + recurrence.interval);
+  const lastDay = new Date(
+    next.getFullYear(),
+    next.getMonth() + 1,
+    0,
+  ).getDate();
+  next.setDate(Math.min(originalDay, lastDay));
+  return next;
 }

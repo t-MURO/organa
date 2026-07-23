@@ -49,12 +49,14 @@ const snoozeOptions = [5, 10, 30, 60];
 const durationOptions = [5, 10, 15, 30, 60];
 
 export function TaskEditorModal({
+  defaultPlannedFor,
   task,
   visible,
   onClose,
   onDelete,
   onSave,
 }: {
+  defaultPlannedFor: string;
   task?: Task;
   visible: boolean;
   onClose(): void;
@@ -97,7 +99,7 @@ export function TaskEditorModal({
     setDetails(task?.details ?? "");
     setKind(task?.kind ?? "one_off");
     setPriority(task?.priority ?? "should");
-    setPlannedFor(task?.plannedFor ?? formatLocalDate(new Date()));
+    setPlannedFor(task?.plannedFor ?? defaultPlannedFor);
     setScheduledTime(task?.scheduledTime ?? "");
     setDueDate(due ? formatLocalDate(due) : "");
     setDueTime(due ? formatTime(due) : "");
@@ -124,7 +126,7 @@ export function TaskEditorModal({
     setRequireDoseConfirmation(task?.requireDoseConfirmation ?? false);
     setError("");
     setConfirmDelete(false);
-  }, [task, visible]);
+  }, [defaultPlannedFor, task, visible]);
 
   function selectKind(nextKind: TaskKind) {
     setKind(nextKind);

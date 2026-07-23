@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildDayPlan,
   completeTask,
+  completeTaskOccurrence,
   createTask,
   reopenTask,
   toggleSubtaskCompletion,
@@ -143,5 +144,58 @@ describe("task transitions", () => {
       "2026-07-23T12:00:00.000Z",
     );
     expect(updated.completedAt).toBeUndefined();
+  });
+
+  it("completes a recurring occurrence and creates the next one", () => {
+    const task = createTask(
+      {
+        title: "Water plants",
+        kind: "habit",
+        plannedFor: "2026-07-23",
+        scheduledTime: "17:30",
+        recurrence: { frequency: "weekly", interval: 2 },
+        subtasks: [
+          {
+            id: "step-1",
+            title: "Check the soil",
+            completedAt: "2026-07-23T08:00:00.000Z",
+          },
+        ],
+      },
+      "occurrence-1",
+      now,
+    );
+    const result = completeTaskOccurrence(
+      task,
+      "occurrence-2",
+      new Date("2026-07-23T18:00:00.000Z"),
+    );
+
+    expect(result.completedTask.completedAt).toBe(
+      "2026-07-23T18:00:00.000Z",
+    );
+    expect(result.nextTask).toMatchObject({
+      id: "occurrence-2",
+      plannedFor: "2026-08-06",
+      previousOccurrenceId: "occurrence-1",
+      occurrenceNumber: 2,
+      seriesId: "occurrence-1",
+    });
+    expect(result.nextTask?.subtasks[0].completedAt).toBeUndefined();
+  });
+
+  it("clamps monthly recurrence to the last valid calendar day", () => {
+    const task = createTask(
+      {
+        title: "Monthly review",
+        plannedFor: "2027-01-31",
+        recurrence: { frequency: "monthly", interval: 1 },
+      },
+      "occurrence-1",
+      now,
+    );
+    const result = completeTaskOccurrence(task, "occurrence-2", now);
+
+    expect(result.nextTask?.plannedFor).toBe("2027-02-28");
   });
 });

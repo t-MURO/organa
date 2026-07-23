@@ -10,6 +10,9 @@ The first implementation slice includes:
 - One-off, routine, and medication task configuration
 - Scheduling, due dates, recurrence, reminders, snooze presets, and grace days
 - Independent subtasks, checkbox-only completion, undo, and confirmed deletion
+- Week-first calendar planning with a month toggle and selectable day plans
+- Searchable upcoming, overdue, and completed task inbox
+- Calendar-aware recurring occurrences with preserved completion history
 - SQLite persistence on native platforms
 - IndexedDB persistence on web
 - Light, dark, and system theme modes

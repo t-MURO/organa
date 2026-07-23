@@ -21,6 +21,8 @@ import {
 
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
+import { PlanningCalendar } from "./planning-calendar";
+import { TaskInbox } from "./task-inbox";
 import { useTasks } from "./task-context";
 import { TaskEditorModal } from "./task-editor-modal";
 
@@ -54,24 +56,30 @@ export function TodayScreen() {
   const [showCompleted, setShowCompleted] = useState(false);
   const [editorVisible, setEditorVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<Task>();
+  const actualToday = formatLocalDate(new Date());
+  const [selectedDate, setSelectedDate] = useState(actualToday);
   const [recentlyCompletedIds, setRecentlyCompletedIds] = useState<string[]>(
     [],
   );
   const completionTimers = useRef(
     new Map<string, ReturnType<typeof setTimeout>>(),
   );
-  const today = formatLocalDate(new Date());
-  const plan = buildDayPlan(tasks, today);
+  const plan = buildDayPlan(tasks, selectedDate);
   const recentlyCompleted = new Set(recentlyCompletedIds);
   const visibleLanes = {
-    must: visibleTasksForLane(tasks, today, "must", recentlyCompleted),
-    should: visibleTasksForLane(tasks, today, "should", recentlyCompleted),
-    nice: visibleTasksForLane(tasks, today, "nice", recentlyCompleted),
+    must: visibleTasksForLane(tasks, selectedDate, "must", recentlyCompleted),
+    should: visibleTasksForLane(
+      tasks,
+      selectedDate,
+      "should",
+      recentlyCompleted,
+    ),
+    nice: visibleTasksForLane(tasks, selectedDate, "nice", recentlyCompleted),
   };
   const visibleTimed = tasks
     .filter(
       (task) =>
-        task.plannedFor === today &&
+        task.plannedFor === selectedDate &&
         Boolean(task.scheduledTime) &&
         (!task.completedAt || recentlyCompleted.has(task.id)),
     )
@@ -97,7 +105,7 @@ export function TodayScreen() {
 
   function submitTask() {
     if (!title.trim()) return;
-    addTask({ title, priority, plannedFor: today });
+    addTask({ title, priority, plannedFor: selectedDate });
     setTitle("");
   }
 
@@ -176,8 +184,14 @@ export function TodayScreen() {
     >
       <View style={[styles.hero, isCompact ? styles.heroCompact : undefined]}>
         <View style={styles.heroCopy}>
-          <Text style={styles.eyebrow}>{formatFriendlyDate(new Date())}</Text>
-          <Text style={styles.title}>Make room for today.</Text>
+          <Text style={styles.eyebrow}>
+            {formatFriendlyDate(parseLocalDate(selectedDate))}
+          </Text>
+          <Text style={styles.title}>
+            {selectedDate === actualToday
+              ? "Make room for today."
+              : "Plan with a little room."}
+          </Text>
           <Text style={styles.subtitle}>
             A short list is still a real plan. Choose what feels possible.
           </Text>
@@ -198,6 +212,12 @@ export function TodayScreen() {
         onChangeTitle={setTitle}
         onOpenEditor={openNewTask}
         onSubmit={submitTask}
+      />
+
+      <PlanningCalendar
+        selectedDate={selectedDate}
+        tasks={tasks}
+        onSelectDate={setSelectedDate}
       />
 
       <View style={[styles.board, isWide && styles.boardWide]}>
@@ -273,7 +293,9 @@ export function TodayScreen() {
           onPress={() => setShowCompleted((current) => !current)}
         >
           <Text style={styles.completedTitle}>
-            Completed today ({settledCompleted.length})
+            {selectedDate === actualToday ? "Completed today" : "Completed"}
+            {" ("}
+            {settledCompleted.length})
           </Text>
           <Text style={styles.completedToggle}>
             {showCompleted ? "Hide" : "Show"}
@@ -303,7 +325,9 @@ export function TodayScreen() {
           </View>
         ) : null}
       </View>
+      <TaskInbox tasks={tasks} onEdit={openTask} />
       <TaskEditorModal
+        defaultPlannedFor={selectedDate}
         task={editingTask}
         visible={editorVisible}
         onClose={closeEditor}
@@ -740,6 +764,11 @@ function formatFriendlyDate(date: Date) {
   })
     .format(date)
     .toUpperCase();
+}
+
+function parseLocalDate(value: string) {
+  const [year, month, day] = value.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
 function formatKind(kind: Task["kind"]) {
