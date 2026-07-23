@@ -60,6 +60,11 @@ pnpm dlx supabase db lint --linked
 The migration:
 
 - enables RLS on every user-scoped public table
+- makes first account-key/device enrollment atomic and prevents direct
+  authenticated account-key replacement
+- stores only hidden one-way recovery and device proof verifiers
+- requires the device proof for encrypted writes, reminder-device changes,
+  revocation, and deletion requests
 - grants clients read access only where required
 - routes encrypted writes and device changes through validated
   security-definer RPCs
@@ -105,6 +110,10 @@ Use two accounts and two physical devices or browsers to verify:
 - one account cannot select or mutate another account's rows
 - anon requests cannot invoke RPCs
 - malformed, future-dated, and untrusted-device mutations are rejected
+- proofless device registration, mutation, revocation, and deletion RPC calls
+  are rejected
+- a revoked device cannot re-enroll without the recovery-derived proof
+- active deletion requests reject encrypted mutations and device changes
 - different-field edits merge and same-field edits resolve deterministically
 - a missed broadcast is recovered by a durable pull
 - device reminder ownership updates on both clients

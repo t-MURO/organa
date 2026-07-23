@@ -6,6 +6,7 @@ export {
 } from "./record-encryption";
 export {
   createKeyHierarchy,
+  createRecoveryEnrollmentProof,
   normalizeRecoveryCode,
   unwrapContentKey,
 } from "./recovery-key";

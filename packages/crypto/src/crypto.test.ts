@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createKeyHierarchy,
+  createRecoveryEnrollmentProof,
   decryptJson,
   encryptJson,
   normalizeRecoveryCode,
@@ -55,5 +56,19 @@ describe("Organa encryption", () => {
     await expect(
       unwrapContentKey(changed, hierarchy.recoveryEnvelope),
     ).rejects.toThrow();
+  });
+
+  it("derives the same enrollment proof from equivalent recovery formatting", async () => {
+    const hierarchy = await createKeyHierarchy();
+    const reformatted = hierarchy.recoveryCode.toLowerCase().replaceAll("-", " ");
+
+    const proof = await createRecoveryEnrollmentProof(hierarchy.recoveryCode);
+    const repeated = await createRecoveryEnrollmentProof(reformatted);
+
+    expect(proof).toBe(repeated);
+    expect(proof).toMatch(/^[a-f0-9]{64}$/);
+    expect(proof).not.toContain(
+      normalizeRecoveryCode(hierarchy.recoveryCode).slice(0, 64),
+    );
   });
 });

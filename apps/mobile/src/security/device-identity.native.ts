@@ -1,15 +1,27 @@
 import * as SecureStore from "expo-secure-store";
-import { randomUUID } from "expo-crypto";
 
-import type { DeviceIdentity } from "./device-identity";
+import {
+  createDeviceIdentity,
+  type DeviceIdentity,
+} from "./device-identity.shared";
 
 const key = "organa.device-identity";
 
 export async function getDeviceIdentity(): Promise<DeviceIdentity> {
   const existing = await SecureStore.getItemAsync(key);
-  if (existing) return JSON.parse(existing) as DeviceIdentity;
+  if (existing) {
+    const parsed = JSON.parse(existing) as Partial<DeviceIdentity>;
+    if (parsed.id && parsed.createdAt && parsed.secret) {
+      return parsed as DeviceIdentity;
+    }
+    if (parsed.id && parsed.createdAt) {
+      const migrated = { ...createDeviceIdentity(), ...parsed };
+      await SecureStore.setItemAsync(key, JSON.stringify(migrated));
+      return migrated;
+    }
+  }
 
-  const identity = { createdAt: new Date().toISOString(), id: randomUUID() };
+  const identity = createDeviceIdentity();
   await SecureStore.setItemAsync(key, JSON.stringify(identity));
   return identity;
 }

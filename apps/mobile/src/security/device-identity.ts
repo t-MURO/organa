@@ -1,13 +1,13 @@
-import { randomUUID } from "expo-crypto";
+import {
+  createDeviceIdentity,
+  type DeviceIdentity,
+} from "./device-identity.shared";
 
-export interface DeviceIdentity {
-  id: string;
-  createdAt: string;
-}
+export type { DeviceIdentity } from "./device-identity.shared";
 
 let identity: DeviceIdentity | undefined;
 
 export async function getDeviceIdentity() {
-  identity ??= { createdAt: new Date().toISOString(), id: randomUUID() };
+  identity ??= createDeviceIdentity();
   return identity;
 }

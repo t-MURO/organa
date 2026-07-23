@@ -80,6 +80,14 @@ export function normalizeRecoveryCode(code: string) {
   return normalized.toLowerCase();
 }
 
+export async function createRecoveryEnrollmentProof(recoveryCode: string) {
+  const recoverySecret = normalizeRecoveryCode(recoveryCode).slice(0, 64);
+  return digestStringAsync(
+    CryptoDigestAlgorithm.SHA256,
+    `organa:device-enrollment:v1:${recoverySecret}`,
+  );
+}
+
 async function recoveryChecksum(secret: string) {
   const digest = await digestStringAsync(
     CryptoDigestAlgorithm.SHA256,

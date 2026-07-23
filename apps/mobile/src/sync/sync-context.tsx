@@ -224,7 +224,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
   }
 
   async function flush() {
-    if (flushing.current || !auth.user || !supabase) return;
+    if (flushing.current || !auth.user || !supabase || !security.device) return;
     flushing.current = true;
     setStatus("syncing");
     setError("");
@@ -236,6 +236,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
           p_ciphertext: mutation.ciphertext ?? null,
           p_created_at: mutation.createdAt,
           p_device_id: mutation.deviceId,
+          p_device_proof: security.device.secret,
           p_field_versions: mutation.fieldVersions,
           p_mutation_id: mutation.id,
           p_operation: mutation.operation,

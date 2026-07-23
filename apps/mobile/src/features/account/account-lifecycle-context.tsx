@@ -11,6 +11,7 @@ import { useAuth } from "../../auth/auth-context";
 import { supabase } from "../../auth/supabase";
 import { deleteLocalAccountData } from "../../data/delete-local-account-data";
 import { contentKeyVault } from "../../security/content-key-vault";
+import { useSecurity } from "../../security/security-context";
 
 interface DeletionRequest {
   executeAfter: string;
@@ -33,6 +34,7 @@ const AccountLifecycleContext = createContext<
 
 export function AccountLifecycleProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
+  const security = useSecurity();
   const [deletionRequest, setDeletionRequest] =
     useState<DeletionRequest | null>(null);
   const [loading, setLoading] = useState(Boolean(auth.user));
@@ -81,19 +83,25 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
   }, [auth.localPreview, auth.user?.id]);
 
   async function requestDeletion() {
-    if (!auth.user || !supabase || auth.localPreview) {
+    if (!auth.user || !security.device || !supabase || auth.localPreview) {
       throw new Error("Account deletion requires a connected account.");
     }
-    const result = await supabase.rpc("request_account_deletion");
+    const result = await supabase.rpc("request_account_deletion", {
+      p_device_id: security.device.id,
+      p_device_proof: security.device.secret,
+    });
     if (result.error) throw result.error;
     await refresh();
   }
 
   async function cancelDeletion() {
-    if (!auth.user || !supabase || auth.localPreview) {
+    if (!auth.user || !security.device || !supabase || auth.localPreview) {
       throw new Error("There is no connected deletion request.");
     }
-    const result = await supabase.rpc("cancel_account_deletion");
+    const result = await supabase.rpc("cancel_account_deletion", {
+      p_device_id: security.device.id,
+      p_device_proof: security.device.secret,
+    });
     if (result.error) throw result.error;
     await refresh();
   }

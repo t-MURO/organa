@@ -4,6 +4,7 @@ create table public.account_keys (
   user_id uuid primary key references auth.users(id) on delete cascade,
   key_id uuid not null,
   recovery_key_envelope jsonb not null,
+  recovery_proof_hash text not null check (recovery_proof_hash ~ '^[a-f0-9]{64}$'),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -13,7 +14,7 @@ create table public.devices (
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null,
   platform text not null check (platform in ('ios', 'android', 'web', 'macos', 'windows', 'linux')),
-  public_key text,
+  device_proof_hash text not null check (device_proof_hash ~ '^[a-f0-9]{64}$'),
   trusted_at timestamptz,
   revoked_at timestamptz,
   primary_reminder boolean not null default false,
@@ -98,17 +99,15 @@ alter table public.account_deletion_requests enable row level security;
 
 create policy account_keys_owner
   on public.account_keys
-  for all
+  for select
   to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using (auth.uid() = user_id);
 
 create policy devices_owner
   on public.devices
-  for all
+  for select
   to authenticated
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using (auth.uid() = user_id);
 
 create policy encrypted_records_owner
   on public.encrypted_records
@@ -167,19 +166,162 @@ revoke all
      public.account_deletion_requests
   from anon, authenticated;
 
+grant select (
+  user_id,
+  key_id,
+  recovery_key_envelope,
+  created_at,
+  updated_at
+) on public.account_keys to authenticated;
+
+grant select (
+  id,
+  user_id,
+  name,
+  platform,
+  trusted_at,
+  revoked_at,
+  primary_reminder,
+  notifications_enabled,
+  created_at,
+  last_seen_at
+) on public.devices to authenticated;
+
 grant select
-  on public.account_keys,
-     public.devices,
-     public.encrypted_records,
+  on public.encrypted_records,
      public.encrypted_record_history,
      public.account_deletion_requests
   to authenticated;
 
-grant insert, update on public.account_keys to authenticated;
+create or replace function public.device_proof_is_valid(
+  p_device_id uuid,
+  p_device_proof text
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from public.devices
+    where devices.user_id = auth.uid()
+      and devices.id = p_device_id
+      and devices.trusted_at is not null
+      and devices.revoked_at is null
+      and devices.device_proof_hash = encode(
+        extensions.digest(p_device_proof, 'sha256'),
+        'hex'
+      )
+  );
+$$;
+
+revoke execute on function public.device_proof_is_valid(uuid, text)
+  from public, anon, authenticated;
+
+create or replace function public.enroll_account_key(
+  p_key_id uuid,
+  p_recovery_key_envelope jsonb,
+  p_recovery_proof text,
+  p_device_id uuid,
+  p_device_name text,
+  p_device_platform text,
+  p_device_proof text
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Authentication is required.';
+  end if;
+
+  if p_device_platform not in ('ios', 'android', 'web') then
+    raise exception 'Unsupported device platform.';
+  end if;
+
+  if length(trim(p_device_name)) = 0 or length(trim(p_device_name)) > 80 then
+    raise exception 'Invalid device name.';
+  end if;
+
+  if p_recovery_proof is null or p_recovery_proof !~ '^[a-f0-9]{64}$' then
+    raise exception 'Invalid recovery enrollment proof.';
+  end if;
+
+  if p_recovery_key_envelope is null or
+     jsonb_typeof(p_recovery_key_envelope) <> 'object' or
+     pg_column_size(p_recovery_key_envelope) > 16384 then
+    raise exception 'Invalid recovery key envelope.';
+  end if;
+
+  if p_device_proof is null or
+     length(p_device_proof) < 64 or
+     length(p_device_proof) > 200 then
+    raise exception 'Invalid device proof.';
+  end if;
+
+  if exists (
+    select 1 from public.account_keys where user_id = auth.uid()
+  ) then
+    raise exception 'The account key is already enrolled.';
+  end if;
+
+  if exists (
+    select 1 from public.devices where id = p_device_id
+  ) then
+    raise exception 'The device identifier is already enrolled.';
+  end if;
+
+  insert into public.account_keys (
+    user_id,
+    key_id,
+    recovery_key_envelope,
+    recovery_proof_hash
+  )
+  values (
+    auth.uid(),
+    p_key_id,
+    p_recovery_key_envelope,
+    p_recovery_proof
+  );
+
+  insert into public.devices (
+    id,
+    user_id,
+    name,
+    platform,
+    device_proof_hash,
+    trusted_at,
+    primary_reminder,
+    notifications_enabled
+  )
+  values (
+    p_device_id,
+    auth.uid(),
+    trim(p_device_name),
+    p_device_platform,
+    encode(extensions.digest(p_device_proof, 'sha256'), 'hex'),
+    now(),
+    true,
+    true
+  );
+end;
+$$;
+
+revoke execute on function public.enroll_account_key(
+  uuid, jsonb, text, uuid, text, text, text
+) from public, anon;
+grant execute on function public.enroll_account_key(
+  uuid, jsonb, text, uuid, text, text, text
+) to authenticated;
 
 create or replace function public.apply_encrypted_mutation(
   p_mutation_id uuid,
   p_device_id uuid,
+  p_device_proof text,
   p_record_type text,
   p_record_id text,
   p_operation text,
@@ -265,15 +407,18 @@ begin
     raise exception 'Field timestamp is too far in the future.';
   end if;
 
-  if not exists (
+  if not public.device_proof_is_valid(p_device_id, p_device_proof) then
+    raise exception 'The device proof is invalid.';
+  end if;
+
+  if exists (
     select 1
-    from public.devices
-    where devices.user_id = auth.uid()
-      and devices.id = p_device_id
-      and devices.revoked_at is null
-      and devices.trusted_at is not null
+    from public.account_deletion_requests
+    where user_id = auth.uid()
+      and cancelled_at is null
+      and completed_at is null
   ) then
-    raise exception 'The device is not trusted.';
+    raise exception 'The account is read-only while deletion is pending.';
   end if;
 
   insert into public.sync_mutations (
@@ -432,13 +577,16 @@ end;
 $$;
 
 revoke execute on function public.apply_encrypted_mutation(
-  uuid, uuid, text, text, text, jsonb, jsonb, bigint, timestamptz
+  uuid, uuid, text, text, text, text, jsonb, jsonb, bigint, timestamptz
 ) from public, anon;
 grant execute on function public.apply_encrypted_mutation(
-  uuid, uuid, text, text, text, jsonb, jsonb, bigint, timestamptz
+  uuid, uuid, text, text, text, text, jsonb, jsonb, bigint, timestamptz
 ) to authenticated;
 
-create or replace function public.request_account_deletion()
+create or replace function public.request_account_deletion(
+  p_device_id uuid,
+  p_device_proof text
+)
 returns public.account_deletion_requests
 language plpgsql
 security definer
@@ -449,6 +597,10 @@ declare
 begin
   if auth.uid() is null then
     raise exception 'Authentication is required.';
+  end if;
+
+  if not public.device_proof_is_valid(p_device_id, p_device_proof) then
+    raise exception 'The device proof is invalid.';
   end if;
 
   insert into public.account_deletion_requests (
@@ -477,7 +629,10 @@ begin
 end;
 $$;
 
-create or replace function public.cancel_account_deletion()
+create or replace function public.cancel_account_deletion(
+  p_device_id uuid,
+  p_device_proof text
+)
 returns void
 language plpgsql
 security definer
@@ -486,6 +641,10 @@ as $$
 begin
   if auth.uid() is null then
     raise exception 'Authentication is required.';
+  end if;
+
+  if not public.device_proof_is_valid(p_device_id, p_device_proof) then
+    raise exception 'The device proof is invalid.';
   end if;
 
   update public.account_deletion_requests
@@ -501,17 +660,21 @@ begin
 end;
 $$;
 
-revoke execute on function public.request_account_deletion()
+revoke execute on function public.request_account_deletion(uuid, text)
   from public, anon;
-revoke execute on function public.cancel_account_deletion()
+revoke execute on function public.cancel_account_deletion(uuid, text)
   from public, anon;
-grant execute on function public.request_account_deletion() to authenticated;
-grant execute on function public.cancel_account_deletion() to authenticated;
+grant execute on function public.request_account_deletion(uuid, text)
+  to authenticated;
+grant execute on function public.cancel_account_deletion(uuid, text)
+  to authenticated;
 
 create or replace function public.register_trusted_device(
   p_device_id uuid,
+  p_device_proof text,
   p_name text,
-  p_platform text
+  p_platform text,
+  p_recovery_proof text
 )
 returns void
 language plpgsql
@@ -519,6 +682,7 @@ security definer
 set search_path = ''
 as $$
 declare
+  existing_active boolean;
   is_first_reminder_device boolean;
 begin
   if auth.uid() is null then
@@ -533,13 +697,51 @@ begin
     raise exception 'Invalid device name.';
   end if;
 
-  if exists (
-    select 1 from public.devices
+  if p_device_proof is null or
+     length(p_device_proof) < 64 or
+     length(p_device_proof) > 200 then
+    raise exception 'Invalid device proof.';
+  end if;
+
+  select exists (
+    select 1
+    from public.devices
     where user_id = auth.uid()
       and id = p_device_id
-      and revoked_at is not null
+      and revoked_at is null
+      and trusted_at is not null
+  ) into existing_active;
+
+  if existing_active then
+    if not public.device_proof_is_valid(p_device_id, p_device_proof) then
+      raise exception 'The device proof is invalid.';
+    end if;
+
+    update public.devices
+    set last_seen_at = now(),
+        name = trim(p_name),
+        platform = p_platform
+    where user_id = auth.uid()
+      and id = p_device_id;
+    return;
+  end if;
+
+  if p_recovery_proof is null or not exists (
+    select 1
+    from public.account_keys
+    where user_id = auth.uid()
+      and recovery_proof_hash = p_recovery_proof
   ) then
-    raise exception 'This device was revoked and must be enrolled again.';
+    raise exception 'Recovery authorization is required to enroll this device.';
+  end if;
+
+  if exists (
+    select 1
+    from public.devices
+    where id = p_device_id
+      and user_id <> auth.uid()
+  ) then
+    raise exception 'The device identifier belongs to another account.';
   end if;
 
   select not exists (
@@ -554,6 +756,7 @@ begin
     user_id,
     name,
     platform,
+    device_proof_hash,
     trusted_at,
     primary_reminder,
     notifications_enabled,
@@ -564,6 +767,7 @@ begin
     auth.uid(),
     trim(p_name),
     p_platform,
+    encode(extensions.digest(p_device_proof, 'sha256'), 'hex'),
     now(),
     is_first_reminder_device,
     is_first_reminder_device,
@@ -571,6 +775,11 @@ begin
   )
   on conflict (id)
   do update set
+    device_proof_hash = excluded.device_proof_hash,
+    trusted_at = now(),
+    revoked_at = null,
+    primary_reminder = excluded.primary_reminder,
+    notifications_enabled = excluded.notifications_enabled,
     last_seen_at = now(),
     name = excluded.name,
     platform = excluded.platform
@@ -579,6 +788,8 @@ end;
 $$;
 
 create or replace function public.configure_reminder_device(
+  p_current_device_id uuid,
+  p_current_device_proof text,
   p_device_id uuid,
   p_make_primary boolean,
   p_notifications_enabled boolean
@@ -591,6 +802,23 @@ as $$
 begin
   if auth.uid() is null then
     raise exception 'Authentication is required.';
+  end if;
+
+  if not public.device_proof_is_valid(
+    p_current_device_id,
+    p_current_device_proof
+  ) then
+    raise exception 'The current device proof is invalid.';
+  end if;
+
+  if exists (
+    select 1
+    from public.account_deletion_requests
+    where user_id = auth.uid()
+      and cancelled_at is null
+      and completed_at is null
+  ) then
+    raise exception 'The account is read-only while deletion is pending.';
   end if;
 
   if not exists (
@@ -628,6 +856,7 @@ $$;
 
 create or replace function public.revoke_trusted_device(
   p_current_device_id uuid,
+  p_current_device_proof text,
   p_target_device_id uuid
 )
 returns void
@@ -640,6 +869,23 @@ declare
 begin
   if auth.uid() is null then
     raise exception 'Authentication is required.';
+  end if;
+
+  if not public.device_proof_is_valid(
+    p_current_device_id,
+    p_current_device_proof
+  ) then
+    raise exception 'The current device proof is invalid.';
+  end if;
+
+  if exists (
+    select 1
+    from public.account_deletion_requests
+    where user_id = auth.uid()
+      and cancelled_at is null
+      and completed_at is null
+  ) then
+    raise exception 'The account is read-only while deletion is pending.';
   end if;
 
   if p_current_device_id = p_target_device_id then
@@ -684,17 +930,25 @@ begin
 end;
 $$;
 
-revoke execute on function public.register_trusted_device(uuid, text, text)
+revoke execute on function public.register_trusted_device(
+  uuid, text, text, text, text
+)
   from public, anon;
-revoke execute on function public.configure_reminder_device(uuid, boolean, boolean)
+revoke execute on function public.configure_reminder_device(
+  uuid, text, uuid, boolean, boolean
+)
   from public, anon;
-revoke execute on function public.revoke_trusted_device(uuid, uuid)
+revoke execute on function public.revoke_trusted_device(uuid, text, uuid)
   from public, anon;
-grant execute on function public.register_trusted_device(uuid, text, text)
+grant execute on function public.register_trusted_device(
+  uuid, text, text, text, text
+)
   to authenticated;
-grant execute on function public.configure_reminder_device(uuid, boolean, boolean)
+grant execute on function public.configure_reminder_device(
+  uuid, text, uuid, boolean, boolean
+)
   to authenticated;
-grant execute on function public.revoke_trusted_device(uuid, uuid)
+grant execute on function public.revoke_trusted_device(uuid, text, uuid)
   to authenticated;
 
 create policy organa_user_receives_own_broadcasts

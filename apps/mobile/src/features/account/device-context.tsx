@@ -104,8 +104,10 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     deviceId: string,
     options: { makePrimary?: boolean; notificationsEnabled: boolean },
   ) {
-    if (!supabase || auth.localPreview) return;
+    if (!supabase || !security.device || auth.localPreview) return;
     const result = await supabase.rpc("configure_reminder_device", {
+      p_current_device_id: security.device.id,
+      p_current_device_proof: security.device.secret,
       p_device_id: deviceId,
       p_make_primary: options.makePrimary ?? false,
       p_notifications_enabled: options.notificationsEnabled,
@@ -118,6 +120,7 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     if (!supabase || !security.device || auth.localPreview) return;
     const result = await supabase.rpc("revoke_trusted_device", {
       p_current_device_id: security.device.id,
+      p_current_device_proof: security.device.secret,
       p_target_device_id: deviceId,
     });
     if (result.error) throw result.error;

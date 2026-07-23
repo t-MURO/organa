@@ -1,5 +1,6 @@
 import {
   createKeyHierarchy,
+  createRecoveryEnrollmentProof,
   decryptJson,
   encryptJson,
   type ContentKey,
@@ -139,18 +140,30 @@ export function SecurityProvider({ children }: PropsWithChildren) {
   }, [auth.localPreview, auth.user]);
 
   async function confirmRecoverySaved() {
-    if (!auth.user || !contentKey || !recoveryEnvelope || !device || !supabase) {
+    if (
+      !auth.user ||
+      !contentKey ||
+      !recoveryCode ||
+      !recoveryEnvelope ||
+      !device ||
+      !supabase
+    ) {
       throw new Error("Recovery setup is incomplete.");
     }
     setError("");
-    const result = await supabase.from("account_keys").upsert({
-      key_id: contentKey.id,
-      recovery_key_envelope: recoveryEnvelope,
-      user_id: auth.user.id,
+    const recoveryProof = await createRecoveryEnrollmentProof(recoveryCode);
+    const result = await supabase.rpc("enroll_account_key", {
+      p_device_id: device.id,
+      p_device_name:
+        Platform.OS === "web" ? "Web browser" : `${Platform.OS} device`,
+      p_device_platform: Platform.OS,
+      p_device_proof: device.secret,
+      p_key_id: contentKey.id,
+      p_recovery_key_envelope: recoveryEnvelope,
+      p_recovery_proof: recoveryProof,
     });
     if (result.error) throw result.error;
     await contentKeyVault.set(auth.user.id, contentKey);
-    await registerDevice(device);
     setRecoveryCode(undefined);
   }
 
@@ -160,8 +173,9 @@ export function SecurityProvider({ children }: PropsWithChildren) {
     }
     setError("");
     const restoredKey = await unwrapContentKey(code, recoveryEnvelope);
+    const recoveryProof = await createRecoveryEnrollmentProof(code);
     await contentKeyVault.set(auth.user.id, restoredKey);
-    await registerDevice(device);
+    await registerDevice(device, recoveryProof);
     setContentKey(restoredKey);
     setRestoreRequired(false);
   }
@@ -205,12 +219,17 @@ export function SecurityProvider({ children }: PropsWithChildren) {
   );
 }
 
-async function registerDevice(device: DeviceIdentity) {
+async function registerDevice(
+  device: DeviceIdentity,
+  recoveryProof?: string,
+) {
   if (!supabase) return;
   const result = await supabase.rpc("register_trusted_device", {
     p_device_id: device.id,
+    p_device_proof: device.secret,
     p_name: Platform.OS === "web" ? "Web browser" : `${Platform.OS} device`,
     p_platform: Platform.OS,
+    p_recovery_proof: recoveryProof ?? null,
   });
   if (result.error) throw result.error;
 }

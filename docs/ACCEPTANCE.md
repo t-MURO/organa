@@ -29,7 +29,9 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 38 automated tests pass
+- 44 automated tests pass
+- static security-contract tests prevent direct account-key writes and
+  proofless privileged RPC signatures
 - Expo Doctor passes 19/20 checks after native project generation; the only
   remaining check is host tooling because CocoaPods/full Xcode are not
   installed on this machine

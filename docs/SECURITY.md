@@ -14,6 +14,8 @@ storage, and deletion operations.
 - Authenticated additional data binds each envelope to its record type,
   record ID, and field name.
 - A random 256-bit recovery key encrypts the content key.
+- A one-way SHA-256 verifier derived from the recovery key authorizes enrollment
+  of a new or previously revoked device without uploading the recovery key.
 - The displayed recovery code contains the recovery key plus a short checksum
   for detecting transcription mistakes.
 - The recovery key is never uploaded. Supabase stores only its encrypted
@@ -29,12 +31,16 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
 Native:
 
 - The content key is stored with Expo SecureStore.
+- A random per-device proof secret is stored with the device identity in Expo
+  SecureStore.
 - Optional app lock uses platform local authentication and device fallback.
 
 Web:
 
 - A non-extractable Web Crypto AES-GCM wrapping key and wrapped content key are
   stored in a separate IndexedDB database.
+- The per-device proof secret is stored with the browser device identity in
+  local storage. It is an authorization control, not an encryption key.
 - If durable CryptoKey storage is blocked, the key remains memory-only and the
   recovery code is needed after the session is lost.
 - This protects against simple storage export, not malicious same-origin
@@ -54,6 +60,8 @@ Supabase can read:
 - content-key ID and recovery-envelope metadata/ciphertext
 - device ID, display name, platform, trust/revocation time, last-seen time, and
   reminder-device booleans
+- one-way recovery-enrollment and per-device proof verifiers; authenticated
+  clients cannot select these verifier columns
 - encrypted record type, opaque record ID, encrypted field names, ciphertext,
   field-version timestamps, record version, deletion state, updater device,
   and update time
@@ -74,11 +82,18 @@ user-entered content.
 - Clients can directly read only their own rows.
 - Encrypted mutation, device configuration, and deletion writes use validated
   RPCs.
+- Initial account-key and device enrollment is atomic. Authenticated clients
+  cannot insert or replace account-key rows directly.
+- New or revoked devices must present the recovery-derived enrollment proof.
+- Active devices must present their per-device proof secret for encrypted
+  mutations, reminder-device changes, revocation, and account deletion.
 - Security-definer RPC execution is revoked from `public` and `anon`.
 - Mutation RPCs validate authentication, trusted-device state, record type,
   patch shape, and future clock skew.
 - Private Realtime authorization compares the authenticated user ID with the
   exact user-scoped topic.
+- The mutation and device-control RPCs reject writes while an uncancelled
+  account-deletion request is active.
 
 Trusted-device revocation is enforced when the target reconnects: local Organa
 data and its key are removed, its session signs out, and encrypted writes from

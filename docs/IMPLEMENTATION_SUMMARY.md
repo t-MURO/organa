@@ -63,6 +63,11 @@ Implemented user-facing areas:
 - Onboarding generates a recovery code and requires storage confirmation.
 - New devices can restore the content key locally with the recovery code.
 - Trusted devices can be viewed and revoked.
+- First account-key/device enrollment is atomic, and account-key rows cannot be
+  replaced directly by authenticated clients.
+- New or revoked devices require a one-way proof derived from the recovery key.
+- Encrypted writes and privileged device/account actions require a hidden
+  per-device proof secret.
 - One primary reminder device is supported; notifications on additional
   devices require explicit enablement.
 - Revoked devices clear local Organa data and sign out when revocation is
@@ -101,10 +106,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 40 automated tests pass:
+- 44 automated tests pass:
   - 27 domain tests
-  - 3 cryptography tests
-  - 10 application integration tests
+  - 4 cryptography tests
+  - 13 application integration tests
 - iOS Hermes export succeeds.
 - Android Hermes export succeeds.
 - Production web export succeeds.
@@ -133,13 +138,14 @@ Major implementation commits:
 - `f83f73a` - recover missed realtime changes
 - `2652a15` - restore native Brain Dump bundles
 - `a9ad329` - harden native release configuration
+- `4963b1b` - reconcile remote reminder changes and add this summary
 
-## Current Uncommitted Work
+## Latest Security Hardening
 
-- Remote task synchronization now reschedules or cancels local notifications.
-- Remote Check-In reminder settings now use current reminder-device ownership.
-- Regression tests cover remote task notification reconciliation.
-- This implementation summary has been added.
+- Recovery-authorized device enrollment and per-device write proofs
+- Atomic account-key/first-device enrollment
+- Server-enforced deletion read-only state
+- Security-contract regression tests and updated security documentation
 
 ## Remaining Acceptance Gates
 
