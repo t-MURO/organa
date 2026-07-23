@@ -5,6 +5,8 @@ import {
   completeTask,
   createTask,
   reopenTask,
+  toggleSubtaskCompletion,
+  updateTask,
 } from "./tasks";
 
 const now = new Date("2026-07-23T09:00:00.000Z");
@@ -70,6 +72,7 @@ describe("task transitions", () => {
     expect(task.kind).toBe("one_off");
     expect(task.priority).toBe("should");
     expect(task.reminders).toEqual([]);
+    expect(task.snoozePresets).toEqual([10, 30, 60]);
   });
 
   it("completes and reopens a task without mutating the source", () => {
@@ -87,5 +90,58 @@ describe("task transitions", () => {
     expect(completed.completedAt).toBe("2026-07-23T10:00:00.000Z");
     expect(reopened.completedAt).toBeUndefined();
     expect(reopened.updatedAt).toBe("2026-07-23T11:00:00.000Z");
+  });
+
+  it("edits configuration without rewriting task history", () => {
+    const task = createTask(
+      {
+        title: "Water plants",
+        kind: "habit",
+        plannedFor: "2026-07-23",
+        subtasks: [{ id: "step-1", title: "Check the soil" }],
+      },
+      "task-1",
+      now,
+    );
+    const updated = updateTask(
+      task,
+      {
+        title: "Water indoor plants",
+        kind: "habit",
+        plannedFor: "2026-07-24",
+        recurrence: { frequency: "weekly", interval: 1 },
+        graceDays: 3,
+        snoozePresets: [30, 5, 30],
+      },
+      new Date("2026-07-23T12:00:00.000Z"),
+    );
+
+    expect(updated.id).toBe(task.id);
+    expect(updated.createdAt).toBe(task.createdAt);
+    expect(updated.title).toBe("Water indoor plants");
+    expect(updated.recurrence?.frequency).toBe("weekly");
+    expect(updated.graceDays).toBe(3);
+    expect(updated.snoozePresets).toEqual([5, 30]);
+  });
+
+  it("toggles a subtask without completing its parent", () => {
+    const task = createTask(
+      {
+        title: "Prepare bag",
+        subtasks: [{ id: "step-1", title: "Pack keys" }],
+      },
+      "task-1",
+      now,
+    );
+    const updated = toggleSubtaskCompletion(
+      task,
+      "step-1",
+      new Date("2026-07-23T12:00:00.000Z"),
+    );
+
+    expect(updated.subtasks[0].completedAt).toBe(
+      "2026-07-23T12:00:00.000Z",
+    );
+    expect(updated.completedAt).toBeUndefined();
   });
 });

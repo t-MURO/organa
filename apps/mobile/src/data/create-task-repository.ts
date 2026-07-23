@@ -13,5 +13,8 @@ export function createTaskRepository(): TaskRepository {
     async upsert(task) {
       tasks.set(task.id, task);
     },
+    async remove(id) {
+      tasks.delete(id);
+    },
   };
 }

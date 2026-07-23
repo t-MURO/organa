@@ -4,4 +4,5 @@ export interface TaskRepository {
   initialize(): Promise<void>;
   list(): Promise<Task[]>;
   upsert(task: Task): Promise<void>;
+  remove(id: string): Promise<void>;
 }

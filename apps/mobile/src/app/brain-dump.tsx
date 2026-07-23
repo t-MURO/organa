@@ -1,11 +1,5 @@
-import { FeaturePlaceholder } from "../components/feature-placeholder";
+import { BrainDumpScreen } from "../features/brain-dump/brain-dump-screen";
 
 export default function BrainDumpRoute() {
-  return (
-    <FeaturePlaceholder
-      description="One continuous, searchable stream of bullet points that stays available across devices without turning every thought into a task."
-      eyebrow="BRAIN DUMP"
-      title="Put it somewhere safe."
-    />
-  );
+  return <BrainDumpScreen />;
 }

@@ -3,8 +3,10 @@ import {
   createTask,
   formatLocalDate,
   reopenTask,
+  toggleSubtaskCompletion,
+  updateTask,
+  type CreateTaskInput,
   type Task,
-  type TaskPriority,
 } from "@organa/domain";
 import {
   createContext,
@@ -23,11 +25,15 @@ interface TaskState {
 
 type TaskAction =
   | { type: "loaded"; tasks: Task[] }
-  | { type: "upserted"; task: Task };
+  | { type: "upserted"; task: Task }
+  | { type: "removed"; id: string };
 
 interface TaskContextValue extends TaskState {
-  addTask(title: string, priority: TaskPriority): void;
+  addTask(input: CreateTaskInput): Task;
+  editTask(task: Task, input: CreateTaskInput): Task;
+  removeTask(id: string): void;
   toggleTask(task: Task): void;
+  toggleSubtask(task: Task, subtaskId: string): void;
 }
 
 const TaskContext = createContext<TaskContextValue | undefined>(undefined);
@@ -48,6 +54,11 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
           : [...state.tasks, action.task],
       };
     }
+    case "removed":
+      return {
+        ...state,
+        tasks: state.tasks.filter((task) => task.id !== action.id),
+      };
   }
 }
 
@@ -135,17 +146,29 @@ export function TaskProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  function addTask(title: string, priority: TaskPriority) {
+  function addTask(input: CreateTaskInput) {
     const task = createTask(
       {
-        title,
-        priority,
-        plannedFor: formatLocalDate(new Date()),
+        ...input,
+        plannedFor: input.plannedFor ?? formatLocalDate(new Date()),
       },
       makeId(),
     );
     dispatch({ type: "upserted", task });
     void repository.upsert(task);
+    return task;
+  }
+
+  function editTask(task: Task, input: CreateTaskInput) {
+    const updated = updateTask(task, input);
+    dispatch({ type: "upserted", task: updated });
+    void repository.upsert(updated);
+    return updated;
+  }
+
+  function removeTask(id: string) {
+    dispatch({ type: "removed", id });
+    void repository.remove(id);
   }
 
   function toggleTask(task: Task) {
@@ -154,8 +177,23 @@ export function TaskProvider({ children }: PropsWithChildren) {
     void repository.upsert(nextTask);
   }
 
+  function toggleSubtask(task: Task, subtaskId: string) {
+    const nextTask = toggleSubtaskCompletion(task, subtaskId);
+    dispatch({ type: "upserted", task: nextTask });
+    void repository.upsert(nextTask);
+  }
+
   return (
-    <TaskContext.Provider value={{ ...state, addTask, toggleTask }}>
+    <TaskContext.Provider
+      value={{
+        ...state,
+        addTask,
+        editTask,
+        removeTask,
+        toggleTask,
+        toggleSubtask,
+      }}
+    >
       {children}
     </TaskContext.Provider>
   );

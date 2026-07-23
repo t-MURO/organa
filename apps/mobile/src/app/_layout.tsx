@@ -8,6 +8,8 @@ import {
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppShell } from "../components/app-shell";
+import { BrainDumpProvider } from "../features/brain-dump/brain-dump-context";
+import { CheckInProvider } from "../features/check-in/check-in-context";
 import { TaskProvider } from "../features/tasks/task-context";
 
 export default function RootLayout() {
@@ -25,7 +27,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <TaskProvider>
-        <AppShell />
+        <BrainDumpProvider>
+          <CheckInProvider>
+            <AppShell />
+          </CheckInProvider>
+        </BrainDumpProvider>
       </TaskProvider>
     </SafeAreaProvider>
   );

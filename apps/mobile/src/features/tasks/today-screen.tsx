@@ -1,6 +1,7 @@
 import {
   buildDayPlan,
   formatLocalDate,
+  type CreateTaskInput,
   type Task,
   type TaskPriority,
 } from "@organa/domain";
@@ -21,6 +22,7 @@ import {
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
 import { useTasks } from "./task-context";
+import { TaskEditorModal } from "./task-editor-modal";
 
 const priorities: Array<{
   key: TaskPriority;
@@ -38,10 +40,20 @@ export function TodayScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const { width } = useWindowDimensions();
-  const { loading, tasks, addTask, toggleTask } = useTasks();
+  const {
+    loading,
+    tasks,
+    addTask,
+    editTask,
+    removeTask,
+    toggleTask,
+    toggleSubtask,
+  } = useTasks();
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("should");
   const [showCompleted, setShowCompleted] = useState(false);
+  const [editorVisible, setEditorVisible] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task>();
   const [recentlyCompletedIds, setRecentlyCompletedIds] = useState<string[]>(
     [],
   );
@@ -85,8 +97,37 @@ export function TodayScreen() {
 
   function submitTask() {
     if (!title.trim()) return;
-    addTask(title, priority);
+    addTask({ title, priority, plannedFor: today });
     setTitle("");
+  }
+
+  function openNewTask() {
+    setEditingTask(undefined);
+    setEditorVisible(true);
+  }
+
+  function openTask(task: Task) {
+    setEditingTask(task);
+    setEditorVisible(true);
+  }
+
+  function closeEditor() {
+    setEditorVisible(false);
+    setEditingTask(undefined);
+  }
+
+  function saveEditor(input: CreateTaskInput, task?: Task) {
+    if (task) {
+      editTask(task, input);
+    } else {
+      addTask(input);
+    }
+    closeEditor();
+  }
+
+  function deleteFromEditor(task: Task) {
+    removeTask(task.id);
+    closeEditor();
   }
 
   function toggleTaskWithGrace(task: Task) {
@@ -155,6 +196,7 @@ export function TodayScreen() {
         title={title}
         onChangePriority={setPriority}
         onChangeTitle={setTitle}
+        onOpenEditor={openNewTask}
         onSubmit={submitTask}
       />
 
@@ -176,7 +218,9 @@ export function TodayScreen() {
                 styles={styles}
                 tasks={visibleLanes[lane.key]}
                 theme={theme}
+                onEdit={openTask}
                 onToggle={toggleTaskWithGrace}
+                onToggleSubtask={toggleSubtask}
               />
             ))}
           </View>
@@ -205,6 +249,7 @@ export function TodayScreen() {
                     styles={styles}
                     task={task}
                     theme={theme}
+                    onEdit={openTask}
                     onToggle={toggleTaskWithGrace}
                   />
                 </View>
@@ -258,6 +303,13 @@ export function TodayScreen() {
           </View>
         ) : null}
       </View>
+      <TaskEditorModal
+        task={editingTask}
+        visible={editorVisible}
+        onClose={closeEditor}
+        onDelete={deleteFromEditor}
+        onSave={saveEditor}
+      />
     </ScrollView>
   );
 }
@@ -270,6 +322,7 @@ function QuickAdd({
   title,
   onChangePriority,
   onChangeTitle,
+  onOpenEditor,
   onSubmit,
 }: {
   compact: boolean;
@@ -279,6 +332,7 @@ function QuickAdd({
   title: string;
   onChangePriority(priority: TaskPriority): void;
   onChangeTitle(title: string): void;
+  onOpenEditor(): void;
   onSubmit(): void;
 }) {
   return (
@@ -288,9 +342,18 @@ function QuickAdd({
           <Text style={styles.quickAddEyebrow}>QUICK CAPTURE</Text>
           <Text style={styles.quickAddTitle}>What is on your mind?</Text>
         </View>
-        {!compact ? (
-          <Text style={styles.quickAddHint}>Press enter to add</Text>
-        ) : null}
+        <View style={styles.quickAddActions}>
+          {!compact ? (
+            <Text style={styles.quickAddHint}>Press enter to add</Text>
+          ) : null}
+          <Pressable
+            accessibilityRole="button"
+            style={styles.planButton}
+            onPress={onOpenEditor}
+          >
+            <Text style={styles.planButtonText}>Plan details</Text>
+          </Pressable>
+        </View>
       </View>
       <View style={styles.inputRow}>
         <TextInput
@@ -371,7 +434,9 @@ function PriorityLane({
   styles,
   tasks,
   theme,
+  onEdit,
   onToggle,
+  onToggleSubtask,
 }: {
   hint: string;
   label: string;
@@ -379,7 +444,9 @@ function PriorityLane({
   styles: ReturnType<typeof createStyles>;
   tasks: Task[];
   theme: OrganaTheme;
+  onEdit(task: Task): void;
   onToggle(task: Task): void;
+  onToggleSubtask(task: Task, subtaskId: string): void;
 }) {
   const colors = priorityColors(theme, priority);
 
@@ -403,7 +470,9 @@ function PriorityLane({
               colors={colors}
               styles={styles}
               task={task}
+              onEdit={onEdit}
               onToggle={onToggle}
+              onToggleSubtask={onToggleSubtask}
             />
           ))
         ) : (
@@ -418,12 +487,16 @@ function PriorityTask({
   colors,
   styles,
   task,
+  onEdit,
   onToggle,
+  onToggleSubtask,
 }: {
   colors: ReturnType<typeof priorityColors>;
   styles: ReturnType<typeof createStyles>;
   task: Task;
+  onEdit(task: Task): void;
   onToggle(task: Task): void;
+  onToggleSubtask(task: Task, subtaskId: string): void;
 }) {
   const fade = useCompletionFade(Boolean(task.completedAt));
 
@@ -448,31 +521,72 @@ function PriorityTask({
             <Text style={styles.taskCheckText}>✓</Text>
           ) : null}
         </Pressable>
-        <View style={styles.taskCopy}>
-          <Text
-            style={[
-              styles.taskTitle,
-              task.completedAt ? styles.taskTitleCompleted : undefined,
-            ]}
-          >
-            {task.title}
-          </Text>
-          <Text
-            style={[
-              styles.taskMeta,
-              task.completedAt ? styles.taskMetaCompleted : undefined,
-            ]}
-          >
-            {formatTaskMeta(task)}
-          </Text>
+        <View style={styles.taskContent}>
+          <View style={styles.taskCopy}>
+            <Text
+              style={[
+                styles.taskTitle,
+                task.completedAt ? styles.taskTitleCompleted : undefined,
+              ]}
+            >
+              {task.title}
+            </Text>
+            <Text
+              style={[
+                styles.taskMeta,
+                task.completedAt ? styles.taskMetaCompleted : undefined,
+              ]}
+            >
+              {formatTaskMeta(task)}
+            </Text>
+          </View>
+          {!task.completedAt && task.subtasks.length > 0 ? (
+            <View style={styles.subtaskList}>
+              {task.subtasks.map((subtask) => (
+                <View key={subtask.id} style={styles.subtaskItem}>
+                  <Pressable
+                    accessibilityRole="checkbox"
+                    accessibilityLabel={subtask.title}
+                    accessibilityState={{
+                      checked: Boolean(subtask.completedAt),
+                    }}
+                    style={[
+                      styles.subtaskCheck,
+                      subtask.completedAt
+                        ? { backgroundColor: colors.strong }
+                        : { borderColor: colors.strong },
+                    ]}
+                    onPress={() => onToggleSubtask(task, subtask.id)}
+                  >
+                    {subtask.completedAt ? (
+                      <Text style={styles.subtaskCheckText}>✓</Text>
+                    ) : null}
+                  </Pressable>
+                  <Text
+                    style={[
+                      styles.subtaskItemTitle,
+                      subtask.completedAt
+                        ? styles.subtaskItemTitleCompleted
+                        : undefined,
+                    ]}
+                  >
+                    {subtask.title}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </View>
       </Animated.View>
       {task.completedAt ? (
         <UndoButton styles={styles} task={task} onToggle={onToggle} />
       ) : (
-        <Text style={[styles.taskKind, { color: colors.strong }]}>
-          {formatKind(task.kind)}
-        </Text>
+        <View style={styles.taskActions}>
+          <Text style={[styles.taskKind, { color: colors.strong }]}>
+            {formatKind(task.kind)}
+          </Text>
+          <EditButton styles={styles} task={task} onEdit={onEdit} />
+        </View>
       )}
     </View>
   );
@@ -482,11 +596,13 @@ function TimelineTask({
   styles,
   task,
   theme,
+  onEdit,
   onToggle,
 }: {
   styles: ReturnType<typeof createStyles>;
   task: Task;
   theme: OrganaTheme;
+  onEdit(task: Task): void;
   onToggle(task: Task): void;
 }) {
   const fade = useCompletionFade(Boolean(task.completedAt));
@@ -528,8 +644,31 @@ function TimelineTask({
       </Animated.View>
       {task.completedAt ? (
         <UndoButton styles={styles} task={task} onToggle={onToggle} />
-      ) : null}
+      ) : (
+        <EditButton styles={styles} task={task} onEdit={onEdit} />
+      )}
     </View>
+  );
+}
+
+function EditButton({
+  styles,
+  task,
+  onEdit,
+}: {
+  styles: ReturnType<typeof createStyles>;
+  task: Task;
+  onEdit(task: Task): void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Edit ${task.title}`}
+      style={styles.editButton}
+      onPress={() => onEdit(task)}
+    >
+      <Text style={styles.editButtonText}>Edit</Text>
+    </Pressable>
   );
 }
 
@@ -613,8 +752,19 @@ function formatTaskMeta(task: Task) {
   const details: string[] = [];
   if (task.scheduledTime) details.push(task.scheduledTime);
   if (task.estimatedMinutes) details.push(`${task.estimatedMinutes} min`);
+  if (task.recurrence) details.push(capitalize(task.recurrence.frequency));
+  if (task.subtasks.length > 0) {
+    const completedSteps = task.subtasks.filter(
+      (item) => item.completedAt,
+    ).length;
+    details.push(`${completedSteps}/${task.subtasks.length} steps`);
+  }
   if (details.length === 0) return "No fixed time";
   return details.join(" / ");
+}
+
+function capitalize(value: string) {
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
 function priorityColors(theme: OrganaTheme, priority: TaskPriority) {
@@ -739,6 +889,24 @@ function createStyles(theme: OrganaTheme) {
       color: theme.textMuted,
       fontFamily: "Manrope_400Regular",
       fontSize: 10,
+    },
+    quickAddActions: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 12,
+    },
+    planButton: {
+      backgroundColor: theme.shouldSoft,
+      borderColor: theme.should,
+      borderRadius: 12,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    planButtonText: {
+      color: theme.should,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 9,
     },
     inputRow: {
       flexDirection: "row",
@@ -921,6 +1089,10 @@ function createStyles(theme: OrganaTheme) {
       flex: 1,
       minWidth: 0,
     },
+    taskContent: {
+      flex: 1,
+      minWidth: 0,
+    },
     taskTitle: {
       color: theme.text,
       fontFamily: "Manrope_600SemiBold",
@@ -942,6 +1114,53 @@ function createStyles(theme: OrganaTheme) {
     taskKind: {
       fontFamily: "Manrope_700Bold",
       fontSize: 9,
+    },
+    taskActions: {
+      alignItems: "flex-end",
+      gap: 6,
+    },
+    editButton: {
+      borderColor: theme.border,
+      borderRadius: 9,
+      borderWidth: 1,
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+    },
+    editButtonText: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 8,
+    },
+    subtaskList: {
+      gap: 6,
+      marginTop: 9,
+    },
+    subtaskItem: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 7,
+    },
+    subtaskCheck: {
+      alignItems: "center",
+      borderRadius: 5,
+      borderWidth: 1,
+      height: 17,
+      justifyContent: "center",
+      width: 17,
+    },
+    subtaskCheckText: {
+      color: theme.background,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 6,
+    },
+    subtaskItemTitle: {
+      color: theme.textMuted,
+      flex: 1,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 9,
+    },
+    subtaskItemTitleCompleted: {
+      textDecorationLine: "line-through",
     },
     undoButton: {
       backgroundColor: theme.surfaceMuted,

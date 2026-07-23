@@ -42,5 +42,9 @@ export function createTaskRepository(): TaskRepository {
         task.updatedAt,
       );
     },
+    async remove(id) {
+      const database = await databasePromise;
+      await database.runAsync("DELETE FROM tasks WHERE id = ?", id);
+    },
   };
 }
