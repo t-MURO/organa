@@ -74,7 +74,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
           reminderSettings(change.value, devices.remindersAllowed),
         );
       }),
-    [repository],
+    [devices.remindersAllowed, repository],
   );
 
   function update(input: UserSettingsInput) {

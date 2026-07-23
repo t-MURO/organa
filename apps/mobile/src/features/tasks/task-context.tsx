@@ -24,6 +24,7 @@ import { createTaskRepository } from "../../data/create-task-repository";
 import { useSync } from "../../sync/sync-context";
 import { useDevices } from "../account/device-context";
 import { useInteractionFeedback } from "../settings/interaction-feedback-context";
+import { reconcileRemoteTaskChange } from "./remote-task-reconciliation";
 
 interface TaskState {
   loading: boolean;
@@ -206,16 +207,21 @@ export function TaskProvider({ children }: PropsWithChildren) {
   useEffect(
     () =>
       sync.subscribe<Task>("task", (change) => {
-        if (change.operation === "delete") {
-          dispatch({ type: "removed", id: change.recordId });
-          void repository.remove(change.recordId);
-          return;
-        }
-        if (!change.value) return;
-        dispatch({ type: "upserted", task: change.value });
-        void repository.upsert(change.value);
+        void reconcileRemoteTaskChange(change, {
+          cancelNotifications,
+          remove: async (id) => {
+            dispatch({ type: "removed", id });
+            await repository.remove(id);
+          },
+          syncNotifications: (task) =>
+            syncNotifications(task, false, devices.remindersAllowed),
+          upsert: async (task) => {
+            dispatch({ type: "upserted", task });
+            await repository.upsert(task);
+          },
+        });
       }),
-    [repository],
+    [devices.remindersAllowed, repository],
   );
 
   function addTask(input: CreateTaskInput) {
