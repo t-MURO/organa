@@ -17,6 +17,7 @@ import {
 import { useAuth } from "../../auth/auth-context";
 import { createCheckInRepository } from "../../data/create-check-in-repository";
 import { useSync } from "../../sync/sync-context";
+import { selectRestoreChanges } from "../account/restore-merge";
 
 interface CheckInState {
   loading: boolean;
@@ -28,6 +29,7 @@ type CheckInAction =
   | { type: "upserted"; entry: CheckInEntry };
 
 interface CheckInContextValue extends CheckInState {
+  restoreEntries(entries: CheckInEntry[]): Promise<number>;
   saveEntry(input: CheckInInput): CheckInEntry;
 }
 
@@ -116,8 +118,23 @@ export function CheckInProvider({ children }: PropsWithChildren) {
     return entry;
   }
 
+  async function restoreEntries(entries: CheckInEntry[]) {
+    const current = await repository.list();
+    const changes = selectRestoreChanges(current, entries);
+    await Promise.all(
+      changes.map(async ({ previous, value }) => {
+        await repository.upsert(value);
+        await sync.queueUpsert("check_in", value.id, value, previous);
+      }),
+    );
+    for (const { value } of changes) {
+      dispatch({ type: "upserted", entry: value });
+    }
+    return changes.length;
+  }
+
   return (
-    <CheckInContext.Provider value={{ ...state, saveEntry }}>
+    <CheckInContext.Provider value={{ ...state, restoreEntries, saveEntry }}>
       {children}
     </CheckInContext.Provider>
   );

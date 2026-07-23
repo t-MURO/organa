@@ -12,6 +12,7 @@ import {
 
 import { useAuth } from "../../auth/auth-context";
 import { useAppTheme } from "../../components/app-shell";
+import { createBackupFileReader } from "../../data/create-backup-file-reader";
 import { createExportFileWriter } from "../../data/create-export-file-writer";
 import { useBrainDump } from "../brain-dump/brain-dump-context";
 import { useCheckIns } from "../check-in/check-in-context";
@@ -26,10 +27,12 @@ import { useDevices } from "./device-context";
 import {
   createReadableJson,
   createReflectionMarkdown,
+  restoreEncryptedBackup,
   type OrganaEncryptedBackup,
   type OrganaExportData,
 } from "./export-data";
 
+const backupReader = createBackupFileReader();
 const exportWriter = createExportFileWriter();
 
 export function AccountScreen() {
@@ -41,7 +44,12 @@ export function AccountScreen() {
   const brainDump = useBrainDump();
   const checkIns = useCheckIns();
   const templates = useTemplates();
-  const { settings, update: updateSettings } = useSettings();
+  const {
+    loading: settingsLoading,
+    restore: restoreSettings,
+    settings,
+    update: updateSettings,
+  } = useSettings();
   const appLock = useAppLock();
   const theme = useAppTheme();
   const styles = createStyles(theme);
@@ -49,6 +57,8 @@ export function AccountScreen() {
   const compact = width < 680;
   const [signingOut, setSigningOut] = useState(false);
   const [busyExport, setBusyExport] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [restoringBackup, setRestoringBackup] = useState(false);
   const [deletionConfirmation, setDeletionConfirmation] = useState("");
   const [requestingDeletion, setRequestingDeletion] = useState(false);
   const [busyDevice, setBusyDevice] = useState("");
@@ -56,6 +66,12 @@ export function AccountScreen() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const identities = auth.user?.identities ?? [];
+  const dataLoading =
+    tasks.loading ||
+    brainDump.loading ||
+    checkIns.loading ||
+    templates.loading ||
+    settingsLoading;
 
   function exportData(): OrganaExportData {
     return {
@@ -135,6 +151,46 @@ export function AccountScreen() {
           : "Deletion could not be requested.",
       );
       setRequestingDeletion(false);
+    }
+  }
+
+  async function restoreBackup() {
+    if (!recoveryCode.trim()) {
+      setError("Enter the recovery code created with this backup.");
+      return;
+    }
+
+    setRestoringBackup(true);
+    setError("");
+    setMessage("");
+    try {
+      const contents = await backupReader.pick();
+      if (contents === null) return;
+
+      const data = await restoreEncryptedBackup(contents, recoveryCode);
+      const restored = await Promise.all([
+        tasks.restoreTasks(data.tasks),
+        templates.restoreTemplates(data.templates),
+        checkIns.restoreEntries(data.checkIns),
+        brainDump.restoreBullets(data.brainDump),
+      ]);
+      await restoreSettings(data.settings);
+
+      const recordCount = restored.reduce((total, count) => total + count, 0);
+      setRecoveryCode("");
+      setMessage(
+        `Backup restored. ${recordCount} ${
+          recordCount === 1 ? "record was" : "records were"
+        } merged and settings were applied.`,
+      );
+    } catch (nextError) {
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "The backup could not be restored.",
+      );
+    } finally {
+      setRestoringBackup(false);
     }
   }
 
@@ -468,22 +524,49 @@ export function AccountScreen() {
           <View style={styles.buttonStack}>
             <ExportButton
               busy={busyExport === "structured"}
+              disabled={dataLoading}
               label="Tasks & settings / JSON"
               styles={styles}
               onPress={() => void saveExport("structured")}
             />
             <ExportButton
               busy={busyExport === "reflections"}
+              disabled={dataLoading}
               label="Check-In & Brain Dump / Markdown"
               styles={styles}
               onPress={() => void saveExport("reflections")}
             />
             <ExportButton
               busy={busyExport === "encrypted"}
-              disabled={!security.recoveryEnvelope}
+              disabled={dataLoading || !security.recoveryEnvelope}
               label="Encrypted full backup"
               styles={styles}
               onPress={() => void saveExport("encrypted")}
+            />
+          </View>
+          <View style={styles.restoreSection}>
+            <Text style={styles.restoreTitle}>Restore encrypted backup</Text>
+            <Text style={styles.cardText}>
+              Existing records are kept unless the backup contains a newer
+              version. Imported data is encrypted again for this account.
+            </Text>
+            <TextInput
+              accessibilityLabel="Recovery code for encrypted backup"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              placeholder="Recovery code"
+              placeholderTextColor={theme.textMuted}
+              secureTextEntry
+              style={styles.restoreInput}
+              value={recoveryCode}
+              onChangeText={setRecoveryCode}
+            />
+            <ExportButton
+              busy={restoringBackup}
+              disabled={dataLoading || !recoveryCode.trim()}
+              label="Choose backup and restore"
+              styles={styles}
+              onPress={() => void restoreBackup()}
             />
           </View>
         </View>
@@ -936,6 +1019,30 @@ function createStyles(theme: OrganaTheme) {
       color: theme.text,
       fontFamily: "Manrope_700Bold",
       fontSize: 10,
+    },
+    restoreInput: {
+      backgroundColor: theme.background,
+      borderColor: theme.border,
+      borderRadius: 11,
+      borderWidth: 1,
+      color: theme.text,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 11,
+      marginBottom: 8,
+      marginTop: 12,
+      minHeight: 42,
+      paddingHorizontal: 12,
+    },
+    restoreSection: {
+      borderTopColor: theme.border,
+      borderTopWidth: 1,
+      marginTop: 18,
+      paddingTop: 17,
+    },
+    restoreTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 12,
     },
     message: {
       color: theme.accentStrong,

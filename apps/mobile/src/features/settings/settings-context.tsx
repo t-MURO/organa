@@ -22,6 +22,7 @@ import { useDevices } from "../account/device-context";
 interface SettingsContextValue {
   loading: boolean;
   settings: UserSettings;
+  restore(settings: UserSettings): Promise<void>;
   update(input: UserSettingsInput): UserSettings;
 }
 
@@ -89,8 +90,18 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     return next;
   }
 
+  async function restore(next: UserSettings) {
+    await repository.upsert(next);
+    await sync.queueUpsert("settings", next.id, next, settings);
+    setSettings(next);
+    await reminderScheduler.sync(
+      reminderSettings(next, devices.remindersAllowed),
+      next.checkInReminder.enabled && devices.remindersAllowed,
+    );
+  }
+
   return (
-    <SettingsContext.Provider value={{ loading, settings, update }}>
+    <SettingsContext.Provider value={{ loading, restore, settings, update }}>
       {children}
     </SettingsContext.Provider>
   );

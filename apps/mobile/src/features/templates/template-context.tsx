@@ -16,6 +16,7 @@ import {
 import { useAuth } from "../../auth/auth-context";
 import { createTemplateRepository } from "../../data/create-template-repository";
 import { useSync } from "../../sync/sync-context";
+import { selectRestoreChanges } from "../account/restore-merge";
 
 interface TemplateState {
   loading: boolean;
@@ -36,6 +37,7 @@ interface TemplateContextValue extends TemplateState {
     input: TaskTemplateInput,
   ): TaskTemplate;
   removeTemplate(id: string): void;
+  restoreTemplates(templates: TaskTemplate[]): Promise<number>;
 }
 
 const TemplateContext = createContext<TemplateContextValue | undefined>(
@@ -233,6 +235,21 @@ export function TemplateProvider({ children }: PropsWithChildren) {
     void sync.queueDelete("template", id);
   }
 
+  async function restoreTemplates(templates: TaskTemplate[]) {
+    const current = await repository.list();
+    const changes = selectRestoreChanges(current, templates);
+    await Promise.all(
+      changes.map(async ({ previous, value }) => {
+        await repository.upsert(value);
+        await sync.queueUpsert("template", value.id, value, previous);
+      }),
+    );
+    for (const { value } of changes) {
+      dispatch({ type: "upserted", template: value });
+    }
+    return changes.length;
+  }
+
   return (
     <TemplateContext.Provider
       value={{
@@ -242,6 +259,7 @@ export function TemplateProvider({ children }: PropsWithChildren) {
         copyTemplate,
         editTemplate,
         removeTemplate,
+        restoreTemplates,
       }}
     >
       {children}

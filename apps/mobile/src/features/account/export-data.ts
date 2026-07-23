@@ -11,6 +11,7 @@ import {
   type RecoveryKeyEnvelope,
   unwrapContentKey,
 } from "@organa/crypto";
+import { isValidBrainDumpCrdtState } from "../brain-dump/brain-dump-crdt";
 
 export interface OrganaExportData {
   exportedAt: string;
@@ -29,6 +30,8 @@ export interface OrganaEncryptedBackup {
   recoveryKeyEnvelope: RecoveryKeyEnvelope;
   payload: EncryptedEnvelope;
 }
+
+const MAX_BACKUP_CHARACTERS = 20 * 1024 * 1024;
 
 export function createReadableJson(data: OrganaExportData) {
   const { checkIns: _checkIns, brainDump: _brainDump, ...structured } = data;
@@ -94,6 +97,10 @@ export async function restoreEncryptedBackup(
 }
 
 export function parseEncryptedBackup(contents: string): OrganaEncryptedBackup {
+  if (contents.length > MAX_BACKUP_CHARACTERS) {
+    throw new Error("The selected backup is larger than 20 MB.");
+  }
+
   let value: unknown;
   try {
     value = JSON.parse(contents);
@@ -106,7 +113,7 @@ export function parseEncryptedBackup(contents: string): OrganaEncryptedBackup {
     value.format !== "organa-encrypted-backup-v1" ||
     typeof value.backupId !== "string" ||
     !value.backupId ||
-    typeof value.encryptedAt !== "string" ||
+    !isTimestamp(value.encryptedAt) ||
     !isRecoveryEnvelope(value.recoveryKeyEnvelope) ||
     !isEncryptedEnvelope(value.payload) ||
     value.payload.keyId !== value.recoveryKeyEnvelope.keyId
@@ -121,12 +128,156 @@ function isOrganaExportData(value: unknown): value is OrganaExportData {
   return (
     isRecord(value) &&
     value.format === "organa-readable-v1" &&
-    typeof value.exportedAt === "string" &&
-    Array.isArray(value.tasks) &&
-    Array.isArray(value.templates) &&
-    isRecord(value.settings) &&
-    Array.isArray(value.checkIns) &&
-    Array.isArray(value.brainDump)
+    isTimestamp(value.exportedAt) &&
+    isArrayOf(value.tasks, isTask) &&
+    isArrayOf(value.templates, isTaskTemplate) &&
+    isUserSettings(value.settings) &&
+    isArrayOf(value.checkIns, isCheckInEntry) &&
+    isArrayOf(value.brainDump, isBrainDumpBullet)
+  );
+}
+
+function isTask(value: unknown): value is Task {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.id) &&
+    isTaskInput(value) &&
+    isTaskKind(value.kind) &&
+    isTaskPriority(value.priority) &&
+    isArrayOf(value.reminders, isReminder) &&
+    isArrayOf(value.subtasks, isSubtask) &&
+    isArrayOf(value.snoozePresets, isNonNegativeInteger) &&
+    isTimestamp(value.createdAt) &&
+    isTimestamp(value.updatedAt) &&
+    isOptional(value.completedAt, isTimestamp) &&
+    isOptional(value.doseConfirmedAt, isTimestamp)
+  );
+}
+
+function isTaskInput(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value) || !isNonEmptyString(value.title)) return false;
+
+  return (
+    isOptional(value.details, isString) &&
+    isOptional(value.kind, isTaskKind) &&
+    isOptional(value.priority, isTaskPriority) &&
+    isOptional(value.plannedFor, isLocalDate) &&
+    isOptional(value.scheduledTime, isLocalTime) &&
+    isOptional(value.dueAt, isTimestamp) &&
+    isOptional(value.estimatedMinutes, isPositiveInteger) &&
+    isOptional(value.recurrence, isRecurrence) &&
+    isOptional(value.reminders, (item) => isArrayOf(item, isReminder)) &&
+    isOptional(value.subtasks, (item) => isArrayOf(item, isSubtask)) &&
+    isOptional(value.snoozePresets, (item) =>
+      isArrayOf(item, isNonNegativeInteger),
+    ) &&
+    isOptional(value.graceDays, isNonNegativeInteger) &&
+    isOptional(value.requireDoseConfirmation, isBoolean) &&
+    isOptional(value.subtaskRemindersEnabled, isBoolean) &&
+    isOptional(value.seriesId, isNonEmptyString) &&
+    isOptional(value.previousOccurrenceId, isNonEmptyString) &&
+    isOptional(value.occurrenceNumber, isPositiveInteger)
+  );
+}
+
+function isReminder(value: unknown) {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.id) &&
+    (value.stage === "before_due" ||
+      value.stage === "at_due" ||
+      value.stage === "after_due") &&
+    isNonNegativeInteger(value.offsetMinutes) &&
+    typeof value.enabled === "boolean"
+  );
+}
+
+function isSubtask(value: unknown) {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.id) &&
+    isNonEmptyString(value.title) &&
+    isOptional(value.completedAt, isTimestamp) &&
+    isOptional(value.reminders, (item) => isArrayOf(item, isReminder))
+  );
+}
+
+function isRecurrence(value: unknown) {
+  return (
+    isRecord(value) &&
+    (value.frequency === "daily" ||
+      value.frequency === "weekly" ||
+      value.frequency === "monthly") &&
+    isPositiveInteger(value.interval) &&
+    isOptional(value.weekdays, (item) =>
+      isArrayOf(
+        item,
+        (weekday) =>
+          Number.isInteger(weekday) &&
+          Number(weekday) >= 0 &&
+          Number(weekday) <= 6,
+      ),
+    )
+  );
+}
+
+function isTaskTemplate(value: unknown): value is TaskTemplate {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.id) &&
+    isNonEmptyString(value.name) &&
+    isOptional(value.description, isString) &&
+    value.source === "user" &&
+    isTaskInput(value.task) &&
+    isTimestamp(value.createdAt) &&
+    isTimestamp(value.updatedAt)
+  );
+}
+
+function isUserSettings(value: unknown): value is UserSettings {
+  return (
+    isRecord(value) &&
+    value.id === "user-settings" &&
+    (value.theme === "system" ||
+      value.theme === "light" ||
+      value.theme === "dark") &&
+    typeof value.appSoundsEnabled === "boolean" &&
+    typeof value.hapticsEnabled === "boolean" &&
+    isRecord(value.checkInReminder) &&
+    typeof value.checkInReminder.enabled === "boolean" &&
+    isLocalTime(value.checkInReminder.time) &&
+    isTimestamp(value.createdAt) &&
+    isTimestamp(value.updatedAt)
+  );
+}
+
+function isCheckInEntry(value: unknown): value is CheckInEntry {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.id) &&
+    isLocalDate(value.date) &&
+    Number.isInteger(value.mood) &&
+    Number(value.mood) >= 1 &&
+    Number(value.mood) <= 5 &&
+    isOptional(value.feeling, isString) &&
+    isOptional(value.reflection, isString) &&
+    isTimestamp(value.createdAt) &&
+    isTimestamp(value.updatedAt)
+  );
+}
+
+function isBrainDumpBullet(value: unknown): value is BrainDumpBullet {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.id) &&
+    typeof value.text === "string" &&
+    typeof value.rank === "number" &&
+    Number.isFinite(value.rank) &&
+    isOptional(value.crdtState, (item) =>
+      typeof item === "string" && isValidBrainDumpCrdtState(item),
+    ) &&
+    isTimestamp(value.createdAt) &&
+    isTimestamp(value.updatedAt)
   );
 }
 
@@ -153,4 +304,62 @@ function isEncryptedEnvelope(value: unknown): value is EncryptedEnvelope {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isArrayOf(
+  value: unknown,
+  predicate: (item: unknown) => boolean,
+): value is unknown[] {
+  return Array.isArray(value) && value.every(predicate);
+}
+
+function isOptional(
+  value: unknown,
+  predicate: (item: unknown) => boolean,
+) {
+  return value === undefined || predicate(value);
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isBoolean(value: unknown): value is boolean {
+  return typeof value === "boolean";
+}
+
+function isPositiveInteger(value: unknown) {
+  return Number.isInteger(value) && Number(value) > 0;
+}
+
+function isNonNegativeInteger(value: unknown) {
+  return Number.isInteger(value) && Number(value) >= 0;
+}
+
+function isTaskKind(value: unknown) {
+  return value === "one_off" || value === "habit" || value === "medication";
+}
+
+function isTaskPriority(value: unknown) {
+  return value === "must" || value === "should" || value === "nice";
+}
+
+function isLocalDate(value: unknown) {
+  return (
+    typeof value === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`))
+  );
+}
+
+function isLocalTime(value: unknown) {
+  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function isTimestamp(value: unknown) {
+  return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }

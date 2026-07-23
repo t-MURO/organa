@@ -18,7 +18,8 @@ Status recorded on 2026-07-23.
   incremental durable reconciliation integration
 - [x] Recovery-key confirmation and recovery-code restore flow
 - [x] Trusted reminder-device controls and reconnect-time revocation cleanup
-- [x] Local readable/encrypted exports and one-hour deletion UI/backend worker
+- [x] Local readable/encrypted exports, validated backup restore/merge, and
+  one-hour deletion UI/backend worker
 - [x] Light/dark/system themes, reduced motion, sounds, haptics, and app lock
 - [x] iOS widget sources for today's tasks and next reminder
 - [x] Installable PWA manifest, icons, static routes, and offline app shell
@@ -29,7 +30,7 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 44 automated tests pass
+- 49 automated tests pass
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
 - Expo Doctor passes 19/20 checks after native project generation; the only
@@ -48,6 +49,9 @@ Local evidence:
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks
+- browser backup drill rejected an invalid file, restored a real AES-GCM
+  backup through the file chooser, and verified the imported task and settings
+  persisted after reload
 
 ## Requires Connected Backend Validation
 

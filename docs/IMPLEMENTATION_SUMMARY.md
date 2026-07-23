@@ -26,7 +26,8 @@ Implemented user-facing areas:
 - Light, dark, and system themes
 - Optional creation/completion sounds and completion haptics
 - Optional biometric/device-authentication app lock
-- Local readable exports and encrypted restorable backups
+- Local readable exports and encrypted backups with an in-app restore/merge
+  workflow
 - One-hour cancellable account-deletion flow
 - iOS Today Tasks and Next Reminder widgets
 - Installable PWA with a Workbox offline application shell
@@ -62,6 +63,9 @@ Implemented user-facing areas:
   IndexedDB.
 - Onboarding generates a recovery code and requires storage confirmation.
 - New devices can restore the content key locally with the recovery code.
+- Encrypted backup imports validate every nested record and Brain Dump CRDT
+  payload before writing, reject files over 20 MB, preserve newer local
+  records, and re-encrypt restored data for the current account.
 - Trusted devices can be viewed and revoked.
 - First account-key/device enrollment is atomic, and account-key rows cannot be
   replaced directly by authenticated clients.
@@ -108,10 +112,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 44 automated tests pass:
+- 49 automated tests pass:
   - 27 domain tests
   - 4 cryptography tests
-  - 13 application integration tests
+  - 18 application integration tests
 - iOS Hermes export succeeds.
 - Android Hermes export succeeds.
 - Production web export succeeds.
@@ -119,6 +123,9 @@ Latest verified repository checks:
 - Workbox precaches 15 URLs.
 - Production dependency audit reports no known vulnerabilities.
 - `git diff --check` passes.
+- A browser recovery drill selected a real AES-GCM backup through the web file
+  picker, rejected an invalid backup, restored a task and theme, and verified
+  both persisted after reload.
 - Expo Doctor passes 19 of 20 checks with generated native projects. The only
   failure is host tooling because CocoaPods/full Xcode are not installed on
   this machine.
@@ -148,6 +155,7 @@ Major implementation commits:
 - Atomic account-key/first-device enrollment
 - Server-enforced deletion read-only state
 - Resilient local-data and device-secret erasure on revocation/deletion
+- Validated, size-limited encrypted backup import with newest-record merge
 - Security-contract regression tests and updated security documentation
 
 ## Remaining Acceptance Gates

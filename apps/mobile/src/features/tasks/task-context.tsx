@@ -23,6 +23,7 @@ import { createNotificationScheduler } from "../../data/create-notification-sche
 import { createTaskRepository } from "../../data/create-task-repository";
 import { useSync } from "../../sync/sync-context";
 import { useDevices } from "../account/device-context";
+import { selectRestoreChanges } from "../account/restore-merge";
 import { useInteractionFeedback } from "../settings/interaction-feedback-context";
 import { reconcileRemoteTaskChange } from "./remote-task-reconciliation";
 
@@ -40,6 +41,7 @@ interface TaskContextValue extends TaskState {
   addTask(input: CreateTaskInput): Task;
   editTask(task: Task, input: CreateTaskInput): Task;
   removeTask(id: string): void;
+  restoreTasks(tasks: Task[]): Promise<number>;
   confirmDose(task: Task): void;
   toggleTask(task: Task): void;
   toggleSubtask(task: Task, subtaskId: string): void;
@@ -256,6 +258,22 @@ export function TaskProvider({ children }: PropsWithChildren) {
     cancelNotifications(id);
   }
 
+  async function restoreTasks(tasks: Task[]) {
+    const current = await repository.list();
+    const changes = selectRestoreChanges(current, tasks);
+    await Promise.all(
+      changes.map(async ({ previous, value }) => {
+        await repository.upsert(value);
+        await sync.queueUpsert("task", value.id, value, previous);
+      }),
+    );
+    for (const { value } of changes) {
+      dispatch({ type: "upserted", task: value });
+      syncNotifications(value, false, devices.remindersAllowed);
+    }
+    return changes.length;
+  }
+
   function confirmDose(task: Task) {
     const confirmed = confirmMedicationDose(task);
     if (confirmed === task) return;
@@ -328,6 +346,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
         confirmDose,
         editTask,
         removeTask,
+        restoreTasks,
         toggleTask,
         toggleSubtask,
       }}

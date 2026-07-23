@@ -82,6 +82,16 @@ export function mergeCrdtBullets(
   };
 }
 
+export function isValidBrainDumpCrdtState(value: string) {
+  try {
+    const doc = new Y.Doc();
+    Y.applyUpdate(doc, decode(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function ensureCrdtBullet(bullet: BrainDumpBullet) {
   return bullet.crdtState ? bullet : initializeCrdtBullet(bullet);
 }

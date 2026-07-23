@@ -37,6 +37,7 @@ type BrainDumpAction =
 
 interface BrainDumpContextValue extends BrainDumpState {
   addBullet(text?: string, afterId?: string): string;
+  restoreBullets(bullets: BrainDumpBullet[]): Promise<number>;
   updateBullet(bullet: BrainDumpBullet, text: string): void;
   removeBullet(id: string): void;
 }
@@ -213,9 +214,48 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
     void sync.queueDelete("brain_dump_bullet", id);
   }
 
+  async function restoreBullets(bullets: BrainDumpBullet[]) {
+    const current = await repository.list();
+    const incomingById = new Map<string, BrainDumpBullet>();
+    for (const bullet of bullets) {
+      incomingById.set(
+        bullet.id,
+        mergeCrdtBullets(incomingById.get(bullet.id), bullet),
+      );
+    }
+
+    const restored = [...incomingById.values()].map((incoming) => {
+      const local = current.find(
+        (bullet) => bullet.id === incoming.id,
+      );
+      return { local, value: mergeCrdtBullets(local, incoming) };
+    });
+    await Promise.all(
+      restored.map(async ({ local, value }) => {
+        await repository.upsert(value);
+        await sync.queueUpsert(
+          "brain_dump_bullet",
+          value.id,
+          value,
+          local,
+        );
+      }),
+    );
+    for (const { value } of restored) {
+      dispatch({ type: "upserted", bullet: value });
+    }
+    return restored.length;
+  }
+
   return (
     <BrainDumpContext.Provider
-      value={{ ...state, addBullet, updateBullet, removeBullet }}
+      value={{
+        ...state,
+        addBullet,
+        restoreBullets,
+        updateBullet,
+        removeBullet,
+      }}
     >
       {children}
     </BrainDumpContext.Provider>

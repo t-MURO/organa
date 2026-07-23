@@ -3,6 +3,7 @@ import { createUserSettings } from "@organa/domain";
 import { describe, expect, it } from "vitest";
 
 import {
+  parseEncryptedBackup,
   restoreEncryptedBackup,
   type OrganaEncryptedBackup,
   type OrganaExportData,
@@ -18,7 +19,7 @@ const data: OrganaExportData = {
   templates: [],
 };
 
-async function createBackup(): Promise<{
+async function createBackup(payload: unknown = data): Promise<{
   backup: OrganaEncryptedBackup;
   recoveryCode: string;
 }> {
@@ -30,7 +31,7 @@ async function createBackup(): Promise<{
       encryptedAt: data.exportedAt,
       format: "organa-encrypted-backup-v1",
       payload: await encryptJson(
-        data,
+        payload,
         hierarchy.contentKey,
         "backup",
         backupId,
@@ -66,5 +67,44 @@ describe("encrypted backup restoration", () => {
     await expect(
       restoreEncryptedBackup(JSON.stringify(backup), other.recoveryCode),
     ).rejects.toThrow();
+  });
+
+  it("rejects malformed records before they reach local storage", async () => {
+    const invalidData = {
+      ...data,
+      tasks: [{ id: "not-a-task" }],
+    };
+    const { backup, recoveryCode } = await createBackup(invalidData);
+
+    await expect(
+      restoreEncryptedBackup(JSON.stringify(backup), recoveryCode),
+    ).rejects.toThrow("does not contain valid Organa data");
+  });
+
+  it("rejects corrupt Brain Dump CRDT state before restoration", async () => {
+    const invalidData = {
+      ...data,
+      brainDump: [
+        {
+          createdAt: data.exportedAt,
+          crdtState: "not-valid-yjs-data",
+          id: "thought-1",
+          rank: 1_024,
+          text: "A thought",
+          updatedAt: data.exportedAt,
+        },
+      ],
+    };
+    const { backup, recoveryCode } = await createBackup(invalidData);
+
+    await expect(
+      restoreEncryptedBackup(JSON.stringify(backup), recoveryCode),
+    ).rejects.toThrow("does not contain valid Organa data");
+  });
+
+  it("rejects oversized backup input before parsing JSON", () => {
+    expect(() => parseEncryptedBackup(" ".repeat(20 * 1024 * 1024 + 1))).toThrow(
+      "larger than 20 MB",
+    );
   });
 });
