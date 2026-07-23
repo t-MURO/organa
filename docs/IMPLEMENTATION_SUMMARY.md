@@ -368,6 +368,22 @@ The browser walkthrough created a date-only task, showed `Due Jul 25` in its
 inbox metadata, reopened it with a blank due-time field and no at-due reminder,
 and rejected `2026-02-30` without changing the saved task.
 
+## Yjs Runtime Reliability Milestone
+
+This milestone removes a duplicate-Yjs runtime hazard observed during repeated
+Expo development server renders:
+
+- Brain Dump CRDT helpers now load and cache Yjs only when CRDT work begins
+  instead of evaluating it during every server render
+- A deterministic `pnpm verify:yjs-runtime` command starts the real Expo web
+  runtime, renders the app twice, and fails on Yjs's duplicate-import warning
+- The verifier reproduced the warning before the fix and passes repeatedly
+  afterward
+- Existing Brain Dump tests still cover concurrent character-level merge,
+  CRDT state validation, and persistence behavior
+- Strict TypeScript, the configured production PWA export, and iOS and Android
+  Hermes exports pass with the deferred runtime boundary
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

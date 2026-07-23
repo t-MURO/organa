@@ -13,6 +13,7 @@
     "ios": "expo start --ios",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
+    "verify:yjs-runtime": "node scripts/verify-yjs-dev-runtime.mjs",
     "verify:supabase": "node scripts/verify-local-supabase-all.mjs",
     "web": "expo start --web"
   },

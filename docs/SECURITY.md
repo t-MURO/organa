@@ -135,6 +135,9 @@ wipe.
 - Previous encrypted versions are retained for seven days.
 - Mutation IDs make outbox retries idempotent.
 - Yjs updates make Brain Dump edits commutative and conflict-free.
+- Yjs is loaded once, on first CRDT use, rather than during Expo server
+  rendering; `pnpm verify:yjs-runtime` guards against duplicate runtime
+  evaluation.
 - Yjs update records currently accumulate and need a compaction policy before
   high-volume production use.
 

@@ -10,6 +10,7 @@
     "dev:web": "pnpm --filter @organa/app web",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
+    "verify:yjs-runtime": "pnpm --filter @organa/app verify:yjs-runtime",
     "verify:supabase": "pnpm --filter @organa/app verify:supabase"
   },
   "devDependencies": {

@@ -103,6 +103,9 @@ Local evidence:
 - browser deadline drill created a date-only task, displayed its due date in
   the inbox, reopened it with no invented due time or reminder, and rejected an
   impossible calendar date without overwriting the saved task
+- `pnpm verify:yjs-runtime` renders the development web app twice and confirms
+  Expo server reloads do not evaluate a second Yjs runtime; Brain Dump merge
+  tests continue to exercise real CRDT edits and concurrent updates
 - a production PWA drill signed in, persisted an encrypted task, stopped both
   the app server and Supabase, reloaded successfully, created another task
   offline, reloaded with the outbox still queued, restored Supabase, and

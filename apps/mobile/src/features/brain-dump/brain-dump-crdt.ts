@@ -1,6 +1,10 @@
 import type { BrainDumpBullet } from "@organa/domain";
 import { fromByteArray, toByteArray } from "base64-js";
-import * as Y from "yjs";
+import type { Text as YText } from "yjs";
+
+type YjsModule = typeof import("yjs");
+
+let yjsModule: YjsModule | undefined;
 
 export interface BrainDumpCrdtUpdate {
   bulletId: string;
@@ -10,6 +14,7 @@ export interface BrainDumpCrdtUpdate {
 }
 
 export function initializeCrdtBullet(bullet: BrainDumpBullet) {
+  const Y = getYjs();
   const doc = new Y.Doc();
   const text = doc.getText("text");
   if (bullet.text) text.insert(0, bullet.text);
@@ -25,6 +30,7 @@ export function editCrdtBullet(
   updateId: string,
   now = new Date(),
 ) {
+  const Y = getYjs();
   const doc = documentFromBullet(bullet);
   const text = doc.getText("text");
   let incremental = new Uint8Array();
@@ -55,6 +61,7 @@ export function applyCrdtUpdate(
   bullet: BrainDumpBullet,
   update: BrainDumpCrdtUpdate,
 ) {
+  const Y = getYjs();
   const doc = documentFromBullet(bullet);
   Y.applyUpdate(doc, decode(update.update));
   return {
@@ -70,6 +77,7 @@ export function mergeCrdtBullets(
   local: BrainDumpBullet | undefined,
   incoming: BrainDumpBullet,
 ) {
+  const Y = getYjs();
   if (!local) return ensureCrdtBullet(incoming);
   const localDoc = documentFromBullet(local);
   const incomingDoc = documentFromBullet(incoming);
@@ -84,6 +92,7 @@ export function mergeCrdtBullets(
 
 export function isValidBrainDumpCrdtState(value: string) {
   try {
+    const Y = getYjs();
     const doc = new Y.Doc();
     Y.applyUpdate(doc, decode(value));
     return true;
@@ -97,6 +106,7 @@ function ensureCrdtBullet(bullet: BrainDumpBullet) {
 }
 
 function documentFromBullet(bullet: BrainDumpBullet) {
+  const Y = getYjs();
   const doc = new Y.Doc();
   if (bullet.crdtState) {
     Y.applyUpdate(doc, decode(bullet.crdtState));
@@ -106,7 +116,7 @@ function documentFromBullet(bullet: BrainDumpBullet) {
   return doc;
 }
 
-function applyTextDifference(text: Y.Text, next: string) {
+function applyTextDifference(text: YText, next: string) {
   const current = text.toString();
   let prefix = 0;
   while (
@@ -134,7 +144,7 @@ function applyTextDifference(text: Y.Text, next: string) {
   });
 }
 
-function docTransaction(text: Y.Text, change: () => void) {
+function docTransaction(text: YText, change: () => void) {
   if (text.doc) {
     text.doc.transact(change);
   } else {
@@ -148,4 +158,9 @@ function encode(value: Uint8Array) {
 
 function decode(value: string) {
   return toByteArray(value);
+}
+
+function getYjs() {
+  yjsModule ??= require("yjs") as YjsModule;
+  return yjsModule;
 }
