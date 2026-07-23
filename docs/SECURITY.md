@@ -78,6 +78,12 @@ Supabase can read:
   approving device ID, and a target-bound encrypted content-key envelope
 - user-scoped Realtime topic plus opaque changed record/device identifiers
 
+The account-deletion scheduler uses the server-side service role. Its table
+grant is limited to selecting the user ID, execution deadline, cancellation
+state, and completion state needed to find due requests. The endpoint disables
+the platform JWT check, requires a separate scheduler secret, and accepts only
+`POST`.
+
 Supabase must not receive task titles, details, medication text, reminder text,
 templates, Check-In content, mood values, Brain Dump text, or the plaintext
 content key.

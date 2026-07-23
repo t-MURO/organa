@@ -87,11 +87,11 @@ organa:<user-id>:devices
 
 ## 4. Deploy Account Deletion
 
-Deploy the Edge Function without Supabase JWT verification because it uses a
-separate scheduler secret:
+The checked-in function configuration disables Supabase JWT verification
+because this endpoint uses a separate scheduler secret. Deploy it with:
 
 ```sh
-pnpm dlx supabase functions deploy finalize-account-deletions --no-verify-jwt
+pnpm dlx supabase functions deploy finalize-account-deletions
 pnpm dlx supabase secrets set ACCOUNT_DELETION_SCHEDULER_SECRET=LONG_RANDOM_VALUE
 ```
 
@@ -128,5 +128,9 @@ Use two accounts and two physical devices or browsers to verify:
 - device reminder ownership updates on both clients
 - revocation clears the target on its next online status check
 - deletion is cancellable before one hour and finalizes after the deadline
+
+`pnpm verify:supabase` automates the local database checks and a live
+account-deletion Edge Function drill. The hosted beta validation must repeat
+them against the actual EU project.
 
 Do not invite beta users until these tests pass against the actual EU project.

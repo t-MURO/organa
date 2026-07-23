@@ -11,6 +11,11 @@ Deno.serve(async (request) => {
   if (request.headers.get("authorization") !== `Bearer ${schedulerSecret}`) {
     return json({ error: "Unauthorized." }, 401);
   }
+  if (request.method !== "POST") {
+    return json({ error: "Method not allowed." }, 405, {
+      allow: "POST",
+    });
+  }
 
   const client = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -43,9 +48,16 @@ Deno.serve(async (request) => {
   });
 });
 
-function json(value: unknown, status = 200) {
+function json(
+  value: unknown,
+  status = 200,
+  extraHeaders: Record<string, string> = {},
+) {
   return new Response(JSON.stringify(value), {
-    headers: { "content-type": "application/json; charset=utf-8" },
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      ...extraHeaders,
+    },
     status,
   });
 }

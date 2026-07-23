@@ -122,11 +122,15 @@ Latest verified repository checks:
   - 28 domain tests
   - 6 cryptography tests
   - 27 application integration tests
-- Both migrations apply cleanly from scratch to local Supabase/PostgreSQL.
+- All three migrations apply cleanly from scratch to local
+  Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
 - `pnpm verify:supabase` passes 31 authenticated database checks for RLS,
   proof-gated approval, claim, rejection, revocation, and deletion read-only
   behavior.
+- The same command passes 12 live account-deletion Edge Function checks,
+  including scheduler authorization and cascading removal of the Auth user,
+  sessions, keys, devices, encrypted records, and deletion request.
 - iOS Hermes export succeeds.
 - Android Hermes export succeeds.
 - Production web export succeeds.
@@ -195,8 +199,8 @@ This milestone includes:
 - A pending-device screen that can request approval, poll for status, and
   unlock locally with the one-time code
 - Trusted-device account controls that can approve or reject incoming requests
-- A reproducible local Supabase verification script covering 31 authenticated
-  database and security checks
+- Reproducible local Supabase verification covering 31 authenticated database
+  checks and 12 live account-deletion Edge Function checks
 - A web authentication-storage guard that prevents configured Expo server
   rendering from treating an incomplete `localStorage` placeholder as storage
 - Checked-in local confirmation and returning-user email templates that send
@@ -204,8 +208,8 @@ This milestone includes:
 - Web-storage and email-template regression tests; the complete automated suite
   currently passes 61 tests
 
-Local Supabase has been reset successfully from both migrations, database lint
-reports no schema errors, and the 31-check live verification script passes.
+Local Supabase has been reset successfully from all three migrations, database
+lint reports no schema errors, and all 43 live backend checks pass.
 Configured production web export and both native Hermes exports succeed. The
 combined two-device approval UI and encrypted realtime task propagation were
 also exercised in separate browser origins against the local backend.
@@ -222,7 +226,7 @@ Connected Supabase project:
   tests against the deployed project.
 - Measure two-client encrypted sync and missed-broadcast recovery.
 - Validate live reminder-device ownership and revocation.
-- Execute the scheduled deletion finalizer after the one-hour window.
+- Repeat the scheduled deletion finalizer drill against the hosted project.
 - Restore an encrypted export on a separate clean client.
 
 Physical devices:

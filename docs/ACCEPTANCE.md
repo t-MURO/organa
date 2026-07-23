@@ -36,12 +36,16 @@ Local evidence:
 - 61 automated tests pass: 28 domain, 6 cryptography, and 27 application tests
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
-- both migrations apply from scratch to local Supabase/PostgreSQL and
+- all three migrations apply from scratch to local Supabase/PostgreSQL and
   `db lint --local --level warning` reports no schema errors or warnings
-- `pnpm verify:supabase` passes 31 authenticated integration checks covering
+- `pnpm verify:supabase` passes 31 authenticated database checks covering
   cross-account RLS, direct-write denial, invalid proofs, encrypted
   trusted-device approval and claim, envelope erasure, request rejection,
   revocation, anonymous denial, and deletion read-only enforcement
+- the same command passes 12 live Edge Function checks covering scheduler
+  authorization, POST-only execution, the one-hour deadline, due processing,
+  and cascading removal of the Auth user, sessions, device keys, and encrypted
+  records
 - local Supabase sends the six-digit code expected by both the first-time and
   returning-user passwordless sign-in forms
 - a two-origin browser walkthrough completed recovery setup, requested and
@@ -79,7 +83,7 @@ Local evidence:
   checks against the deployed EU project
 - [ ] Two-client encrypted sync latency and missed-broadcast recovery
 - [ ] Device reminder ownership and revocation across live sessions
-- [ ] Scheduled deletion finalizer after the one-hour window
+- [ ] Repeat the scheduled deletion finalizer drill against the hosted project
 - [ ] Export recovery drill using a separate clean device
 
 ## Requires Physical Device Validation
