@@ -323,6 +323,7 @@ describe("task transitions", () => {
     const task = createTask(
       {
         dueAt: "2026-07-21T18:30:00.000Z",
+        dueDate: "2026-07-21",
         plannedFor: "2026-07-21",
         recurrence: {
           frequency: "weekly",
@@ -342,7 +343,31 @@ describe("task transitions", () => {
     );
 
     expect(result.nextTask?.plannedFor).toBe("2026-07-23");
+    expect(result.nextTask?.dueDate).toBe("2026-07-23");
     expect(result.nextTask?.dueAt).toBe("2026-07-23T18:30:00.000Z");
+  });
+
+  it("shifts a date-only deadline without adding an exact time", () => {
+    const task = createTask(
+      {
+        dueDate: "2026-07-22",
+        plannedFor: "2026-07-21",
+        recurrence: { frequency: "weekly", interval: 1 },
+        title: "Weekly paperwork",
+      },
+      "occurrence-1",
+      now,
+    );
+
+    const result = completeTaskOccurrence(
+      task,
+      "occurrence-2",
+      new Date("2026-07-21T19:00:00.000Z"),
+    );
+
+    expect(result.nextTask?.plannedFor).toBe("2026-07-28");
+    expect(result.nextTask?.dueDate).toBe("2026-07-29");
+    expect(result.nextTask?.dueAt).toBeUndefined();
   });
 
   it("does not materialize a backlog of missed recurring dates", () => {
@@ -394,9 +419,46 @@ describe("task transitions", () => {
       ),
     ).toThrow("between 0 and 6");
   });
+
+  it("rejects impossible planned and due calendar dates", () => {
+    expect(() =>
+      createTask(
+        { plannedFor: "2026-02-30", title: "Invalid plan" },
+        "invalid-plan",
+        now,
+      ),
+    ).toThrow("planned date");
+    expect(() =>
+      createTask(
+        { dueDate: "2026-13-01", title: "Invalid deadline" },
+        "invalid-due",
+        now,
+      ),
+    ).toThrow("due date");
+  });
 });
 
 describe("task timing", () => {
+  it("uses a date-only deadline without inventing an exact due time", () => {
+    const task = createTask(
+      {
+        dueDate: "2026-07-24",
+        plannedFor: "2026-07-20",
+        title: "Submit paperwork",
+      },
+      "date-only",
+      now,
+    );
+
+    expect(task.dueAt).toBeUndefined();
+    expect(
+      getTaskTimingState(task, new Date(2026, 6, 24, 23, 59)).status,
+    ).toBe("active");
+    expect(
+      getTaskTimingState(task, new Date(2026, 6, 25, 12)).status,
+    ).toBe("overdue");
+  });
+
   it("uses recurring grace days as a calendar cushion before overdue", () => {
     const task = createTask(
       {

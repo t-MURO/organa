@@ -1,5 +1,5 @@
 import { createKeyHierarchy, encryptJson } from "@organa/crypto";
-import { createUserSettings } from "@organa/domain";
+import { createTask, createUserSettings } from "@organa/domain";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -49,6 +49,48 @@ describe("encrypted backup restoration", () => {
     await expect(
       restoreEncryptedBackup(JSON.stringify(backup), recoveryCode),
     ).resolves.toEqual(data);
+  });
+
+  it("preserves a valid date-only task deadline", async () => {
+    const dateOnlyData = {
+      ...data,
+      tasks: [
+        createTask(
+          {
+            dueDate: "2026-08-15",
+            title: "Submit paperwork",
+          },
+          "date-only",
+          new Date(data.exportedAt),
+        ),
+      ],
+    };
+    const { backup, recoveryCode } = await createBackup(dateOnlyData);
+
+    await expect(
+      restoreEncryptedBackup(JSON.stringify(backup), recoveryCode),
+    ).resolves.toEqual(dateOnlyData);
+  });
+
+  it("rejects impossible calendar dates in restored tasks", async () => {
+    const invalidData = {
+      ...data,
+      tasks: [
+        {
+          ...createTask(
+            { title: "Invalid deadline" },
+            "invalid-date",
+            new Date(data.exportedAt),
+          ),
+          dueDate: "2026-02-30",
+        },
+      ],
+    };
+    const { backup, recoveryCode } = await createBackup(invalidData);
+
+    await expect(
+      restoreEncryptedBackup(JSON.stringify(backup), recoveryCode),
+    ).rejects.toThrow("does not contain valid Organa data");
   });
 
   it("rejects backup metadata that no longer matches the ciphertext", async () => {

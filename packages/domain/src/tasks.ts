@@ -33,6 +33,7 @@ export interface Task {
   priority: TaskPriority;
   plannedFor?: LocalDate;
   scheduledTime?: LocalTime;
+  dueDate?: LocalDate;
   dueAt?: string;
   estimatedMinutes?: number;
   completedAt?: string;
@@ -58,6 +59,7 @@ export interface CreateTaskInput {
   priority?: TaskPriority;
   plannedFor?: LocalDate;
   scheduledTime?: LocalTime;
+  dueDate?: LocalDate;
   dueAt?: string;
   estimatedMinutes?: number;
   recurrence?: TaskRecurrence;
@@ -143,23 +145,12 @@ export function getTaskTimingState(
     };
   }
 
+  if (task.dueDate && isLocalDate(task.dueDate)) {
+    return getLocalDateTimingState(task.dueDate, graceDays, now);
+  }
+
   if (task.plannedFor && isLocalDate(task.plannedFor)) {
-    const today = formatLocalDate(now);
-    const lastGraceDate = addDaysToLocalDate(task.plannedFor, graceDays);
-    const isOverdue = today > lastGraceDate;
-    const inGracePeriod =
-      graceDays > 0 && today > task.plannedFor && today <= lastGraceDate;
-    const graceDaysUsed = isOverdue
-      ? graceDays
-      : inGracePeriod
-        ? Math.min(graceDays, localDateDistance(task.plannedFor, today))
-        : 0;
-    return {
-      graceDaysRemaining: isOverdue ? 0 : graceDays - graceDaysUsed,
-      graceDaysUsed,
-      inGracePeriod,
-      status: isOverdue ? "overdue" : "active",
-    };
+    return getLocalDateTimingState(task.plannedFor, graceDays, now);
   }
 
   return {
@@ -183,7 +174,9 @@ export function createTask(
 
   const timestamp = now.toISOString();
   const kind = input.kind ?? "one_off";
-  const recurrence = normalizeRecurrence(input.recurrence, input.plannedFor);
+  const plannedFor = normalizeLocalDate(input.plannedFor, "planned date");
+  const dueDate = normalizeLocalDate(input.dueDate, "due date");
+  const recurrence = normalizeRecurrence(input.recurrence, plannedFor);
 
   return {
     id,
@@ -191,8 +184,9 @@ export function createTask(
     details: input.details?.trim() || undefined,
     kind,
     priority: input.priority ?? "should",
-    plannedFor: input.plannedFor,
+    plannedFor,
     scheduledTime: input.scheduledTime,
+    dueDate,
     dueAt: input.dueAt,
     estimatedMinutes: input.estimatedMinutes,
     recurrence,
@@ -274,6 +268,13 @@ export function completeTaskOccurrence(
       priority: task.priority,
       plannedFor: nextPlannedFor,
       scheduledTime: task.scheduledTime,
+      dueDate: task.dueDate
+        ? shiftLocalDateByOccurrence(
+            task.dueDate,
+            task.plannedFor,
+            nextPlannedFor,
+          )
+        : undefined,
       dueAt: task.dueAt
         ? shiftDateByLocalDays(
             new Date(task.dueAt),
@@ -403,6 +404,16 @@ function normalizeGraceDays(graceDays?: number) {
     throw new Error("Grace days must be a whole number from 0 to 3.");
   }
   return graceDays;
+}
+
+function normalizeLocalDate(
+  value: LocalDate | undefined,
+  label: string,
+): LocalDate | undefined {
+  if (value !== undefined && !isLocalDate(value)) {
+    throw new Error(`The ${label} must be a valid YYYY-MM-DD date.`);
+  }
+  return value;
 }
 
 function normalizeRecurrence(
@@ -536,6 +547,36 @@ function shiftDateByLocalDays(
   const shifted = new Date(value);
   shifted.setDate(shifted.getDate() + signedLocalDateDistance(from, to));
   return shifted;
+}
+
+function shiftLocalDateByOccurrence(
+  value: LocalDate,
+  from: LocalDate,
+  to: LocalDate,
+) {
+  return addDaysToLocalDate(value, signedLocalDateDistance(from, to));
+}
+
+function getLocalDateTimingState(
+  date: LocalDate,
+  graceDays: number,
+  now: Date,
+): TaskTimingState {
+  const today = formatLocalDate(now);
+  const lastGraceDate = addDaysToLocalDate(date, graceDays);
+  const isOverdue = today > lastGraceDate;
+  const inGracePeriod = graceDays > 0 && today > date && today <= lastGraceDate;
+  const graceDaysUsed = isOverdue
+    ? graceDays
+    : inGracePeriod
+      ? Math.min(graceDays, localDateDistance(date, today))
+      : 0;
+  return {
+    graceDaysRemaining: isOverdue ? 0 : graceDays - graceDaysUsed,
+    graceDaysUsed,
+    inGracePeriod,
+    status: isOverdue ? "overdue" : "active",
+  };
 }
 
 function addCalendarDays(date: Date, days: number) {

@@ -16,7 +16,9 @@ document names those rules and explains the user-facing policy.
   `previousOccurrenceId`, and `occurrenceNumber`.
 - **Planned date:** The local calendar day on which the user intends to see the
   task in daily planning.
-- **Due time:** An optional exact deadline represented by `dueAt`.
+- **Due date:** An optional local calendar deadline represented by `dueDate`.
+- **Due time:** An optional exact deadline represented by `dueAt`; it exists
+  only when the user supplies both a due date and a due time.
 - **Grace days:** A pressure-free calendar cushion before an active recurring
   occurrence is described as overdue.
 - **Reminder:** A local before-due, at-due, or after-due alert anchored to an
@@ -25,6 +27,8 @@ document names those rules and explains the user-facing policy.
 ## Task Invariants
 
 - A task can exist without planning or due dates.
+- A date-only deadline does not invent an end-of-day time and cannot schedule
+  an exact-time reminder.
 - Title is required after trimming.
 - Completion changes only through the task checkbox.
 - Completion and medication dose confirmation are separate transitions.
@@ -59,6 +63,8 @@ Rules:
 - A generated occurrence shifts its due time by the same number of local
   calendar days as its planned date, preserving the intended local clock time
   through daylight-saving changes.
+- A generated occurrence shifts a date-only deadline by the same number of
+  local calendar days without adding an exact time.
 - Recurrence has no end date in the MVP. Removing recurrence from an active
   occurrence stops future generation.
 
@@ -84,8 +90,10 @@ Rules:
 - Grace is automatic; users do not spend tokens or acknowledge failure.
 - For an exact due time, the overdue threshold moves by the configured number
   of local calendar days while retaining the clock time.
-- Without an exact due time, a planned occurrence becomes overdue only after
-  its planned date and all configured grace dates have passed.
+- A date-only deadline remains active for its full local due date and all
+  configured grace dates.
+- Without a due date, a planned occurrence becomes overdue only after its
+  planned date and all configured grace dates have passed.
 - Grace changes classification only. It does not rewrite the planned date,
   delay reminders, alter completion history, or shift the recurrence anchor.
 - Usage and remaining allowance are derived from the current date, so they

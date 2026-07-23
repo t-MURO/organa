@@ -156,6 +156,9 @@ export function TaskInbox({
 function inboxTaskMeta(task: Task, now: Date) {
   const details: string[] = [];
   if (task.plannedFor) details.push(formatDate(task.plannedFor));
+  if (task.dueDate && task.dueDate !== task.plannedFor) {
+    details.push(`Due ${formatDate(task.dueDate)}`);
+  }
   if (task.scheduledTime) details.push(task.scheduledTime);
   if (task.recurrence) details.push(capitalize(task.recurrence.frequency));
   if (getTaskTimingState(task, now).inGracePeriod) {

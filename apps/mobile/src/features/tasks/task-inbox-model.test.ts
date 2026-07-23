@@ -46,6 +46,30 @@ describe("task inbox model", () => {
     ).toEqual(["finished"]);
   });
 
+  it("uses a date-only deadline before the planning date for classification", () => {
+    const deadline = createTask(
+      {
+        dueDate: "2026-08-05",
+        plannedFor: "2026-08-01",
+        title: "Submit paperwork",
+      },
+      "deadline",
+    );
+
+    expect(filterTasksForInbox([deadline], "upcoming", "", now)).toEqual([
+      deadline,
+    ]);
+    expect(filterTasksForInbox([deadline], "overdue", "", now)).toEqual([]);
+    expect(
+      filterTasksForInbox(
+        [deadline],
+        "overdue",
+        "",
+        new Date(2026, 7, 6, 12),
+      ),
+    ).toEqual([deadline]);
+  });
+
   it("keeps recurring tasks out of overdue during their grace window", () => {
     const recurring = createTask(
       {

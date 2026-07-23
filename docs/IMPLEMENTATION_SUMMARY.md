@@ -124,10 +124,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 83 automated tests pass:
-  - 36 domain tests
+- 91 automated tests pass:
+  - 39 domain tests
   - 6 cryptography tests
-  - 41 application integration tests
+  - 46 application integration tests
 - All three migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
@@ -226,7 +226,7 @@ This milestone includes:
 - Checked-in local confirmation and returning-user email templates that send
   the six-digit code expected by Organa
 - Web-storage and email-template regression tests; the complete automated suite
-  currently passes 83 tests
+  currently passes 91 tests
 
 Local Supabase has been reset successfully from all three migrations, database
 lint reports no schema errors, and all 43 live backend checks pass.
@@ -327,8 +327,8 @@ Automated coverage added in this milestone includes:
 - Invalid recurrence rejection tests
 - Inbox placement, search, overdue, completed, undated, and grace-window tests
 
-The final implementation passes 83 automated tests: 36 domain, 6 cryptography,
-and 41 application tests. Strict TypeScript, `git diff --check`, the configured
+The final implementation passes 91 automated tests: 39 domain, 6 cryptography,
+and 46 application tests. Strict TypeScript, `git diff --check`, the configured
 production PWA build with all 12 artifact checks, and iOS and Android Hermes
 exports also pass.
 
@@ -344,6 +344,28 @@ The browser walkthrough already verified:
   instead of materializing a missed-occurrence backlog
 - Checkbox completion retained the visible checked state and Undo control
   during the delayed fade transition
+
+## Date-Only Deadline Milestone
+
+This milestone closes the distinction between an optional due date and an
+optional exact due time:
+
+- `dueDate` stores a local calendar deadline independently from `dueAt`
+- Saving a due date without a due time no longer invents a `23:59` deadline
+- Date-only deadlines remain active through the complete local due date
+- Exact-time reminders are created only when both date and time are present
+- A due date takes precedence over an earlier planning date for inbox overdue
+  classification
+- Recurring occurrences shift date-only deadlines by the same local calendar
+  distance without adding a time
+- Backup validation and restoration preserve date-only deadlines
+- UI and domain boundaries reject impossible local calendar dates
+- Legacy tasks containing only `dueAt` still reopen with their exact local date
+  and time
+
+The browser walkthrough created a date-only task, showed `Due Jul 25` in its
+inbox metadata, reopened it with a blank due-time field and no at-due reminder,
+and rejected `2026-02-30` without changing the saved task.
 
 ## Remaining Acceptance Gates
 

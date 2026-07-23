@@ -31,5 +31,10 @@ export function taskMatchesInboxFilter(
 }
 
 function taskSortKey(task: Task) {
-  return task.plannedFor ?? task.dueAt ?? `undated:${task.updatedAt}`;
+  return (
+    task.plannedFor ??
+    task.dueDate ??
+    task.dueAt ??
+    `undated:${task.updatedAt}`
+  );
 }

@@ -1,5 +1,4 @@
 import {
-  formatLocalDate,
   type CreateTaskInput,
   type Reminder,
   type Task,
@@ -24,6 +23,10 @@ import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import { notificationCapability } from "../../data/create-notification-scheduler";
 import type { OrganaTheme } from "../../theme";
+import {
+  createTaskDeadline,
+  readTaskDeadline,
+} from "./task-editor-model";
 
 const taskKinds: Array<{ value: TaskKind; label: string; hint: string }> = [
   { value: "one_off", label: "One-off", hint: "A task to finish once" },
@@ -107,15 +110,15 @@ export function TaskEditorModal({
   useEffect(() => {
     if (!visible) return;
 
-    const due = task?.dueAt ? new Date(task.dueAt) : undefined;
+    const deadline = readTaskDeadline(task);
     setTitle(task?.title ?? "");
     setDetails(task?.details ?? "");
     setKind(task?.kind ?? "one_off");
     setPriority(task?.priority ?? "should");
     setPlannedFor(task?.plannedFor ?? defaultPlannedFor);
     setScheduledTime(task?.scheduledTime ?? "");
-    setDueDate(due ? formatLocalDate(due) : "");
-    setDueTime(due ? formatTime(due) : "");
+    setDueDate(deadline.dueDate);
+    setDueTime(deadline.dueTime);
     setDuration(task?.estimatedMinutes?.toString() ?? "");
     setRecurrenceEnabled(Boolean(task?.recurrence));
     setFrequency(task?.recurrence?.frequency ?? "daily");
@@ -291,9 +294,7 @@ export function TaskEditorModal({
               enabled: true,
             }))
         : [];
-    const dueAt = dueDate
-      ? new Date(`${dueDate}T${dueTime || "23:59"}:00`).toISOString()
-      : undefined;
+    const deadline = createTaskDeadline(dueDate, dueTime);
 
     onSave(
       {
@@ -303,7 +304,7 @@ export function TaskEditorModal({
         priority,
         plannedFor: plannedFor || undefined,
         scheduledTime: scheduledTime || undefined,
-        dueAt,
+        ...deadline,
         estimatedMinutes,
         recurrence: recurrenceEnabled
           ? {
@@ -909,19 +910,20 @@ function ToggleRow({
 }
 
 function isValidDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
 }
 
 function isValidTime(value: string) {
   if (!/^\d{2}:\d{2}$/.test(value)) return false;
   const [hours, minutes] = value.split(":").map(Number);
   return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
-}
-
-function formatTime(date: Date) {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(
-    date.getMinutes(),
-  ).padStart(2, "0")}`;
 }
 
 function capitalize(value: string) {

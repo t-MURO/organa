@@ -34,7 +34,7 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 83 automated tests pass: 36 domain, 6 cryptography, and 41 application tests
+- 91 automated tests pass: 39 domain, 6 cryptography, and 46 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
@@ -100,6 +100,9 @@ Local evidence:
   routine, kept an undated task searchable but out of dated lanes, classified a
   stale routine inside its three-day grace window, and advanced its completion
   directly to the next future occurrence without creating a backlog
+- browser deadline drill created a date-only task, displayed its due date in
+  the inbox, reopened it with no invented due time or reminder, and rejected an
+  impossible calendar date without overwriting the saved task
 - a production PWA drill signed in, persisted an encrypted task, stopped both
   the app server and Supabase, reloaded successfully, created another task
   offline, reloaded with the outbox still queued, restored Supabase, and

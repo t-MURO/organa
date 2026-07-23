@@ -163,6 +163,7 @@ function isTaskInput(value: unknown): value is Record<string, unknown> {
     isOptional(value.priority, isTaskPriority) &&
     isOptional(value.plannedFor, isLocalDate) &&
     isOptional(value.scheduledTime, isLocalTime) &&
+    isOptional(value.dueDate, isLocalDate) &&
     isOptional(value.dueAt, isTimestamp) &&
     isOptional(value.estimatedMinutes, isPositiveInteger) &&
     isOptional(value.recurrence, isRecurrence) &&
@@ -356,10 +357,15 @@ function isTaskPriority(value: unknown) {
 }
 
 function isLocalDate(value: unknown) {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
   return (
-    typeof value === "string" &&
-    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-    !Number.isNaN(Date.parse(`${value}T00:00:00.000Z`))
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
   );
 }
 
