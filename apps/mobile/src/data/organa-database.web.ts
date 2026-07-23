@@ -2,6 +2,7 @@ import type {
   BrainDumpBullet,
   CheckInEntry,
   Task,
+  TaskTemplate,
 } from "@organa/domain";
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 
@@ -27,13 +28,20 @@ export interface OrganaDatabase extends DBSchema {
       "by-date": string;
     };
   };
+  taskTemplates: {
+    key: string;
+    value: TaskTemplate;
+    indexes: {
+      "by-updated-at": string;
+    };
+  };
 }
 
 let databasePromise: Promise<IDBPDatabase<OrganaDatabase>> | undefined;
 
 export function openOrganaDatabase() {
   if (!databasePromise) {
-    databasePromise = openDB<OrganaDatabase>("organa", 3, {
+    databasePromise = openDB<OrganaDatabase>("organa", 4, {
       upgrade(database, oldVersion) {
         if (oldVersion < 1) {
           const taskStore = database.createObjectStore("tasks", {
@@ -54,6 +62,13 @@ export function openOrganaDatabase() {
             keyPath: "id",
           });
           checkInStore.createIndex("by-date", "date", { unique: true });
+        }
+
+        if (oldVersion < 4) {
+          const templateStore = database.createObjectStore("taskTemplates", {
+            keyPath: "id",
+          });
+          templateStore.createIndex("by-updated-at", "updatedAt");
         }
       },
     });

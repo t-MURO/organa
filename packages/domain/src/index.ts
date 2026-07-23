@@ -33,6 +33,22 @@ export {
   updateTask,
 } from "./tasks";
 
+export {
+  createTaskTemplate,
+  searchTaskTemplates,
+  updateTaskTemplate,
+} from "./templates";
+
+export { buildTaskReminderSchedule } from "./reminders";
+
+export type { ScheduledTaskReminder } from "./reminders";
+
+export type {
+  TaskTemplate,
+  TaskTemplateInput,
+  TaskTemplateSource,
+} from "./templates";
+
 export type {
   CreateTaskInput,
   DayPlan,

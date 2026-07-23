@@ -21,6 +21,7 @@ import {
 } from "react-native";
 
 import { useAppTheme } from "../../components/app-shell";
+import { notificationCapability } from "../../data/create-notification-scheduler";
 import type { OrganaTheme } from "../../theme";
 
 const taskKinds: Array<{ value: TaskKind; label: string; hint: string }> = [
@@ -522,6 +523,15 @@ export function TaskEditorModal({
                 Reminders need a due date and time before notifications can be
                 scheduled.
               </Text>
+              <View style={styles.capabilityNotice}>
+                <Text style={styles.capabilityLabel}>
+                  {notificationCapability.label}
+                </Text>
+                <Text style={styles.capabilityText}>
+                  {notificationCapability.reason ??
+                    "Scheduled on this device and available offline."}
+                </Text>
+              </View>
               <View style={styles.chipRow}>
                 {reminderOptions.map((option) => (
                   <ChoiceChip
@@ -873,6 +883,23 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_400Regular",
       fontSize: 9,
       lineHeight: 14,
+    },
+    capabilityNotice: {
+      backgroundColor: theme.shouldSoft,
+      borderRadius: 12,
+      gap: 3,
+      padding: 11,
+    },
+    capabilityLabel: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 9,
+    },
+    capabilityText: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 8,
+      lineHeight: 12,
     },
     sectionBody: {
       gap: 10,

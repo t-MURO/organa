@@ -16,6 +16,7 @@ import {
   useReducer,
 } from "react";
 
+import { createNotificationScheduler } from "../../data/create-notification-scheduler";
 import { createTaskRepository } from "../../data/create-task-repository";
 
 interface TaskState {
@@ -38,6 +39,27 @@ interface TaskContextValue extends TaskState {
 
 const TaskContext = createContext<TaskContextValue | undefined>(undefined);
 const repository = createTaskRepository();
+const notificationScheduler = createNotificationScheduler();
+let notificationInitialization: Promise<void> | undefined;
+
+function initializeNotifications() {
+  notificationInitialization ??= notificationScheduler
+    .initialize()
+    .catch(() => undefined);
+  return notificationInitialization;
+}
+
+function syncNotifications(task: Task, requestPermission = false) {
+  void initializeNotifications()
+    .then(() => notificationScheduler.syncTask(task, requestPermission))
+    .catch(() => undefined);
+}
+
+function cancelNotifications(taskId: string) {
+  void initializeNotifications()
+    .then(() => notificationScheduler.cancelTask(taskId))
+    .catch(() => undefined);
+}
 
 function taskReducer(state: TaskState, action: TaskAction): TaskState {
   switch (action.type) {
@@ -138,6 +160,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       if (active) {
         dispatch({ type: "loaded", tasks });
       }
+      tasks.forEach((task) => syncNotifications(task));
     }
 
     void load();
@@ -156,6 +179,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     );
     dispatch({ type: "upserted", task });
     void repository.upsert(task);
+    syncNotifications(task, true);
     return task;
   }
 
@@ -163,12 +187,14 @@ export function TaskProvider({ children }: PropsWithChildren) {
     const updated = updateTask(task, input);
     dispatch({ type: "upserted", task: updated });
     void repository.upsert(updated);
+    syncNotifications(updated, true);
     return updated;
   }
 
   function removeTask(id: string) {
     dispatch({ type: "removed", id });
     void repository.remove(id);
+    cancelNotifications(id);
   }
 
   function toggleTask(task: Task) {
@@ -181,9 +207,11 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
       dispatch({ type: "upserted", task: reopened });
       void repository.upsert(reopened);
+      syncNotifications(reopened);
       if (generatedOccurrence) {
         dispatch({ type: "removed", id: generatedOccurrence.id });
         void repository.remove(generatedOccurrence.id);
+        cancelNotifications(generatedOccurrence.id);
       }
       return;
     }
@@ -194,10 +222,12 @@ export function TaskProvider({ children }: PropsWithChildren) {
     const result = completeTaskOccurrence(task, makeId());
     dispatch({ type: "upserted", task: result.completedTask });
     void repository.upsert(result.completedTask);
+    syncNotifications(result.completedTask);
 
     if (result.nextTask && !existingOccurrence) {
       dispatch({ type: "upserted", task: result.nextTask });
       void repository.upsert(result.nextTask);
+      syncNotifications(result.nextTask);
     }
   }
 

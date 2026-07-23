@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
 
 interface NavItem {
-  href: "/" | "/check-in" | "/brain-dump";
+  href: "/" | "/check-in" | "/brain-dump" | "/templates";
   shortLabel: string;
   label: string;
 }
@@ -24,6 +24,7 @@ const navigation: NavItem[] = [
   { href: "/", shortLabel: "T", label: "Today" },
   { href: "/check-in", shortLabel: "C", label: "Check-In" },
   { href: "/brain-dump", shortLabel: "B", label: "Brain Dump" },
+  { href: "/templates", shortLabel: "L", label: "Library" },
 ];
 
 interface AppShellContext {
@@ -33,6 +34,7 @@ interface AppShellContext {
 export function AppShell() {
   const systemScheme = useColorScheme();
   const { width } = useWindowDimensions();
+  const pathname = usePathname();
   const [themeMode, setThemeMode] = useState<"system" | "light" | "dark">(
     "system",
   );
@@ -54,26 +56,32 @@ export function AppShell() {
     <AppShellThemeContext.Provider value={{ theme }}>
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style={effectiveMode === "dark" ? "light" : "dark"} />
-        <View style={styles.shell}>
-          {isWide ? (
-            <Sidebar
-              styles={styles}
-              theme={theme}
-              themeMode={themeMode}
-              onCycleTheme={cycleTheme}
-            />
-          ) : (
-            <MobileHeader
-              styles={styles}
-              themeMode={themeMode}
-              onCycleTheme={cycleTheme}
-            />
-          )}
-          <View style={styles.content}>
+        {pathname === "/focus" ? (
+          <View style={styles.focusShell}>
             <Slot />
           </View>
-          {!isWide ? <MobileNavigation styles={styles} /> : null}
-        </View>
+        ) : (
+          <View style={styles.shell}>
+            {isWide ? (
+              <Sidebar
+                styles={styles}
+                theme={theme}
+                themeMode={themeMode}
+                onCycleTheme={cycleTheme}
+              />
+            ) : (
+              <MobileHeader
+                styles={styles}
+                themeMode={themeMode}
+                onCycleTheme={cycleTheme}
+              />
+            )}
+            <View style={styles.content}>
+              <Slot />
+            </View>
+            {!isWide ? <MobileNavigation styles={styles} /> : null}
+          </View>
+        )}
       </SafeAreaView>
     </AppShellThemeContext.Provider>
   );
@@ -285,6 +293,10 @@ function createStyles(theme: OrganaTheme, isWide: boolean) {
       backgroundColor: theme.background,
       flex: 1,
       flexDirection: isWide ? "row" : "column",
+    },
+    focusShell: {
+      backgroundColor: theme.background,
+      flex: 1,
     },
     content: {
       flex: 1,

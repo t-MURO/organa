@@ -18,6 +18,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
 
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
@@ -39,6 +40,7 @@ const priorities: Array<{
 const COMPLETION_GRACE_MS = 5_000;
 
 export function TodayScreen() {
+  const router = useRouter();
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const { width } = useWindowDimensions();
@@ -117,6 +119,10 @@ export function TodayScreen() {
   function openTask(task: Task) {
     setEditingTask(task);
     setEditorVisible(true);
+  }
+
+  function focusTask(task: Task) {
+    router.push({ pathname: "/focus", params: { taskId: task.id } });
   }
 
   function closeEditor() {
@@ -239,6 +245,7 @@ export function TodayScreen() {
                 tasks={visibleLanes[lane.key]}
                 theme={theme}
                 onEdit={openTask}
+                onFocus={focusTask}
                 onToggle={toggleTaskWithGrace}
                 onToggleSubtask={toggleSubtask}
               />
@@ -270,6 +277,7 @@ export function TodayScreen() {
                     task={task}
                     theme={theme}
                     onEdit={openTask}
+                    onFocus={focusTask}
                     onToggle={toggleTaskWithGrace}
                   />
                 </View>
@@ -459,6 +467,7 @@ function PriorityLane({
   tasks,
   theme,
   onEdit,
+  onFocus,
   onToggle,
   onToggleSubtask,
 }: {
@@ -469,6 +478,7 @@ function PriorityLane({
   tasks: Task[];
   theme: OrganaTheme;
   onEdit(task: Task): void;
+  onFocus(task: Task): void;
   onToggle(task: Task): void;
   onToggleSubtask(task: Task, subtaskId: string): void;
 }) {
@@ -495,6 +505,7 @@ function PriorityLane({
               styles={styles}
               task={task}
               onEdit={onEdit}
+              onFocus={onFocus}
               onToggle={onToggle}
               onToggleSubtask={onToggleSubtask}
             />
@@ -512,6 +523,7 @@ function PriorityTask({
   styles,
   task,
   onEdit,
+  onFocus,
   onToggle,
   onToggleSubtask,
 }: {
@@ -519,6 +531,7 @@ function PriorityTask({
   styles: ReturnType<typeof createStyles>;
   task: Task;
   onEdit(task: Task): void;
+  onFocus(task: Task): void;
   onToggle(task: Task): void;
   onToggleSubtask(task: Task, subtaskId: string): void;
 }) {
@@ -610,6 +623,7 @@ function PriorityTask({
             {formatKind(task.kind)}
           </Text>
           <EditButton styles={styles} task={task} onEdit={onEdit} />
+          <FocusButton styles={styles} task={task} onFocus={onFocus} />
         </View>
       )}
     </View>
@@ -621,12 +635,14 @@ function TimelineTask({
   task,
   theme,
   onEdit,
+  onFocus,
   onToggle,
 }: {
   styles: ReturnType<typeof createStyles>;
   task: Task;
   theme: OrganaTheme;
   onEdit(task: Task): void;
+  onFocus(task: Task): void;
   onToggle(task: Task): void;
 }) {
   const fade = useCompletionFade(Boolean(task.completedAt));
@@ -669,9 +685,33 @@ function TimelineTask({
       {task.completedAt ? (
         <UndoButton styles={styles} task={task} onToggle={onToggle} />
       ) : (
-        <EditButton styles={styles} task={task} onEdit={onEdit} />
+        <View style={styles.taskActions}>
+          <EditButton styles={styles} task={task} onEdit={onEdit} />
+          <FocusButton styles={styles} task={task} onFocus={onFocus} />
+        </View>
       )}
     </View>
+  );
+}
+
+function FocusButton({
+  styles,
+  task,
+  onFocus,
+}: {
+  styles: ReturnType<typeof createStyles>;
+  task: Task;
+  onFocus(task: Task): void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Focus on ${task.title}`}
+      style={styles.focusButton}
+      onPress={() => onFocus(task)}
+    >
+      <Text style={styles.focusButtonText}>Focus</Text>
+    </Pressable>
   );
 }
 
@@ -1157,6 +1197,17 @@ function createStyles(theme: OrganaTheme) {
     },
     editButtonText: {
       color: theme.textMuted,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 8,
+    },
+    focusButton: {
+      backgroundColor: theme.shouldSoft,
+      borderRadius: 9,
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+    },
+    focusButtonText: {
+      color: theme.accentStrong,
       fontFamily: "Manrope_700Bold",
       fontSize: 8,
     },

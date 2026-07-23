@@ -22,6 +22,12 @@ The first implementation slice includes:
 - Pressure-free daily Check-In with mood, feeling, and reflection
 - Local Check-In search with 7-day and 30-day mood views
 - Offline Check-In persistence through SQLite and IndexedDB
+- Searchable official and private task-template library
+- Private template creation, copying, editing, deletion, and offline persistence
+- Single-task Focus mode with optional timer, reset, break, and direct task entry
+- Offline iOS and Android reminders with before, due, and after stages
+- Task-specific notification actions for Focus and configurable snooze presets
+- Explicit in-app-only reminder fallback on web
 
 See [REQUIREMENTS.md](./REQUIREMENTS.md) for the complete product requirements.
 
@@ -62,6 +68,6 @@ apps/mobile/       Expo app for iOS, Android, and web
 packages/domain/   Shared task and planning rules
 ```
 
-Supabase authentication, encrypted synchronization, reminders, Check-In
-reminder settings, and conflict-free Brain Dump synchronization are planned but
-not yet implemented.
+Supabase authentication, encrypted synchronization, Check-In reminder settings,
+widgets, and conflict-free Brain Dump synchronization are planned but not yet
+implemented.
