@@ -21,7 +21,8 @@ Status recorded on 2026-07-23.
 - [x] Local readable/encrypted exports, validated backup restore/merge, and
   one-hour deletion UI/backend worker
 - [x] Light/dark/system themes, reduced motion, sounds, haptics, and app lock
-- [x] iOS widget sources for today's tasks and next reminder
+- [x] iOS widget sources for today's tasks and the next actual enabled task or
+  subtask reminder trigger
 - [x] Installable PWA manifest, icons, static routes, and offline app shell
 - [x] Explicit active-tab-only web reminder fallback
 - [x] Keyboard roles/labels, visible focus, semantic state, reduced motion, and
@@ -30,7 +31,7 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 52 automated tests pass
+- 54 automated tests pass
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
 - Expo Doctor passes 19/20 checks after native project generation; the only

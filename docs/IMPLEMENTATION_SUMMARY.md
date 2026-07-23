@@ -30,7 +30,8 @@ Implemented user-facing areas:
 - Local readable exports and encrypted backups with an in-app restore/merge
   workflow
 - One-hour cancellable account-deletion flow
-- iOS Today Tasks and Next Reminder widgets
+- iOS Today Tasks and Next Reminder widgets; Next Reminder uses the earliest
+  actual enabled task or subtask reminder trigger, including configured offsets
 - Installable PWA with a Workbox offline application shell
 
 ## Persistence And Synchronization
@@ -113,10 +114,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 52 automated tests pass:
+- 54 automated tests pass:
   - 28 domain tests
   - 4 cryptography tests
-  - 20 application integration tests
+  - 22 application integration tests
 - iOS Hermes export succeeds.
 - Android Hermes export succeeds.
 - Production web export succeeds.
@@ -152,6 +153,9 @@ Major implementation commits:
 - `2652a15` - restore native Brain Dump bundles
 - `a9ad329` - harden native release configuration
 - `4963b1b` - reconcile remote reminder changes and add this summary
+- `694c8d6` - erase local device data reliably
+- `8a7b71d` - restore encrypted backups
+- `fec1e70` - configure reminders per subtask
 
 ## Latest Security Hardening
 
