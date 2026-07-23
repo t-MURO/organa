@@ -195,6 +195,7 @@ Major implementation commits:
 - `955adf5` - keep the signed-in PWA usable offline
 - `950f1a0` - keep native reminders and widgets current
 - `70ec45a` - complete recurring task semantics
+- `ca0bdbb` - support date-only task deadlines
 
 ## Latest Security Hardening
 
