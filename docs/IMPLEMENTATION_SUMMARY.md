@@ -31,7 +31,8 @@ Implemented user-facing areas:
   workflow
 - One-hour cancellable account-deletion flow
 - iOS Today Tasks and Next Reminder widgets; Next Reminder uses the earliest
-  actual enabled task or subtask reminder trigger, including configured offsets
+  actual enabled task or subtask reminder trigger, including configured
+  offsets, and both widgets receive future timeline transitions
 - Installable PWA with a Workbox offline application shell, cached render
   fonts, durable local mutations, and automatic reconnecting outbox
 
@@ -52,6 +53,8 @@ Implemented user-facing areas:
 - Brain Dump edits use encrypted Yjs updates.
 - Task changes received from another client now reconcile the local
   notification schedule, including cancellation after remote deletion.
+- Completing or reopening a subtask reconciles its task's local notification
+  schedule immediately, preventing completed-step reminders from remaining.
 - Synced Check-In reminder settings follow the current device's reminder
   ownership.
 
@@ -84,7 +87,9 @@ Implemented user-facing areas:
 - Revoked devices clear local Organa data and sign out when revocation is
   observed.
 - Revocation and final account deletion remove the local device proof secret
-  and clear all known SQLite/IndexedDB stores before database removal.
+  and clear all known SQLite/IndexedDB stores before database removal. Native
+  cleanup also removes scheduled and displayed notifications, while iOS clears
+  both widget timelines.
 - The migration enables RLS, validates trusted-device writes, retains encrypted
   record history temporarily, and restricts private Realtime topics by user.
 - The client contains no product analytics, advertising identifiers, session
@@ -119,10 +124,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 64 automated tests pass:
+- 72 automated tests pass:
   - 28 domain tests
   - 6 cryptography tests
-  - 30 application integration tests
+  - 38 application integration tests
 - All three migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
@@ -188,6 +193,7 @@ Major implementation commits:
 - `45aaaa7` - approve new trusted devices
 - `f7adffe` - verify account deletion finalization
 - `955adf5` - keep the signed-in PWA usable offline
+- `950f1a0` - keep native reminders and widgets current
 
 ## Latest Security Hardening
 
@@ -219,7 +225,7 @@ This milestone includes:
 - Checked-in local confirmation and returning-user email templates that send
   the six-digit code expected by Organa
 - Web-storage and email-template regression tests; the complete automated suite
-  currently passes 64 tests
+  currently passes 72 tests
 
 Local Supabase has been reset successfully from all three migrations, database
 lint reports no schema errors, and all 43 live backend checks pass.
@@ -260,6 +266,26 @@ This milestone includes:
   plaintext titles used during the offline drill
 - Lighthouse accessibility and best-practices scores of 100% on the configured
   production sign-in screen
+
+## Native Reminder And Widget Reliability Milestone
+
+This milestone includes:
+
+- Pure, platform-independent construction and tests for native task and subtask
+  notification payloads, Focus and snooze actions, category identifiers, and
+  response routing
+- Foreground-compatible snooze actions so Expo can deliver the action response
+  even when the application process had been terminated
+- Repeat snoozes that retain task or subtask context, the original notification
+  category, and the Focus action
+- Immediate notification reconciliation when a subtask is completed or
+  reopened, removing stale completed-step alerts
+- iOS Today and Next Reminder timelines that advance at local midnight and at
+  each known reminder trigger without requiring the app to reopen
+- Native private-state cleanup that removes scheduled and displayed
+  notifications after revocation or deletion, plus content-free iOS widget
+  timelines before local database removal
+- Successful iOS and Android Hermes exports after the platform-specific changes
 
 ## Remaining Acceptance Gates
 

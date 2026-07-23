@@ -23,8 +23,8 @@ Status recorded on 2026-07-23.
 - [x] Local readable/encrypted exports, validated backup restore/merge, and
   one-hour deletion UI/backend worker
 - [x] Light/dark/system themes, reduced motion, sounds, haptics, and app lock
-- [x] iOS widget sources for today's tasks and the next actual enabled task or
-  subtask reminder trigger
+- [x] iOS widget timelines for today's tasks and the next actual enabled task or
+  subtask reminder trigger, including midnight and fired-reminder transitions
 - [x] Installable PWA manifest, icons, static routes, signed-in offline reload,
   local mutation persistence, and reconnecting outbox
 - [x] Explicit active-tab-only web reminder fallback
@@ -34,7 +34,7 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 64 automated tests pass: 28 domain, 6 cryptography, and 30 application tests
+- 72 automated tests pass: 28 domain, 6 cryptography, and 38 application tests
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
 - all three migrations apply from scratch to local Supabase/PostgreSQL and
@@ -64,6 +64,16 @@ Local evidence:
   declarations, uses the explicit widget bundle ID, and produces an opaque
   1024-pixel App Store icon
 - iOS and Android Hermes bundle exports succeed
+- native notification-plan tests cover task/subtask payloads, Focus and snooze
+  actions, killed-app-compatible response delivery, completion suppression,
+  Check-In routing, and categorized repeat snoozes
+- completing or reopening a subtask now replaces that task's scheduled
+  notifications so finished steps do not leave stale alerts
+- iOS widget timeline tests prove automatic local-midnight task rollover and
+  advancement after each reminder trigger without reopening the app
+- account deletion and device revocation clear scheduled and displayed native
+  notifications; iOS also replaces both widget timelines with content-free
+  states before local database deletion
 - production web export succeeds
 - production web artifact verification passes 12 installability and offline
   cache checks
