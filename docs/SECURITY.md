@@ -105,6 +105,9 @@ wipe.
 
 - Readable JSON and Markdown exports are assembled locally.
 - Full backups encrypt the complete export and include the recovery envelope.
+- Backup restoration validates the format, unwraps the content key locally with
+  the recovery code, authenticates the backup metadata, and rejects tampering
+  before returning decrypted data.
 - The one-hour deletion period is read-only and cancellable.
 - The scheduled Edge Function deletes the Auth user, causing account rows to
   cascade. The app removes its local database and content key when deletion is

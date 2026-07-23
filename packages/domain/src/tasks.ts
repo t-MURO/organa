@@ -213,10 +213,24 @@ export function completeTask(task: Task, now = new Date()): Task {
   return {
     ...task,
     completedAt: timestamp,
-    doseConfirmedAt:
-      task.kind === "medication" && task.requireDoseConfirmation
-        ? timestamp
-        : undefined,
+    updatedAt: timestamp,
+  };
+}
+
+export function confirmMedicationDose(task: Task, now = new Date()): Task {
+  if (
+    task.kind !== "medication" ||
+    !task.requireDoseConfirmation ||
+    !task.completedAt ||
+    task.doseConfirmedAt
+  ) {
+    return task;
+  }
+
+  const timestamp = now.toISOString();
+  return {
+    ...task,
+    doseConfirmedAt: timestamp,
     updatedAt: timestamp,
   };
 }

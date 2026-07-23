@@ -5,9 +5,11 @@ import type {
   TaskTemplate,
   UserSettings,
 } from "@organa/domain";
-import type {
-  EncryptedEnvelope,
-  RecoveryKeyEnvelope,
+import {
+  decryptJson,
+  type EncryptedEnvelope,
+  type RecoveryKeyEnvelope,
+  unwrapContentKey,
 } from "@organa/crypto";
 
 export interface OrganaExportData {
@@ -21,6 +23,7 @@ export interface OrganaExportData {
 }
 
 export interface OrganaEncryptedBackup {
+  backupId: string;
   encryptedAt: string;
   format: "organa-encrypted-backup-v1";
   recoveryKeyEnvelope: RecoveryKeyEnvelope;
@@ -66,4 +69,88 @@ export function createReflectionMarkdown(data: OrganaExportData) {
     brainDump,
     "",
   ].join("\n");
+}
+
+export async function restoreEncryptedBackup(
+  contents: string,
+  recoveryCode: string,
+): Promise<OrganaExportData> {
+  const backup = parseEncryptedBackup(contents);
+  const contentKey = await unwrapContentKey(
+    recoveryCode,
+    backup.recoveryKeyEnvelope,
+  );
+  const data = await decryptJson<unknown>(
+    backup.payload,
+    contentKey,
+    "backup",
+    backup.backupId,
+  );
+
+  if (!isOrganaExportData(data)) {
+    throw new Error("The decrypted backup does not contain valid Organa data.");
+  }
+  return data;
+}
+
+export function parseEncryptedBackup(contents: string): OrganaEncryptedBackup {
+  let value: unknown;
+  try {
+    value = JSON.parse(contents);
+  } catch {
+    throw new Error("The selected file is not valid JSON.");
+  }
+
+  if (
+    !isRecord(value) ||
+    value.format !== "organa-encrypted-backup-v1" ||
+    typeof value.backupId !== "string" ||
+    !value.backupId ||
+    typeof value.encryptedAt !== "string" ||
+    !isRecoveryEnvelope(value.recoveryKeyEnvelope) ||
+    !isEncryptedEnvelope(value.payload) ||
+    value.payload.keyId !== value.recoveryKeyEnvelope.keyId
+  ) {
+    throw new Error("The selected file is not a valid Organa encrypted backup.");
+  }
+
+  return value as unknown as OrganaEncryptedBackup;
+}
+
+function isOrganaExportData(value: unknown): value is OrganaExportData {
+  return (
+    isRecord(value) &&
+    value.format === "organa-readable-v1" &&
+    typeof value.exportedAt === "string" &&
+    Array.isArray(value.tasks) &&
+    Array.isArray(value.templates) &&
+    isRecord(value.settings) &&
+    Array.isArray(value.checkIns) &&
+    Array.isArray(value.brainDump)
+  );
+}
+
+function isRecoveryEnvelope(value: unknown): value is RecoveryKeyEnvelope {
+  return (
+    isRecord(value) &&
+    value.version === 1 &&
+    value.algorithm === "AES-256-GCM" &&
+    typeof value.keyId === "string" &&
+    typeof value.combined === "string"
+  );
+}
+
+function isEncryptedEnvelope(value: unknown): value is EncryptedEnvelope {
+  return (
+    isRecord(value) &&
+    value.version === 1 &&
+    value.algorithm === "AES-256-GCM" &&
+    typeof value.keyId === "string" &&
+    typeof value.combined === "string" &&
+    typeof value.aad === "string"
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

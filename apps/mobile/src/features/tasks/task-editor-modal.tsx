@@ -83,7 +83,7 @@ export function TaskEditorModal({
   const [frequency, setFrequency] =
     useState<TaskRecurrence["frequency"]>("daily");
   const [interval, setInterval] = useState(1);
-  const [selectedReminders, setSelectedReminders] = useState<string[]>([]);
+  const [selectedReminders, setSelectedReminders] = useState<string[]>(["at"]);
   const [snoozePresets, setSnoozePresets] = useState<number[]>([10, 30, 60]);
   const [subtasks, setSubtasks] = useState<TaskSubtask[]>([]);
   const [subtaskDraft, setSubtaskDraft] = useState("");
@@ -111,15 +111,17 @@ export function TaskEditorModal({
     setFrequency(task?.recurrence?.frequency ?? "daily");
     setInterval(task?.recurrence?.interval ?? 1);
     setSelectedReminders(
-      reminderOptions
-        .filter((option) =>
-          task?.reminders.some(
-            (reminder) =>
-              reminder.stage === option.stage &&
-              reminder.offsetMinutes === option.offset,
-          ),
-        )
-        .map((option) => option.id),
+      task
+        ? reminderOptions
+            .filter((option) =>
+              task.reminders.some(
+                (reminder) =>
+                  reminder.stage === option.stage &&
+                  reminder.offsetMinutes === option.offset,
+              ),
+            )
+            .map((option) => option.id)
+        : ["at"],
     );
     setSnoozePresets(task?.snoozePresets ?? [10, 30, 60]);
     setSubtasks(task?.subtasks ?? []);
@@ -200,11 +202,6 @@ export function TaskEditorModal({
       setError("A due time also needs a due date.");
       return;
     }
-    if (selectedReminders.length > 0 && (!dueDate || !dueTime)) {
-      setError("Configured reminders need both a due date and due time.");
-      return;
-    }
-
     const estimatedMinutes = duration ? Number(duration) : undefined;
     if (
       estimatedMinutes !== undefined &&
@@ -214,14 +211,17 @@ export function TaskEditorModal({
       return;
     }
 
-    const reminders: Reminder[] = reminderOptions
-      .filter((option) => selectedReminders.includes(option.id))
-      .map((option) => ({
-        id: `${option.stage}-${option.offset}`,
-        stage: option.stage,
-        offsetMinutes: option.offset,
-        enabled: true,
-      }));
+    const reminders: Reminder[] =
+      dueDate && dueTime
+        ? reminderOptions
+            .filter((option) => selectedReminders.includes(option.id))
+            .map((option) => ({
+              id: `${option.stage}-${option.offset}`,
+              stage: option.stage,
+              offsetMinutes: option.offset,
+              enabled: true,
+            }))
+        : [];
     const dueAt = dueDate
       ? new Date(`${dueDate}T${dueTime || "23:59"}:00`).toISOString()
       : undefined;

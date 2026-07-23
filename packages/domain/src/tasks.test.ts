@@ -4,6 +4,7 @@ import {
   buildDayPlan,
   completeTask,
   completeTaskOccurrence,
+  confirmMedicationDose,
   createTask,
   reopenTask,
   toggleSubtaskCompletion,
@@ -146,7 +147,7 @@ describe("task transitions", () => {
     expect(updated.completedAt).toBeUndefined();
   });
 
-  it("records optional medication dose confirmation from the checkbox action", () => {
+  it("keeps optional dose confirmation separate from task completion", () => {
     const medication = createTask(
       {
         kind: "medication",
@@ -158,13 +159,33 @@ describe("task transitions", () => {
     );
     const completedAt = new Date("2026-07-23T12:00:00.000Z");
     const completed = completeTask(medication, completedAt);
+    const confirmedAt = new Date("2026-07-23T12:01:00.000Z");
+    const confirmed = confirmMedicationDose(completed, confirmedAt);
 
-    expect(completed.doseConfirmedAt).toBe(completedAt.toISOString());
-    expect(reopenTask(completed, now).doseConfirmedAt).toBeUndefined();
+    expect(completed.completedAt).toBe(completedAt.toISOString());
+    expect(completed.doseConfirmedAt).toBeUndefined();
+    expect(confirmed.doseConfirmedAt).toBe(confirmedAt.toISOString());
+    expect(reopenTask(confirmed, now).doseConfirmedAt).toBeUndefined();
+  });
+
+  it("does not confirm a dose for an active, non-medication, or opted-out task", () => {
+    const medication = createTask(
+      {
+        kind: "medication",
+        requireDoseConfirmation: true,
+        title: "Take medication",
+      },
+      "medication-1",
+      now,
+    );
+    const ordinary = makeTask("ordinary-1", "Clear the table", "should");
+
+    expect(confirmMedicationDose(medication, now)).toBe(medication);
+    expect(confirmMedicationDose(ordinary, now)).toBe(ordinary);
     expect(
-      completeTask(
-        { ...medication, requireDoseConfirmation: false },
-        completedAt,
+      confirmMedicationDose(
+        completeTask({ ...medication, requireDoseConfirmation: false }, now),
+        now,
       ).doseConfirmedAt,
     ).toBeUndefined();
   });

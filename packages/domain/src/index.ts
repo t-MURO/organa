@@ -26,6 +26,7 @@ export {
   buildDayPlan,
   completeTask,
   completeTaskOccurrence,
+  confirmMedicationDose,
   createTask,
   formatLocalDate,
   reopenTask,

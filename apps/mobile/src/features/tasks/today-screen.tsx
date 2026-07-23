@@ -49,6 +49,7 @@ export function TodayScreen() {
     loading,
     tasks,
     addTask,
+    confirmDose,
     editTask,
     removeTask,
     toggleTask,
@@ -247,6 +248,7 @@ export function TodayScreen() {
                 theme={theme}
                 onEdit={openTask}
                 onFocus={focusTask}
+                onConfirmDose={confirmDose}
                 onToggle={toggleTaskWithGrace}
                 onToggleSubtask={toggleSubtask}
               />
@@ -279,6 +281,7 @@ export function TodayScreen() {
                     theme={theme}
                     onEdit={openTask}
                     onFocus={focusTask}
+                    onConfirmDose={confirmDose}
                     onToggle={toggleTaskWithGrace}
                   />
                 </View>
@@ -314,20 +317,28 @@ export function TodayScreen() {
           <View style={styles.completedList}>
             {settledCompleted.length > 0 ? (
               settledCompleted.map((task) => (
-                <Pressable
-                  key={task.id}
-                  accessibilityLabel={`Reopen ${task.title}`}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: true }}
-                  style={styles.completedTask}
-                  onPress={() => toggleTaskWithGrace(task)}
-                >
-                  <View style={styles.completedCheck}>
+                <View key={task.id} style={styles.completedTask}>
+                  <Pressable
+                    accessibilityLabel={`Reopen ${task.title}`}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: true }}
+                    style={styles.completedCheck}
+                    onPress={() => toggleTaskWithGrace(task)}
+                  >
                     <Text style={styles.completedCheckText}>✓</Text>
+                  </Pressable>
+                  <View style={styles.completedTaskCopy}>
+                    <Text style={styles.completedTaskTitle}>{task.title}</Text>
+                    <Text style={styles.reopenLabel}>
+                      Select the checkmark to reopen
+                    </Text>
                   </View>
-                  <Text style={styles.completedTaskTitle}>{task.title}</Text>
-                  <Text style={styles.reopenLabel}>Reopen</Text>
-                </Pressable>
+                  <DoseConfirmationButton
+                    styles={styles}
+                    task={task}
+                    onConfirm={confirmDose}
+                  />
+                </View>
               ))
             ) : (
               <Text style={styles.completedEmpty}>
@@ -474,6 +485,7 @@ function PriorityLane({
   theme,
   onEdit,
   onFocus,
+  onConfirmDose,
   onToggle,
   onToggleSubtask,
 }: {
@@ -485,6 +497,7 @@ function PriorityLane({
   theme: OrganaTheme;
   onEdit(task: Task): void;
   onFocus(task: Task): void;
+  onConfirmDose(task: Task): void;
   onToggle(task: Task): void;
   onToggleSubtask(task: Task, subtaskId: string): void;
 }) {
@@ -512,6 +525,7 @@ function PriorityLane({
               task={task}
               onEdit={onEdit}
               onFocus={onFocus}
+              onConfirmDose={onConfirmDose}
               onToggle={onToggle}
               onToggleSubtask={onToggleSubtask}
             />
@@ -530,6 +544,7 @@ function PriorityTask({
   task,
   onEdit,
   onFocus,
+  onConfirmDose,
   onToggle,
   onToggleSubtask,
 }: {
@@ -538,6 +553,7 @@ function PriorityTask({
   task: Task;
   onEdit(task: Task): void;
   onFocus(task: Task): void;
+  onConfirmDose(task: Task): void;
   onToggle(task: Task): void;
   onToggleSubtask(task: Task, subtaskId: string): void;
 }) {
@@ -622,7 +638,14 @@ function PriorityTask({
         </View>
       </Animated.View>
       {task.completedAt ? (
-        <UndoButton styles={styles} task={task} onToggle={onToggle} />
+        <View style={styles.completedActions}>
+          <DoseConfirmationButton
+            styles={styles}
+            task={task}
+            onConfirm={onConfirmDose}
+          />
+          <UndoButton styles={styles} task={task} onToggle={onToggle} />
+        </View>
       ) : (
         <View style={styles.taskActions}>
           <Text style={[styles.taskKind, { color: colors.strong }]}>
@@ -642,6 +665,7 @@ function TimelineTask({
   theme,
   onEdit,
   onFocus,
+  onConfirmDose,
   onToggle,
 }: {
   styles: ReturnType<typeof createStyles>;
@@ -649,6 +673,7 @@ function TimelineTask({
   theme: OrganaTheme;
   onEdit(task: Task): void;
   onFocus(task: Task): void;
+  onConfirmDose(task: Task): void;
   onToggle(task: Task): void;
 }) {
   const fade = useCompletionFade(Boolean(task.completedAt));
@@ -689,7 +714,14 @@ function TimelineTask({
         </View>
       </Animated.View>
       {task.completedAt ? (
-        <UndoButton styles={styles} task={task} onToggle={onToggle} />
+        <View style={styles.completedActions}>
+          <DoseConfirmationButton
+            styles={styles}
+            task={task}
+            onConfirm={onConfirmDose}
+          />
+          <UndoButton styles={styles} task={task} onToggle={onToggle} />
+        </View>
       ) : (
         <View style={styles.taskActions}>
           <EditButton styles={styles} task={task} onEdit={onEdit} />
@@ -759,6 +791,42 @@ function UndoButton({
       onPress={() => onToggle(task)}
     >
       <Text style={styles.undoButtonText}>Undo</Text>
+    </Pressable>
+  );
+}
+
+function DoseConfirmationButton({
+  styles,
+  task,
+  onConfirm,
+}: {
+  styles: ReturnType<typeof createStyles>;
+  task: Task;
+  onConfirm(task: Task): void;
+}) {
+  if (task.kind !== "medication" || !task.requireDoseConfirmation) {
+    return null;
+  }
+
+  if (task.doseConfirmedAt) {
+    return (
+      <Text
+        accessibilityLabel="Medication dose confirmed"
+        style={styles.doseConfirmed}
+      >
+        Dose confirmed
+      </Text>
+    );
+  }
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Confirm dose for ${task.title}`}
+      style={styles.doseButton}
+      onPress={() => onConfirm(task)}
+    >
+      <Text style={styles.doseButtonText}>Confirm dose</Text>
     </Pressable>
   );
 }
@@ -1199,6 +1267,26 @@ function createStyles(theme: OrganaTheme) {
       alignItems: "flex-end",
       gap: 6,
     },
+    completedActions: {
+      alignItems: "flex-end",
+      gap: 6,
+    },
+    doseButton: {
+      backgroundColor: theme.mustSoft,
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+    },
+    doseButtonText: {
+      color: theme.must,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 9,
+    },
+    doseConfirmed: {
+      color: theme.should,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 9,
+    },
     editButton: {
       borderColor: theme.border,
       borderRadius: 9,
@@ -1388,6 +1476,10 @@ function createStyles(theme: OrganaTheme) {
       gap: 10,
       padding: 11,
     },
+    completedTaskCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
     completedCheck: {
       alignItems: "center",
       backgroundColor: theme.shouldSoft,
@@ -1403,7 +1495,6 @@ function createStyles(theme: OrganaTheme) {
     },
     completedTaskTitle: {
       color: theme.textMuted,
-      flex: 1,
       fontFamily: "Manrope_600SemiBold",
       fontSize: 11,
       textDecorationLine: "line-through",
@@ -1412,6 +1503,7 @@ function createStyles(theme: OrganaTheme) {
       color: theme.textMuted,
       fontFamily: "Manrope_600SemiBold",
       fontSize: 9,
+      marginTop: 2,
     },
     completedEmpty: {
       color: theme.textMuted,

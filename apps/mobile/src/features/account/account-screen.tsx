@@ -99,13 +99,14 @@ export function AccountScreen() {
         }
         const backupId = `full-${Date.now().toString(36)}`;
         const backup: OrganaEncryptedBackup = {
+          backupId,
           encryptedAt: data.exportedAt,
           format: "organa-encrypted-backup-v1",
           payload: await security.encryptRecord("backup", backupId, data),
           recoveryKeyEnvelope: security.recoveryEnvelope,
         };
         await exportWriter.save({
-          contents: JSON.stringify({ ...backup, backupId }, null, 2),
+          contents: JSON.stringify(backup, null, 2),
           filename: `organa-encrypted-backup-${date}.json`,
           mimeType: "application/json",
         });

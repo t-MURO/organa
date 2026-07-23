@@ -1,5 +1,6 @@
 import {
   completeTaskOccurrence,
+  confirmMedicationDose,
   createTask,
   formatLocalDate,
   reopenTask,
@@ -38,6 +39,7 @@ interface TaskContextValue extends TaskState {
   addTask(input: CreateTaskInput): Task;
   editTask(task: Task, input: CreateTaskInput): Task;
   removeTask(id: string): void;
+  confirmDose(task: Task): void;
   toggleTask(task: Task): void;
   toggleSubtask(task: Task, subtaskId: string): void;
 }
@@ -173,7 +175,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       await repository.initialize();
       let tasks = await repository.list();
 
-      if (tasks.length === 0) {
+      if (tasks.length === 0 && auth.localPreview) {
         tasks = seedTasks(formatLocalDate(new Date()));
         await Promise.all(tasks.map((task) => repository.upsert(task)));
         await Promise.all(
@@ -193,7 +195,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [repository]);
+  }, [auth.localPreview, repository]);
 
   useEffect(() => {
     state.tasks.forEach((task) =>
@@ -246,6 +248,15 @@ export function TaskProvider({ children }: PropsWithChildren) {
     void repository.remove(id);
     void sync.queueDelete("task", id);
     cancelNotifications(id);
+  }
+
+  function confirmDose(task: Task) {
+    const confirmed = confirmMedicationDose(task);
+    if (confirmed === task) return;
+
+    dispatch({ type: "upserted", task: confirmed });
+    void repository.upsert(confirmed);
+    void sync.queueUpsert("task", confirmed.id, confirmed, task);
   }
 
   function toggleTask(task: Task) {
@@ -308,6 +319,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       value={{
         ...state,
         addTask,
+        confirmDose,
         editTask,
         removeTask,
         toggleTask,

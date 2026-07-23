@@ -23,7 +23,7 @@ export function FocusScreen() {
   const styles = createStyles(theme);
   const router = useRouter();
   const { taskId } = useLocalSearchParams<{ taskId?: string }>();
-  const { loading, tasks, toggleSubtask, toggleTask } = useTasks();
+  const { confirmDose, loading, tasks, toggleSubtask, toggleTask } = useTasks();
   const task = tasks.find((item) => item.id === taskId);
   const [timerMinutes, setTimerMinutes] = useState<number>();
   const [secondsRemaining, setSecondsRemaining] = useState(0);
@@ -273,6 +273,27 @@ export function FocusScreen() {
                 {task.completedAt ? "Completed. Undo?" : "Mark task complete"}
               </Text>
             </Pressable>
+            {task.completedAt &&
+            task.kind === "medication" &&
+            task.requireDoseConfirmation ? (
+              task.doseConfirmedAt ? (
+                <Text
+                  accessibilityLabel="Medication dose confirmed"
+                  style={styles.doseConfirmed}
+                >
+                  Dose confirmed
+                </Text>
+              ) : (
+                <Pressable
+                  accessibilityLabel={`Confirm dose for ${task.title}`}
+                  accessibilityRole="button"
+                  style={styles.doseButton}
+                  onPress={() => confirmDose(task)}
+                >
+                  <Text style={styles.doseButtonText}>Confirm dose</Text>
+                </Pressable>
+              )
+            ) : null}
             <Pressable
               accessibilityRole="button"
               style={styles.breakButton}
@@ -572,6 +593,24 @@ function createStyles(theme: OrganaTheme) {
       color: theme.textMuted,
       fontFamily: "Manrope_600SemiBold",
       fontSize: 10,
+    },
+    doseButton: {
+      backgroundColor: theme.mustSoft,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    doseButtonText: {
+      color: theme.must,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 10,
+      textAlign: "center",
+    },
+    doseConfirmed: {
+      color: theme.should,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 10,
+      textAlign: "center",
     },
     footer: {
       color: theme.textMuted,

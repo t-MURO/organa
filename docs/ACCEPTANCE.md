@@ -29,13 +29,14 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 34 automated tests pass
+- 38 automated tests pass
 - Expo Doctor passes 20/20 checks
 - production web export succeeds
 - Workbox precaches 15 URLs
 - production dependency audit reports no known vulnerabilities
-- browser walkthrough passed task, Undo/fade, editor, Check-In, Brain Dump,
-  templates, navigation, accessibility-tree, and focus-indicator checks
+- browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
+  medication dose confirmation, editor, Check-In, Brain Dump, templates,
+  navigation, accessibility-tree, and focus-indicator checks
 
 ## Requires Connected Backend Validation
 
@@ -45,6 +46,7 @@ Local evidence:
 - [ ] Cross-account RLS and unauthorized RPC tests
 - [ ] Two-client encrypted sync latency and missed-broadcast recovery
 - [ ] Device reminder ownership and revocation across live sessions
+- [ ] New-device approval initiated by an already trusted device
 - [ ] Scheduled deletion finalizer after the one-hour window
 - [ ] Export recovery drill using a separate clean device
 
