@@ -344,7 +344,7 @@ begin
       1,
       p_operation = 'delete',
       p_device_id,
-      p_created_at
+      clock_timestamp()
     )
     returning version into next_version;
   else
@@ -413,7 +413,7 @@ begin
         version = next_version,
         deleted = current_deleted,
         updated_by = p_device_id,
-        updated_at = greatest(current_updated_at, p_created_at)
+        updated_at = clock_timestamp()
     where user_id = auth.uid()
       and record_type = p_record_type
       and record_id = p_record_id;

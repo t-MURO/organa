@@ -14,8 +14,8 @@ Status recorded on 2026-07-23.
 - [x] Optional Check-In mood/reflection/search/trends/reminder setting
 - [x] Continuous searchable Brain Dump and Yjs merge tests
 - [x] SQLite native persistence and IndexedDB web persistence
-- [x] Encrypted field outbox, idempotent RPC contract, and private Broadcast
-  client integration
+- [x] Encrypted field outbox, idempotent RPC contract, private Broadcast, and
+  incremental durable reconciliation integration
 - [x] Recovery-key confirmation and recovery-code restore flow
 - [x] Trusted reminder-device controls and reconnect-time revocation cleanup
 - [x] Local readable/encrypted exports and one-hour deletion UI/backend worker

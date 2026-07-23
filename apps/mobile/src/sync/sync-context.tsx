@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { AppState } from "react-native";
 
 import { useAuth } from "../auth/auth-context";
 import { supabase } from "../auth/supabase";
@@ -54,6 +55,7 @@ interface EncryptedRecordRow {
   deleted: boolean;
   record_id: string;
   record_type: SyncRecordType;
+  updated_at?: string;
   updated_by: string;
   version: number;
 }
@@ -84,6 +86,8 @@ export function SyncProvider({ children }: PropsWithChildren) {
     new Map<SyncRecordType, Set<(change: RemoteRecordChange) => void>>(),
   );
   const flushing = useRef(false);
+  const reconciling = useRef(false);
+  const reconciliationCursor = useRef("1970-01-01T00:00:00.000Z");
   const [pending, setPending] = useState(0);
   const [status, setStatus] =
     useState<SyncContextValue["status"]>("local");
@@ -115,6 +119,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
     const userId = auth.user.id;
     let active = true;
     let channel: ReturnType<typeof client.channel> | undefined;
+    reconciliationCursor.current = "1970-01-01T00:00:00.000Z";
 
     void client.realtime.setAuth().then(() => {
       if (!active) return;
@@ -132,11 +137,23 @@ export function SyncProvider({ children }: PropsWithChildren) {
           }
           void pullRecord(signal.recordType, signal.recordId);
         })
-        .subscribe();
+        .subscribe((channelStatus) => {
+          if (channelStatus === "SUBSCRIBED") void reconcile();
+        });
     });
+
+    const reconciliationInterval = setInterval(() => void reconcile(), 30_000);
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      (appState) => {
+        if (appState === "active") void reconcile();
+      },
+    );
 
     return () => {
       active = false;
+      clearInterval(reconciliationInterval);
+      appStateSubscription.remove();
       if (channel) void client.removeChannel(channel);
     };
   }, [auth.user, security.contentKey?.id]);
@@ -306,6 +323,52 @@ export function SyncProvider({ children }: PropsWithChildren) {
       return;
     }
     if (result.data) await receiveRow(result.data as EncryptedRecordRow);
+  }
+
+  async function reconcile() {
+    if (
+      reconciling.current ||
+      !auth.user ||
+      !supabase ||
+      !security.contentKey
+    ) {
+      return;
+    }
+
+    reconciling.current = true;
+    try {
+      const result = await supabase
+        .from("encrypted_records")
+        .select(
+          "record_type,record_id,ciphertext,deleted,version,updated_by,updated_at",
+        )
+        .eq("user_id", auth.user.id)
+        .gte("updated_at", reconciliationCursor.current)
+        .order("updated_at", { ascending: true });
+      if (result.error) {
+        setError(result.error.message);
+        return;
+      }
+
+      for (const row of result.data as EncryptedRecordRow[]) {
+        if (!isSyncRecordType(row.record_type)) continue;
+        await receiveRow(row);
+        if (
+          row.updated_at &&
+          row.updated_at > reconciliationCursor.current
+        ) {
+          reconciliationCursor.current = row.updated_at;
+        }
+      }
+    } catch (nextError) {
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "Durable sync reconciliation failed.",
+      );
+    } finally {
+      reconciling.current = false;
+    }
   }
 
   async function receiveRow(row: EncryptedRecordRow) {
