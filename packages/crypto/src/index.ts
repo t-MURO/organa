@@ -5,6 +5,10 @@ export {
   importContentKey,
 } from "./record-encryption";
 export {
+  createDeviceApproval,
+  unwrapDeviceApproval,
+} from "./device-approval";
+export {
   createKeyHierarchy,
   createRecoveryEnrollmentProof,
   normalizeRecoveryCode,
@@ -13,6 +17,7 @@ export {
 
 export type {
   ContentKey,
+  DeviceApprovalEnvelope,
   EncryptedEnvelope,
   KeyHierarchy,
   RecoveryKeyEnvelope,

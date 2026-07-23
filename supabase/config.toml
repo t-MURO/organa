@@ -30,3 +30,11 @@ enable_confirmations = true
 secure_password_change = true
 otp_length = 6
 otp_expiry = 900
+
+[auth.email.template.confirmation]
+subject = "{{ .Token }} is your Organa verification code"
+content_path = "./supabase/templates/email-code.html"
+
+[auth.email.template.magic_link]
+subject = "{{ .Token }} is your Organa verification code"
+content_path = "./supabase/templates/email-code.html"

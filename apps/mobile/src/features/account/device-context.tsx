@@ -1,3 +1,4 @@
+import { createDeviceApproval } from "@organa/crypto";
 import {
   createContext,
   type PropsWithChildren,
@@ -15,6 +16,8 @@ import { removeDeviceIdentity } from "../../security/device-identity";
 import { useSecurity } from "../../security/security-context";
 
 export interface TrustedDevice {
+  approvalExpiresAt?: string;
+  approvalRequestedAt?: string;
   id: string;
   lastSeenAt: string;
   name: string;
@@ -30,11 +33,13 @@ interface DeviceContextValue {
   devices: TrustedDevice[];
   loading: boolean;
   remindersAllowed: boolean;
+  approve(deviceId: string): Promise<string>;
   configureReminders(
     deviceId: string,
     options: { makePrimary?: boolean; notificationsEnabled: boolean },
   ): Promise<void>;
   refresh(): Promise<void>;
+  rejectApproval(deviceId: string): Promise<void>;
   revoke(deviceId: string): Promise<void>;
 }
 
@@ -53,25 +58,45 @@ export function DeviceProvider({ children }: PropsWithChildren) {
       setLoading(false);
       return;
     }
-    const result = await supabase
-      .from("devices")
-      .select(
-        "id,name,platform,trusted_at,revoked_at,primary_reminder,notifications_enabled,last_seen_at",
-      )
-      .eq("user_id", auth.user.id)
-      .order("last_seen_at", { ascending: false });
+    const [result, approvals] = await Promise.all([
+      supabase
+        .from("devices")
+        .select(
+          "id,name,platform,trusted_at,revoked_at,primary_reminder,notifications_enabled,last_seen_at",
+        )
+        .eq("user_id", auth.user.id)
+        .order("last_seen_at", { ascending: false }),
+      supabase
+        .from("device_approvals")
+        .select("device_id,requested_at,expires_at,claimed_at")
+        .eq("user_id", auth.user.id)
+        .is("claimed_at", null)
+        .gt("expires_at", new Date().toISOString()),
+    ]);
     if (result.error) throw result.error;
+    if (approvals.error) throw approvals.error;
+    const approvalByDevice = new Map(
+      approvals.data.map((approval) => [
+        approval.device_id,
+        approval,
+      ]),
+    );
     setDevices(
-      result.data.map((row) => ({
-        id: row.id,
-        lastSeenAt: row.last_seen_at,
-        name: row.name,
-        notificationsEnabled: row.notifications_enabled,
-        platform: row.platform,
-        primaryReminder: row.primary_reminder,
-        revokedAt: row.revoked_at,
-        trustedAt: row.trusted_at,
-      })),
+      result.data.map((row) => {
+        const approval = approvalByDevice.get(row.id);
+        return {
+          approvalExpiresAt: approval?.expires_at,
+          approvalRequestedAt: approval?.requested_at,
+          id: row.id,
+          lastSeenAt: row.last_seen_at,
+          name: row.name,
+          notificationsEnabled: row.notifications_enabled,
+          platform: row.platform,
+          primaryReminder: row.primary_reminder,
+          revokedAt: row.revoked_at,
+          trustedAt: row.trusted_at,
+        };
+      }),
     );
     setLoading(false);
   }
@@ -112,6 +137,41 @@ export function DeviceProvider({ children }: PropsWithChildren) {
       p_device_id: deviceId,
       p_make_primary: options.makePrimary ?? false,
       p_notifications_enabled: options.notificationsEnabled,
+    });
+    if (result.error) throw result.error;
+    await refresh();
+  }
+
+  async function approve(deviceId: string) {
+    if (
+      !supabase ||
+      !security.device ||
+      !security.contentKey ||
+      auth.localPreview
+    ) {
+      throw new Error("A trusted connected device is required.");
+    }
+    const approval = await createDeviceApproval(
+      security.contentKey,
+      deviceId,
+    );
+    const result = await supabase.rpc("approve_trusted_device", {
+      p_current_device_id: security.device.id,
+      p_current_device_proof: security.device.secret,
+      p_encrypted_content_key: approval.envelope,
+      p_target_device_id: deviceId,
+    });
+    if (result.error) throw result.error;
+    await refresh();
+    return approval.approvalCode;
+  }
+
+  async function rejectApproval(deviceId: string) {
+    if (!supabase || !security.device || auth.localPreview) return;
+    const result = await supabase.rpc("reject_device_approval", {
+      p_current_device_id: security.device.id,
+      p_current_device_proof: security.device.secret,
+      p_target_device_id: deviceId,
     });
     if (result.error) throw result.error;
     await refresh();
@@ -162,11 +222,13 @@ export function DeviceProvider({ children }: PropsWithChildren) {
   return (
     <DeviceContext.Provider
       value={{
+        approve,
         configureReminders,
         currentDeviceId: security.device?.id ?? null,
         devices,
         loading,
         refresh,
+        rejectApproval,
         remindersAllowed,
         revoke,
       }}

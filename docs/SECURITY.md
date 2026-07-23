@@ -16,6 +16,13 @@ storage, and deletion operations.
 - A random 256-bit recovery key encrypts the content key.
 - A one-way SHA-256 verifier derived from the recovery key authorizes enrollment
   of a new or previously revoked device without uploading the recovery key.
+- A new device may instead create a 15-minute approval request for an existing
+  trusted device. The trusted device encrypts the content key with a fresh
+  256-bit one-time AES key and displays that key as a checked approval code.
+- The approval envelope is authenticated to the target device ID and content
+  key ID. Supabase stores only this encrypted envelope; the one-time approval
+  code is transferred directly by the user and is erased from app state after
+  use.
 - The displayed recovery code contains the recovery key plus a short checksum
   for detecting transcription mistakes.
 - The recovery key is never uploaded. Supabase stores only its encrypted
@@ -67,6 +74,8 @@ Supabase can read:
   and update time
 - mutation ID, operation, base/applied version, and synchronization timestamps
 - account-deletion request and execution timestamps
+- device-approval request, approval, expiry, and claim timestamps, the
+  approving device ID, and a target-bound encrypted content-key envelope
 - user-scoped Realtime topic plus opaque changed record/device identifiers
 
 Supabase must not receive task titles, details, medication text, reminder text,
@@ -85,6 +94,12 @@ user-entered content.
 - Initial account-key and device enrollment is atomic. Authenticated clients
   cannot insert or replace account-key rows directly.
 - New or revoked devices must present the recovery-derived enrollment proof.
+- A non-revoked new device may request approval from another trusted device.
+  Pending devices remain untrusted until they decrypt the target-bound
+  envelope locally, present their per-device proof, and claim the approval.
+- Approval requests expire after 15 minutes. A trusted device can reject them,
+  claimed envelopes are erased, and revoked devices cannot use approval to
+  bypass recovery-key enrollment.
 - Active devices must present their per-device proof secret for encrypted
   mutations, reminder-device changes, revocation, and account deletion.
 - Security-definer RPC execution is revoked from `public` and `anon`.
@@ -92,8 +107,8 @@ user-entered content.
   patch shape, and future clock skew.
 - Private Realtime authorization compares the authenticated user ID with the
   exact user-scoped topic.
-- The mutation and device-control RPCs reject writes while an uncancelled
-  account-deletion request is active.
+- The mutation, recovery enrollment, approval, and device-control RPCs reject
+  writes while an uncancelled account-deletion request is active.
 
 Trusted-device revocation is enforced when the target reconnects: local Organa
 data, content key, and per-device proof secret are removed, its session signs
@@ -150,7 +165,9 @@ Before production:
 
 1. Review AES-GCM envelope construction, key lifecycle, and recovery UX.
 2. Execute cross-account RLS and RPC abuse tests on the deployed schema.
-3. Test token expiry and device revocation under offline/reconnect conditions.
-4. Review XSS/CSP, PWA caching, OAuth redirects, and browser key storage.
-5. Test native secure storage, biometrics, notifications, and backups.
-6. Resolve every critical or high finding and record the evidence.
+3. Review the one-time trusted-device handoff, expiry, rejection, and
+   target-binding protocol.
+4. Test token expiry and device revocation under offline/reconnect conditions.
+5. Review XSS/CSP, PWA caching, OAuth redirects, and browser key storage.
+6. Test native secure storage, biometrics, notifications, and backups.
+7. Resolve every critical or high finding and record the evidence.

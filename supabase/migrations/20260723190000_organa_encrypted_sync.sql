@@ -340,7 +340,6 @@ declare
   current_ciphertext jsonb;
   current_deleted boolean;
   current_field_versions jsonb;
-  current_updated_at timestamptz;
   current_version bigint;
   field_name text;
   incoming_field_version timestamptz;
@@ -456,11 +455,10 @@ begin
     return next_version;
   end if;
 
-  select ciphertext, deleted, field_versions, updated_at, version
+  select ciphertext, deleted, field_versions, version
     into current_ciphertext,
          current_deleted,
          current_field_versions,
-         current_updated_at,
          current_version
     from public.encrypted_records
     where user_id = auth.uid()

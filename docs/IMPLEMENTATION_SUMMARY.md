@@ -65,13 +65,17 @@ Implemented user-facing areas:
   IndexedDB.
 - Onboarding generates a recovery code and requires storage confirmation.
 - New devices can restore the content key locally with the recovery code.
+- New devices can alternatively request a 15-minute approval from an existing
+  trusted device. The approving device creates a target-bound AES-GCM envelope
+  and displays a one-time code that never reaches Supabase.
 - Encrypted backup imports validate every nested record and Brain Dump CRDT
   payload before writing, reject files over 20 MB, preserve newer local
   records, and re-encrypt restored data for the current account.
 - Trusted devices can be viewed and revoked.
 - First account-key/device enrollment is atomic, and account-key rows cannot be
   replaced directly by authenticated clients.
-- New or revoked devices require a one-way proof derived from the recovery key.
+- New devices require either a one-time trusted-device approval or a one-way
+  proof derived from the recovery key. Revoked devices require recovery.
 - Encrypted writes and privileged device/account actions require a hidden
   per-device proof secret.
 - One primary reminder device is supported; notifications on additional
@@ -89,7 +93,7 @@ Known security work that remains mandatory before production:
 
 - Independent cryptographic and application security review
 - Resolution of every critical or high review finding
-- Connected cross-account RLS and RPC abuse testing
+- Hosted cross-account RLS and RPC abuse testing
 - Physical-device secure-storage, biometric, notification, and backup testing
 - Final legal, privacy, retention, and medication-language review
 
@@ -114,10 +118,15 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 54 automated tests pass:
+- 61 automated tests pass:
   - 28 domain tests
-  - 4 cryptography tests
-  - 22 application integration tests
+  - 6 cryptography tests
+  - 27 application integration tests
+- Both migrations apply cleanly from scratch to local Supabase/PostgreSQL.
+- Local Supabase database lint reports no errors or warnings.
+- `pnpm verify:supabase` passes 31 authenticated database checks for RLS,
+  proof-gated approval, claim, rejection, revocation, and deletion read-only
+  behavior.
 - iOS Hermes export succeeds.
 - Android Hermes export succeeds.
 - Production web export succeeds.
@@ -131,6 +140,11 @@ Latest verified repository checks:
 - A browser subtask-reminder drill created two steps with different timings,
   reopened the task to verify persistence, and confirmed explicit ARIA checked
   and selected states.
+- A two-origin browser walkthrough completed email-code sign-in, first-device
+  recovery setup, target-bound approval, second-device local decryption and
+  claim, quiet secondary enrollment, and post-claim code removal.
+- A task created on the newly approved browser appeared on the original browser
+  through encrypted realtime synchronization without a reload.
 - Expo Doctor passes 19 of 20 checks with generated native projects. The only
   failure is host tooling because CocoaPods/full Xcode are not installed on
   this machine.
@@ -156,23 +170,56 @@ Major implementation commits:
 - `694c8d6` - erase local device data reliably
 - `8a7b71d` - restore encrypted backups
 - `fec1e70` - configure reminders per subtask
+- `d707d0c` - show the actual next reminder in the widget
 
 ## Latest Security Hardening
 
 - Recovery-authorized device enrollment and per-device write proofs
+- One-time encrypted trusted-device approval with 15-minute expiry,
+  target-binding, explicit rejection, and envelope erasure after claim
 - Atomic account-key/first-device enrollment
 - Server-enforced deletion read-only state
 - Resilient local-data and device-secret erasure on revocation/deletion
 - Validated, size-limited encrypted backup import with newest-record merge
 - Security-contract regression tests and updated security documentation
 
+## Trusted-Device Approval Milestone
+
+This milestone includes:
+
+- A target-bound AES-256-GCM content-key handoff and checked `ODA1` one-time
+  approval code in `packages/crypto`
+- A 15-minute Supabase approval request, approval, rejection, and claim flow
+- Proof-gated RPCs, RLS isolation, envelope erasure after claim, and deletion
+  read-only enforcement
+- A pending-device screen that can request approval, poll for status, and
+  unlock locally with the one-time code
+- Trusted-device account controls that can approve or reject incoming requests
+- A reproducible local Supabase verification script covering 31 authenticated
+  database and security checks
+- A web authentication-storage guard that prevents configured Expo server
+  rendering from treating an incomplete `localStorage` placeholder as storage
+- Checked-in local confirmation and returning-user email templates that send
+  the six-digit code expected by Organa
+- Web-storage and email-template regression tests; the complete automated suite
+  currently passes 61 tests
+
+Local Supabase has been reset successfully from both migrations, database lint
+reports no schema errors, and the 31-check live verification script passes.
+Configured production web export and both native Hermes exports succeed. The
+combined two-device approval UI and encrypted realtime task propagation were
+also exercised in separate browser origins against the local backend.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
 
-- Configure and exercise Google, Apple, GitHub, and email-code providers.
-- Apply and lint the migration against Docker or an EU Supabase project.
-- Run cross-account RLS and unauthorized RPC tests.
+- Configure and exercise hosted Google, Apple, GitHub, and email-code
+  providers.
+- Apply and lint the proven migrations against the selected EU Supabase
+  project.
+- Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
+  tests against the deployed project.
 - Measure two-client encrypted sync and missed-broadcast recovery.
 - Validate live reminder-device ownership and revocation.
 - Execute the scheduled deletion finalizer after the one-hour window.

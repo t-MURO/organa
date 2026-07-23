@@ -17,6 +17,8 @@ Status recorded on 2026-07-23.
 - [x] Encrypted field outbox, idempotent RPC contract, private Broadcast, and
   incremental durable reconciliation integration
 - [x] Recovery-key confirmation and recovery-code restore flow
+- [x] Short-lived encrypted new-device approval by an existing trusted device,
+  including explicit approve/reject and one-time target-bound key handoff
 - [x] Trusted reminder-device controls and reconnect-time revocation cleanup
 - [x] Local readable/encrypted exports, validated backup restore/merge, and
   one-hour deletion UI/backend worker
@@ -31,9 +33,22 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 54 automated tests pass
+- 61 automated tests pass: 28 domain, 6 cryptography, and 27 application tests
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
+- both migrations apply from scratch to local Supabase/PostgreSQL and
+  `db lint --local --level warning` reports no schema errors or warnings
+- `pnpm verify:supabase` passes 31 authenticated integration checks covering
+  cross-account RLS, direct-write denial, invalid proofs, encrypted
+  trusted-device approval and claim, envelope erasure, request rejection,
+  revocation, anonymous denial, and deletion read-only enforcement
+- local Supabase sends the six-digit code expected by both the first-time and
+  returning-user passwordless sign-in forms
+- a two-origin browser walkthrough completed recovery setup, requested and
+  approved a target-bound device handoff, unlocked the second client, removed
+  the claimed code from the approving UI, and kept secondary reminders off
+- a task created on the newly approved browser appeared on the original browser
+  through encrypted realtime synchronization without a reload
 - Expo Doctor passes 19/20 checks after native project generation; the only
   remaining check is host tooling because CocoaPods/full Xcode are not
   installed on this machine
@@ -58,13 +73,12 @@ Local evidence:
 
 ## Requires Connected Backend Validation
 
-- [ ] Google, Apple, GitHub, and email OTP against configured provider projects
-- [ ] Migration execution and database lint against local Docker or the EU
-  project
-- [ ] Cross-account RLS and unauthorized RPC tests
+- [ ] Google, Apple, GitHub, and email OTP against configured hosted providers
+- [ ] Apply and lint the proven migrations against the selected EU project
+- [ ] Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
+  checks against the deployed EU project
 - [ ] Two-client encrypted sync latency and missed-broadcast recovery
 - [ ] Device reminder ownership and revocation across live sessions
-- [ ] New-device approval initiated by an already trusted device
 - [ ] Scheduled deletion finalizer after the one-hour window
 - [ ] Export recovery drill using a separate clean device
 

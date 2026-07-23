@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -62,6 +62,11 @@ export function AccountScreen() {
   const [deletionConfirmation, setDeletionConfirmation] = useState("");
   const [requestingDeletion, setRequestingDeletion] = useState(false);
   const [busyDevice, setBusyDevice] = useState("");
+  const [deviceApproval, setDeviceApproval] = useState<{
+    code: string;
+    deviceId: string;
+    deviceName: string;
+  }>();
   const [updatingLock, setUpdatingLock] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -72,6 +77,21 @@ export function AccountScreen() {
     checkIns.loading ||
     templates.loading ||
     settingsLoading;
+
+  useEffect(() => {
+    if (!deviceApproval) return;
+
+    const target = deviceState.devices.find(
+      (device) => device.id === deviceApproval.deviceId,
+    );
+    if (target?.trustedAt) {
+      setDeviceApproval(undefined);
+      setMessage("Device joined. The one-time code is no longer needed.");
+    } else if (target && !target.approvalRequestedAt) {
+      setDeviceApproval(undefined);
+      setMessage("The device approval expired or was canceled.");
+    }
+  }, [deviceApproval, deviceState.devices]);
 
   function exportData(): OrganaExportData {
     return {
@@ -229,6 +249,48 @@ export function AccountScreen() {
     }
   }
 
+  async function approveDevice(deviceId: string, deviceName: string) {
+    setBusyDevice(deviceId);
+    setError("");
+    setMessage("");
+    try {
+      const code = await deviceState.approve(deviceId);
+      setDeviceApproval({ code, deviceId, deviceName });
+      setMessage(
+        "Device approved. Enter the one-time code shown below on the new device.",
+      );
+    } catch (nextError) {
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "The device could not be approved.",
+      );
+    } finally {
+      setBusyDevice("");
+    }
+  }
+
+  async function rejectDeviceApproval(deviceId: string) {
+    setBusyDevice(deviceId);
+    setError("");
+    setMessage("");
+    try {
+      await deviceState.rejectApproval(deviceId);
+      if (deviceApproval?.deviceId === deviceId) {
+        setDeviceApproval(undefined);
+      }
+      setMessage("The device approval request was rejected.");
+    } catch (nextError) {
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "The device approval request could not be rejected.",
+      );
+    } finally {
+      setBusyDevice("");
+    }
+  }
+
   async function toggleAppLock() {
     setUpdatingLock(true);
     setError("");
@@ -326,29 +388,37 @@ export function AccountScreen() {
           ) : (
             deviceState.devices.map((device) => {
               const current = device.id === deviceState.currentDeviceId;
-              const active = !device.revokedAt;
+              const trusted = Boolean(device.trustedAt) && !device.revokedAt;
+              const pendingApproval = Boolean(device.approvalRequestedAt);
               return (
                 <View
                   key={device.id}
                   style={[
                     styles.devicePanel,
-                    !active ? styles.deviceRevoked : undefined,
+                    device.revokedAt ? styles.deviceRevoked : undefined,
                   ]}
                 >
                   <View style={styles.deviceRow}>
                     <View
                       style={[
                         styles.deviceDot,
-                        !active ? styles.deviceDotRevoked : undefined,
+                        pendingApproval && !trusted
+                          ? styles.deviceDotPending
+                          : undefined,
+                        device.revokedAt
+                          ? styles.deviceDotRevoked
+                          : undefined,
                       ]}
                     />
                     <View style={styles.deviceCopy}>
                       <Text style={styles.deviceTitle}>{device.name}</Text>
                       <Text style={styles.deviceMeta}>
                         {capitalize(device.platform)} /{" "}
-                        {active
-                          ? `seen ${formatLastSeen(device.lastSeenAt)}`
-                          : "revoked"}
+                        {device.revokedAt
+                          ? "revoked"
+                          : !trusted
+                            ? "awaiting approval"
+                            : `seen ${formatLastSeen(device.lastSeenAt)}`}
                       </Text>
                     </View>
                     {current ? (
@@ -361,8 +431,46 @@ export function AccountScreen() {
                         <Text style={styles.primaryText}>PRIMARY</Text>
                       </View>
                     ) : null}
+                    {pendingApproval ? (
+                      <View style={styles.pendingPill}>
+                        <Text style={styles.pendingText}>REQUEST</Text>
+                      </View>
+                    ) : null}
                   </View>
-                  {active ? (
+                  {pendingApproval && !current ? (
+                    <View style={styles.deviceActions}>
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={busyDevice === device.id}
+                        style={styles.miniButton}
+                        onPress={() =>
+                          void approveDevice(device.id, device.name)
+                        }
+                      >
+                        <Text style={styles.miniButtonText}>
+                          Approve securely
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={busyDevice === device.id}
+                        style={[styles.miniButton, styles.revokeButton]}
+                        onPress={() =>
+                          void rejectDeviceApproval(device.id)
+                        }
+                      >
+                        <Text
+                          style={[
+                            styles.miniButtonText,
+                            styles.revokeButtonText,
+                          ]}
+                        >
+                          Reject
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ) : null}
+                  {trusted ? (
                     <View style={styles.deviceActions}>
                       {!device.primaryReminder ? (
                         <Pressable
@@ -421,6 +529,21 @@ export function AccountScreen() {
               );
             })
           )}
+          {deviceApproval ? (
+            <View style={styles.approvalCodePanel}>
+              <Text style={styles.approvalCodeTitle}>
+                ONE-TIME CODE FOR {deviceApproval.deviceName.toUpperCase()}
+              </Text>
+              <Text selectable style={styles.approvalCode}>
+                {deviceApproval.code}
+              </Text>
+              <Text style={styles.cardText}>
+                Enter this code only on device{" "}
+                {deviceApproval.deviceId.slice(0, 8).toUpperCase()}. It expires
+                in 15 minutes and is never sent to Organa.
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.card}>
@@ -872,6 +995,7 @@ function createStyles(theme: OrganaTheme) {
       paddingHorizontal: 4,
     },
     deviceDotRevoked: { backgroundColor: theme.textMuted },
+    deviceDotPending: { backgroundColor: theme.nice },
     deviceLoader: { alignSelf: "flex-start", marginTop: 18 },
     devicePanel: {
       backgroundColor: theme.background,
@@ -927,6 +1051,39 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_800ExtraBold",
       fontSize: 6,
       letterSpacing: 0.8,
+    },
+    pendingPill: {
+      backgroundColor: theme.mustSoft,
+      borderRadius: 9,
+      paddingHorizontal: 7,
+      paddingVertical: 4,
+    },
+    pendingText: {
+      color: theme.must,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 6,
+      letterSpacing: 0.8,
+    },
+    approvalCodePanel: {
+      backgroundColor: theme.shouldSoft,
+      borderColor: theme.accentStrong,
+      borderRadius: 13,
+      borderWidth: 1,
+      marginTop: 12,
+      padding: 13,
+    },
+    approvalCodeTitle: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 7,
+      letterSpacing: 1,
+    },
+    approvalCode: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 10,
+      lineHeight: 18,
+      marginTop: 9,
     },
     revokeButton: { borderColor: theme.must },
     revokeButtonText: { color: theme.must },

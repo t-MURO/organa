@@ -9,7 +9,8 @@
     "dev": "turbo dev",
     "dev:web": "pnpm --filter @organa/app web",
     "test": "turbo test",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "verify:supabase": "pnpm --filter @organa/app verify:supabase"
   },
   "devDependencies": {
     "turbo": "2.10.6",

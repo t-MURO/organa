@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createDeviceApproval,
   createKeyHierarchy,
   createRecoveryEnrollmentProof,
   decryptJson,
   encryptJson,
   normalizeRecoveryCode,
+  unwrapDeviceApproval,
   unwrapContentKey,
 } from "./index";
 
@@ -70,5 +72,42 @@ describe("Organa encryption", () => {
     expect(proof).not.toContain(
       normalizeRecoveryCode(hierarchy.recoveryCode).slice(0, 64),
     );
+  });
+
+  it("hands the content key to one specifically approved device", async () => {
+    const hierarchy = await createKeyHierarchy();
+    const approval = await createDeviceApproval(
+      hierarchy.contentKey,
+      "device-2",
+    );
+
+    await expect(
+      unwrapDeviceApproval(
+        approval.approvalCode,
+        approval.envelope,
+        "device-2",
+      ),
+    ).resolves.toEqual(hierarchy.contentKey);
+    await expect(
+      unwrapDeviceApproval(
+        approval.approvalCode,
+        approval.envelope,
+        "device-3",
+      ),
+    ).rejects.toThrow("not valid");
+  });
+
+  it("rejects a mistyped one-time device approval code", async () => {
+    const hierarchy = await createKeyHierarchy();
+    const approval = await createDeviceApproval(
+      hierarchy.contentKey,
+      "device-2",
+    );
+    const replacement = approval.approvalCode.endsWith("A") ? "B" : "A";
+    const changed = `${approval.approvalCode.slice(0, -1)}${replacement}`;
+
+    await expect(
+      unwrapDeviceApproval(changed, approval.envelope, "device-2"),
+    ).rejects.toThrow();
   });
 });

@@ -27,8 +27,10 @@ Enable:
 - GitHub
 - Email OTP
 
-Set email templates to send the six-digit `{{ .Token }}` value. Add these
-redirects, replacing the web origin with the deployed origin:
+Set both the confirmation and magic-link email templates to send the six-digit
+`{{ .Token }}` value. The checked-in local template is
+`supabase/templates/email-code.html`. Add these redirects, replacing the web
+origin with the deployed origin:
 
 ```text
 organa://**
@@ -46,7 +48,8 @@ For a local Docker-backed stack:
 ```sh
 pnpm dlx supabase start
 pnpm dlx supabase db reset
-pnpm dlx supabase db lint --local
+pnpm dlx supabase db lint --local --level warning
+pnpm verify:supabase
 ```
 
 For a linked EU project:
@@ -63,8 +66,10 @@ The migration:
 - makes first account-key/device enrollment atomic and prevents direct
   authenticated account-key replacement
 - stores only hidden one-way recovery and device proof verifiers
+- supports a 15-minute, target-bound encrypted content-key handoff approved by
+  an existing trusted device; the backend never receives the one-time code
 - requires the device proof for encrypted writes, reminder-device changes,
-  revocation, and deletion requests
+  approval, revocation, and deletion requests
 - grants clients read access only where required
 - routes encrypted writes and device changes through validated
   security-definer RPCs
@@ -113,6 +118,10 @@ Use two accounts and two physical devices or browsers to verify:
 - proofless device registration, mutation, revocation, and deletion RPC calls
   are rejected
 - a revoked device cannot re-enroll without the recovery-derived proof
+- a pending device remains untrusted until a different trusted device approves
+  it and the target proves possession of both its device secret and one-time
+  approval code
+- approval envelopes expire, can be rejected, and are erased after claim
 - active deletion requests reject encrypted mutations and device changes
 - different-field edits merge and same-field edits resolve deterministically
 - a missed broadcast is recovered by a durable pull

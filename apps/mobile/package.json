@@ -13,6 +13,7 @@
     "ios": "expo start --ios",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
+    "verify:supabase": "node scripts/verify-local-supabase.mjs",
     "web": "expo start --web"
   },
   "dependencies": {

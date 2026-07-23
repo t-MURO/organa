@@ -23,11 +23,12 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
   const styles = createStyles(theme);
   const [confirmed, setConfirmed] = useState(false);
   const [recoveryInput, setRecoveryInput] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [approvalInput, setApprovalInput] = useState("");
+  const [busy, setBusy] = useState("");
   const [actionError, setActionError] = useState("");
 
   async function confirmRecovery() {
-    setBusy(true);
+    setBusy("confirm-recovery");
     setActionError("");
     try {
       await security.confirmRecoverySaved();
@@ -38,12 +39,12 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
           : "The recovery setup could not be saved.",
       );
     } finally {
-      setBusy(false);
+      setBusy("");
     }
   }
 
   async function restore() {
-    setBusy(true);
+    setBusy("restore-recovery");
     setActionError("");
     try {
       await security.restoreWithRecoveryCode(recoveryInput);
@@ -54,7 +55,55 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
           : "The recovery key could not be used.",
       );
     } finally {
-      setBusy(false);
+      setBusy("");
+    }
+  }
+
+  async function requestApproval() {
+    setBusy("request-approval");
+    setActionError("");
+    try {
+      await security.requestTrustedDeviceApproval();
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "The trusted-device request could not be created.",
+      );
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function refreshApproval() {
+    setBusy("refresh-approval");
+    setActionError("");
+    try {
+      await security.refreshDeviceApproval();
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "The device approval status could not be refreshed.",
+      );
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function restoreFromApproval() {
+    setBusy("restore-approval");
+    setActionError("");
+    try {
+      await security.restoreWithApprovalCode(approvalInput);
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "The one-time approval code could not be used.",
+      );
+    } finally {
+      setBusy("");
     }
   }
 
@@ -119,7 +168,7 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                disabled={!confirmed || busy}
+                disabled={!confirmed || Boolean(busy)}
                 style={[
                   styles.primaryButton,
                   !confirmed ? styles.primaryButtonDisabled : undefined,
@@ -127,7 +176,9 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
                 onPress={() => void confirmRecovery()}
               >
                 <Text style={styles.primaryButtonText}>
-                  {busy ? "Securing account..." : "Continue to Organa"}
+                  {busy === "confirm-recovery"
+                    ? "Securing account..."
+                    : "Continue to Organa"}
                 </Text>
               </Pressable>
             </>
@@ -152,14 +203,98 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
               />
               <Pressable
                 accessibilityRole="button"
-                disabled={busy}
+                disabled={Boolean(busy)}
                 style={styles.primaryButton}
                 onPress={() => void restore()}
               >
                 <Text style={styles.primaryButtonText}>
-                  {busy ? "Unlocking..." : "Unlock this device"}
+                  {busy === "restore-recovery"
+                    ? "Unlocking..."
+                    : "Unlock with recovery key"}
                 </Text>
               </Pressable>
+              <View style={styles.dividerRow}>
+                <View style={styles.divider} />
+                <Text style={styles.dividerText}>OR</Text>
+                <View style={styles.divider} />
+              </View>
+              {security.approvalRequest ? (
+                <View style={styles.approvalPanel}>
+                  <Text style={styles.approvalTitle}>
+                    {security.approvalRequest.approved
+                      ? "A trusted device approved this request."
+                      : "Waiting for a trusted device"}
+                  </Text>
+                  <Text style={styles.hint}>
+                    Request {security.device?.id.slice(0, 8).toUpperCase()} /
+                    expires{" "}
+                    {formatExpiry(security.approvalRequest.expiresAt)}
+                  </Text>
+                  {security.approvalRequest.approved ? (
+                    <>
+                      <TextInput
+                        accessibilityLabel="One-time device approval code"
+                        autoCapitalize="characters"
+                        autoCorrect={false}
+                        multiline
+                        placeholder="ODA1-XXXX-XXXX-..."
+                        placeholderTextColor={theme.textMuted}
+                        style={[styles.input, styles.approvalInput]}
+                        value={approvalInput}
+                        onChangeText={setApprovalInput}
+                      />
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={!approvalInput.trim() || Boolean(busy)}
+                        style={[
+                          styles.primaryButton,
+                          !approvalInput.trim()
+                            ? styles.primaryButtonDisabled
+                            : undefined,
+                        ]}
+                        onPress={() => void restoreFromApproval()}
+                      >
+                        <Text style={styles.primaryButtonText}>
+                          {busy === "restore-approval"
+                            ? "Verifying approval..."
+                            : "Unlock with approval code"}
+                        </Text>
+                      </Pressable>
+                    </>
+                  ) : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={Boolean(busy)}
+                    style={styles.secondaryButton}
+                    onPress={() => void refreshApproval()}
+                  >
+                    <Text style={styles.secondaryButtonText}>
+                      {busy === "refresh-approval"
+                        ? "Checking..."
+                        : "Check approval status"}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.description}>
+                    Or ask another device already signed into this account to
+                    approve this one from Account & Privacy.
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={Boolean(busy)}
+                    style={styles.secondaryButton}
+                    onPress={() => void requestApproval()}
+                  >
+                    <Text style={styles.secondaryButtonText}>
+                      {busy === "request-approval"
+                        ? "Creating request..."
+                        : "Ask a trusted device"}
+                    </Text>
+                  </Pressable>
+                </>
+              )}
             </>
           ) : (
             <>
@@ -308,6 +443,36 @@ function createStyles(theme: OrganaTheme) {
       marginTop: 20,
       textAlignVertical: "top",
     },
+    approvalInput: {
+      minHeight: 74,
+      marginTop: 14,
+      textAlignVertical: "top",
+    },
+    approvalPanel: {
+      backgroundColor: theme.background,
+      borderColor: theme.border,
+      borderRadius: 15,
+      borderWidth: 1,
+      marginTop: 6,
+      padding: 15,
+    },
+    approvalTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 11,
+    },
+    divider: { backgroundColor: theme.border, flex: 1, height: 1 },
+    dividerRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      gap: 10,
+      marginVertical: 20,
+    },
+    dividerText: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 8,
+    },
     primaryButton: {
       alignItems: "center",
       backgroundColor: theme.accentStrong,
@@ -320,6 +485,19 @@ function createStyles(theme: OrganaTheme) {
       color: theme.background,
       fontFamily: "Manrope_700Bold",
       fontSize: 11,
+    },
+    secondaryButton: {
+      alignItems: "center",
+      borderColor: theme.accentStrong,
+      borderRadius: 14,
+      borderWidth: 1,
+      marginTop: 14,
+      padding: 13,
+    },
+    secondaryButtonText: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 10,
     },
     error: {
       color: theme.must,
@@ -335,4 +513,10 @@ function createStyles(theme: OrganaTheme) {
       fontSize: 9,
     },
   });
+}
+
+function formatExpiry(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "soon";
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }

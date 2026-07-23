@@ -18,6 +18,14 @@ export interface RecoveryKeyEnvelope {
   combined: string;
 }
 
+export interface DeviceApprovalEnvelope {
+  version: 1;
+  algorithm: "AES-256-GCM";
+  keyId: string;
+  targetDeviceId: string;
+  combined: string;
+}
+
 export interface KeyHierarchy {
   contentKey: ContentKey;
   recoveryCode: string;

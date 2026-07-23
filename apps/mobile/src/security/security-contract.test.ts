@@ -11,6 +11,13 @@ const migration = readFileSync(
   ),
   "utf8",
 );
+const approvalMigration = readFileSync(
+  new URL(
+    "../../../../supabase/migrations/20260723213000_trusted_device_approval.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 describe("Supabase security contract", () => {
   it("creates a separate proof secret for each device identity", () => {
@@ -51,13 +58,62 @@ describe("Supabase security contract", () => {
     expect(configureFunction).toContain("device_proof_is_valid");
     expect(revokeFunction).toContain("p_current_device_proof text");
     expect(revokeFunction).toContain("device_proof_is_valid");
+    expect(approvalMigration).toContain(
+      "create trigger devices_reject_write_while_deleting",
+    );
+    expect(
+      functionBody(
+        "reject_device_write_while_deleting",
+        approvalMigration,
+      ),
+    ).toContain(
+      "The account is read-only while deletion is pending.",
+    );
+  });
+
+  it("keeps trusted-device approvals encrypted, short-lived, and proof-gated", () => {
+    const requestFunction = functionBody(
+      "request_device_approval",
+      approvalMigration,
+    );
+    const approveFunction = functionBody(
+      "approve_trusted_device",
+      approvalMigration,
+    );
+    const completeFunction = functionBody(
+      "complete_device_approval",
+      approvalMigration,
+    );
+
+    expect(approvalMigration).toContain(
+      "alter table public.device_approvals enable row level security",
+    );
+    expect(approvalMigration).toContain(
+      "encrypted_content_key jsonb",
+    );
+    expect(approvalMigration).not.toMatch(
+      /\bcontent_key\s+(text|jsonb|bytea)\b/,
+    );
+    expect(requestFunction).toContain(
+      "A revoked device requires recovery-key enrollment.",
+    );
+    expect(requestFunction).toContain("interval '15 minutes'");
+    expect(approveFunction).toContain("device_proof_is_valid");
+    expect(approveFunction).toContain(
+      "The account is read-only while deletion is pending.",
+    );
+    expect(approveFunction).toContain("'AES-256-GCM'");
+    expect(completeFunction).toContain(
+      "extensions.digest(p_device_proof, 'sha256')",
+    );
+    expect(completeFunction).toContain("encrypted_content_key = null");
   });
 });
 
-function functionBody(name: string) {
-  const start = migration.indexOf(`create or replace function public.${name}(`);
-  const end = migration.indexOf("\n$$;", start);
+function functionBody(name: string, source = migration) {
+  const start = source.indexOf(`create or replace function public.${name}(`);
+  const end = source.indexOf("\n$$;", start);
   expect(start).toBeGreaterThanOrEqual(0);
   expect(end).toBeGreaterThan(start);
-  return migration.slice(start, end);
+  return source.slice(start, end);
 }

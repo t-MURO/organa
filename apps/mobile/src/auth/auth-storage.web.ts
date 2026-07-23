@@ -1,7 +1,15 @@
 import type { AuthStorage } from "./auth-storage.types";
 
 function storage() {
-  return typeof localStorage === "undefined" ? undefined : localStorage;
+  if (
+    typeof localStorage === "undefined" ||
+    typeof localStorage.getItem !== "function" ||
+    typeof localStorage.setItem !== "function" ||
+    typeof localStorage.removeItem !== "function"
+  ) {
+    return undefined;
+  }
+  return localStorage;
 }
 
 export const authStorage: AuthStorage = {
