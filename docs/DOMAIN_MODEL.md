@@ -128,6 +128,13 @@ Rules:
 - Completion never overwrites an earlier occurrence with the next date.
 - Field-level synchronization merges unrelated changes and resolves the same
   field by the repository's deterministic version rule.
+- A client reserves strictly increasing mutation timestamps before encryption
+  begins. Persisted outbox timestamps seed that clock after restart, so two
+  rapid actions cannot be reordered by equal timestamps or asynchronous
+  encryption completion.
+- Remote snapshots do not replace a record while that record has a local
+  mutation encrypting or queued. After the final mutation is acknowledged, the
+  client immediately pulls the server-merged record.
 - Realtime signals are hints; durable reconciliation remains authoritative.
 
 ## Disconnected Reminder Devices

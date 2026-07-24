@@ -304,6 +304,14 @@ Reminder-reliability milestone:
 - Reconciliation processes older rows, fully drains the latest timestamp group
   per supported record type, advances only after that group succeeds, and
   overlaps the next pass by one millisecond to avoid timestamp-boundary loss.
+- Mutation timestamps are reserved synchronously and increase strictly within
+  the client. Persisted outbox entries seed the clock after restart, so rapid
+  edits retain invocation order even when encryption or storage completes in a
+  different order.
+- Initial hydration waits for the persisted outbox index. Remote rows are
+  withheld while the same record has an encrypting or queued local mutation;
+  the final acknowledgement triggers an immediate pull of the authoritative
+  field-merged row.
 - The account-keyed security boundary remounts the complete sync and private
   data-provider subtree, so obsolete account subscribers are not reused.
 - Strict TypeScript, production web/PWA artifact verification, and iOS/Android

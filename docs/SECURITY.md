@@ -278,6 +278,14 @@ wipe.
 - Structured changes encrypt only changed top-level fields.
 - PostgreSQL merges fields by field timestamp and uses last-write-wins for the
   same field.
+- Each client reserves a strictly increasing field timestamp synchronously
+  before encryption. The largest persisted outbox timestamp seeds the clock
+  after restart, preventing same-millisecond actions or out-of-order encryption
+  completion from letting an older value win.
+- Startup hydration waits until the persisted outbox is indexed. A remote row
+  is withheld while that record has an encrypting or queued local mutation,
+  then repulled after the final acknowledgement so an older server snapshot
+  cannot replace optimistic offline state.
 - Previous encrypted versions are retained for seven days.
 - Mutation IDs make outbox retries idempotent.
 - Yjs updates make Brain Dump edits commutative and conflict-free.

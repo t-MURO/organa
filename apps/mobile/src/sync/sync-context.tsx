@@ -95,6 +95,12 @@ export function SyncProvider({ children }: PropsWithChildren) {
   const flushing = useRef(false);
   const reconciling = useRef(false);
   const reconciliationCursor = useRef(initialSyncCursor);
+  const lastMutationTimestamp = useRef(0);
+  const outboxInitialization = useRef<Promise<void> | null>(null);
+  const outboxReady = useRef(false);
+  const pendingMutationIdsByRecord = useRef(
+    new Map<string, Set<string>>(),
+  );
   const [pending, setPending] = useState(0);
   const [outboxStatus, setOutboxStatus] =
     useState<SyncContextValue["status"]>("local");
@@ -104,18 +110,55 @@ export function SyncProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
-    void repository.initialize().then(async () => {
-      const mutations = await repository.list();
-      if (!active) return;
-      setPending(mutations.length);
-      if (auth.user) void flush();
-    });
+    outboxReady.current = false;
+    const initialization = repository.initialize();
+    outboxInitialization.current = initialization;
+    void initialization
+      .then(async () => {
+        const mutations = await repository.list();
+        if (!active) return;
+        lastMutationTimestamp.current = Math.max(
+          lastMutationTimestamp.current,
+          ...mutations.map((mutation) => Date.parse(mutation.createdAt) || 0),
+        );
+        mutations.forEach((mutation) =>
+          rememberPendingMutation(
+            pendingMutationIdsByRecord.current,
+            mutation.recordType,
+            mutation.recordId,
+            mutation.id,
+          ),
+        );
+        outboxReady.current = true;
+        setPending(mutations.length);
+        for (const [recordType, listeners] of subscribers.current) {
+          for (const listener of listeners) {
+            void pullRecordType(recordType, listener);
+          }
+        }
+        if (auth.user) {
+          void flush();
+          void reconcile();
+        }
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setOutboxStatus("error");
+        setOutboxError(
+          error instanceof Error
+            ? error.message
+            : "The local encrypted sync queue could not be opened.",
+        );
+      });
 
     const interval = setInterval(() => {
       if (auth.user) void flush();
     }, 5_000);
     return () => {
       active = false;
+      if (outboxInitialization.current === initialization) {
+        outboxInitialization.current = null;
+      }
       clearInterval(interval);
     };
   }, [auth.user, repository]);
@@ -173,35 +216,53 @@ export function SyncProvider({ children }: PropsWithChildren) {
     previousValue?: unknown,
   ) {
     if (!auth.user || !security.device) return;
-    const timestamp = new Date().toISOString();
     const nextRecord = asRecord(value);
     const changedFields = changedFieldNames(previousValue, value);
     if (changedFields.length === 0) return;
-    const ciphertext: EncryptedFieldPatch = {};
-    const fieldVersions: Record<string, string> = {};
-    for (const field of changedFields) {
-      ciphertext[field] = await security.encryptRecord(
-        recordType,
-        `${recordId}:${field}`,
-        Object.prototype.hasOwnProperty.call(nextRecord, field)
-          ? { present: true, value: nextRecord[field] }
-          : { present: false },
-      );
-      fieldVersions[field] = timestamp;
-    }
-    await enqueue({
-      attempts: 0,
-      baseVersion: 0,
-      ciphertext,
-      createdAt: timestamp,
-      deviceId: security.device.id,
-      fieldVersions,
-      id: randomUUID(),
-      operation: "upsert",
-      recordId,
+    const timestamp = nextMutationTimestamp(lastMutationTimestamp);
+    const mutationId = randomUUID();
+    rememberPendingMutation(
+      pendingMutationIdsByRecord.current,
       recordType,
-      userId: auth.user.id,
-    });
+      recordId,
+      mutationId,
+    );
+
+    try {
+      const ciphertext: EncryptedFieldPatch = {};
+      const fieldVersions: Record<string, string> = {};
+      for (const field of changedFields) {
+        ciphertext[field] = await security.encryptRecord(
+          recordType,
+          `${recordId}:${field}`,
+          Object.prototype.hasOwnProperty.call(nextRecord, field)
+            ? { present: true, value: nextRecord[field] }
+            : { present: false },
+        );
+        fieldVersions[field] = timestamp;
+      }
+      await enqueue({
+        attempts: 0,
+        baseVersion: 0,
+        ciphertext,
+        createdAt: timestamp,
+        deviceId: security.device.id,
+        fieldVersions,
+        id: mutationId,
+        operation: "upsert",
+        recordId,
+        recordType,
+        userId: auth.user.id,
+      });
+    } catch (error) {
+      forgetPendingMutation(
+        pendingMutationIdsByRecord.current,
+        recordType,
+        recordId,
+        mutationId,
+      );
+      throw error;
+    }
   }
 
   async function queueDelete(
@@ -209,19 +270,37 @@ export function SyncProvider({ children }: PropsWithChildren) {
     recordId: string,
   ) {
     if (!auth.user || !security.device) return;
-    const timestamp = new Date().toISOString();
-    await enqueue({
-      attempts: 0,
-      baseVersion: 0,
-      createdAt: timestamp,
-      deviceId: security.device.id,
-      fieldVersions: { deleted: timestamp },
-      id: randomUUID(),
-      operation: "delete",
-      recordId,
+    const timestamp = nextMutationTimestamp(lastMutationTimestamp);
+    const mutationId = randomUUID();
+    rememberPendingMutation(
+      pendingMutationIdsByRecord.current,
       recordType,
-      userId: auth.user.id,
-    });
+      recordId,
+      mutationId,
+    );
+
+    try {
+      await enqueue({
+        attempts: 0,
+        baseVersion: 0,
+        createdAt: timestamp,
+        deviceId: security.device.id,
+        fieldVersions: { deleted: timestamp },
+        id: mutationId,
+        operation: "delete",
+        recordId,
+        recordType,
+        userId: auth.user.id,
+      });
+    } catch (error) {
+      forgetPendingMutation(
+        pendingMutationIdsByRecord.current,
+        recordType,
+        recordId,
+        mutationId,
+      );
+      throw error;
+    }
   }
 
   async function compactBrainDumpUpdates(
@@ -240,7 +319,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
       ) {
         return false;
       }
-      const timestamp = new Date().toISOString();
+      const timestamp = nextMutationTimestamp(lastMutationTimestamp);
       const snapshotRecord = asRecord(snapshot);
       const ciphertext: EncryptedFieldPatch = {};
       const fieldVersions: Record<string, string> = {};
@@ -273,6 +352,11 @@ export function SyncProvider({ children }: PropsWithChildren) {
   }
 
   async function enqueue(mutation: EncryptedMutation) {
+    const initialization = outboxInitialization.current;
+    if (!initialization) {
+      throw new Error("The local encrypted sync queue is not ready.");
+    }
+    await initialization;
     await repository.upsert(mutation);
     const mutations = await repository.list();
     setPending(mutations.length);
@@ -280,7 +364,15 @@ export function SyncProvider({ children }: PropsWithChildren) {
   }
 
   async function flush() {
-    if (flushing.current || !auth.user || !supabase || !security.device) return;
+    if (
+      flushing.current ||
+      !outboxReady.current ||
+      !auth.user ||
+      !supabase ||
+      !security.device
+    ) {
+      return;
+    }
     flushing.current = true;
     setOutboxStatus("syncing");
     setOutboxError("");
@@ -307,6 +399,21 @@ export function SyncProvider({ children }: PropsWithChildren) {
           throw result.error;
         }
         await repository.remove(mutation.id);
+        forgetPendingMutation(
+          pendingMutationIdsByRecord.current,
+          mutation.recordType,
+          mutation.recordId,
+          mutation.id,
+        );
+        if (
+          !hasPendingMutation(
+            pendingMutationIdsByRecord.current,
+            mutation.recordType,
+            mutation.recordId,
+          )
+        ) {
+          await pullRecord(mutation.recordType, mutation.recordId);
+        }
       }
       const remaining = await repository.list();
       setPending(remaining.length);
@@ -347,7 +454,14 @@ export function SyncProvider({ children }: PropsWithChildren) {
     recordType: SyncRecordType,
     listener: (change: RemoteRecordChange) => void,
   ) {
-    if (!auth.user || !supabase || !security.contentKey) return;
+    if (
+      !outboxReady.current ||
+      !auth.user ||
+      !supabase ||
+      !security.contentKey
+    ) {
+      return;
+    }
     try {
       let recordCursor = "";
       while (true) {
@@ -380,7 +494,14 @@ export function SyncProvider({ children }: PropsWithChildren) {
   }
 
   async function pullRecord(recordType: SyncRecordType, recordId: string) {
-    if (!auth.user || !supabase || !security.contentKey) return;
+    if (
+      !outboxReady.current ||
+      !auth.user ||
+      !supabase ||
+      !security.contentKey
+    ) {
+      return;
+    }
     try {
       const result = await supabase
         .from("encrypted_records")
@@ -401,6 +522,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
   async function reconcile() {
     if (
       reconciling.current ||
+      !outboxReady.current ||
       !auth.user ||
       !supabase ||
       !security.contentKey
@@ -506,6 +628,15 @@ export function SyncProvider({ children }: PropsWithChildren) {
     row: EncryptedRecordRow,
     listener: (change: RemoteRecordChange) => void,
   ) {
+    if (
+      hasPendingMutation(
+        pendingMutationIdsByRecord.current,
+        row.record_type,
+        row.record_id,
+      )
+    ) {
+      return;
+    }
     if (row.deleted || !row.ciphertext) {
       listener({
         operation: "delete",
@@ -556,6 +687,49 @@ function overlapSyncCursor(cursor: string) {
   const timestamp = new Date(cursor).getTime();
   if (!Number.isFinite(timestamp) || timestamp <= 0) return initialSyncCursor;
   return new Date(timestamp - 1).toISOString();
+}
+
+function nextMutationTimestamp(clock: { current: number }) {
+  const timestamp = Math.max(Date.now(), clock.current + 1);
+  clock.current = timestamp;
+  return new Date(timestamp).toISOString();
+}
+
+function rememberPendingMutation(
+  index: Map<string, Set<string>>,
+  recordType: SyncRecordType,
+  recordId: string,
+  mutationId: string,
+) {
+  const key = pendingRecordKey(recordType, recordId);
+  const ids = index.get(key) ?? new Set<string>();
+  ids.add(mutationId);
+  index.set(key, ids);
+}
+
+function forgetPendingMutation(
+  index: Map<string, Set<string>>,
+  recordType: SyncRecordType,
+  recordId: string,
+  mutationId: string,
+) {
+  const key = pendingRecordKey(recordType, recordId);
+  const ids = index.get(key);
+  if (!ids) return;
+  ids.delete(mutationId);
+  if (ids.size === 0) index.delete(key);
+}
+
+function hasPendingMutation(
+  index: Map<string, Set<string>>,
+  recordType: SyncRecordType,
+  recordId: string,
+) {
+  return index.has(pendingRecordKey(recordType, recordId));
+}
+
+function pendingRecordKey(recordType: SyncRecordType, recordId: string) {
+  return `${recordType}\u0000${recordId}`;
 }
 
 function syncReadErrorMessage(error: unknown) {
