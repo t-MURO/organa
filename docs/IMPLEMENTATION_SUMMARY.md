@@ -466,6 +466,9 @@ Implemented user-facing areas:
 - Onboarding generates a recovery code and requires storage confirmation.
 - Recovery and approval envelopes are validated against their expected key or
   device identifiers before cryptographic use.
+- Recovery/approval form state is keyed to the active account, successfully
+  used secrets are erased immediately, and displayed approval codes clear at
+  their server-provided expiry without relying on realtime delivery.
 - New devices can restore the content key locally with the recovery code.
 - New devices can alternatively request a 15-minute approval from an existing
   trusted device. The approving device creates a target-bound AES-GCM envelope
@@ -636,6 +639,7 @@ Major implementation commits:
   revocation or final deletion
 - Server-first key enrollment/approval persistence with exact envelope and
   ambiguous-commit validation
+- Account-scoped recovery UI and deadline-driven one-time-code erasure
 - Recovery-authorized device enrollment and per-device write proofs
 - One-time encrypted trusted-device approval with 15-minute expiry,
   target-binding, explicit rejection, and envelope erasure after claim

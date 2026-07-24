@@ -17,6 +17,16 @@ import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
 import { useSecurity } from "./security-context";
 
 export function SecurityBoundary({ children }: PropsWithChildren) {
+  const auth = useAuth();
+  const ownerId = auth.localPreview
+    ? "local-preview"
+    : (auth.user?.id ?? "signed-out");
+  return (
+    <AccountSecurityBoundary key={ownerId}>{children}</AccountSecurityBoundary>
+  );
+}
+
+function AccountSecurityBoundary({ children }: PropsWithChildren) {
   const security = useSecurity();
   const auth = useAuth();
   const theme = useColorScheme() === "dark" ? darkTheme : lightTheme;
@@ -32,6 +42,7 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
     setActionError("");
     try {
       await security.confirmRecoverySaved();
+      setConfirmed(false);
     } catch (error) {
       setActionError(
         error instanceof Error
@@ -48,6 +59,7 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
     setActionError("");
     try {
       await security.restoreWithRecoveryCode(recoveryInput);
+      setRecoveryInput("");
     } catch (error) {
       setActionError(
         error instanceof Error
@@ -62,6 +74,7 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
   async function requestApproval() {
     setBusy("request-approval");
     setActionError("");
+    setApprovalInput("");
     try {
       await security.requestTrustedDeviceApproval();
     } catch (error) {
@@ -96,6 +109,7 @@ export function SecurityBoundary({ children }: PropsWithChildren) {
     setActionError("");
     try {
       await security.restoreWithApprovalCode(approvalInput);
+      setApprovalInput("");
     } catch (error) {
       setActionError(
         error instanceof Error

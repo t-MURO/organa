@@ -27,6 +27,9 @@ storage, and deletion operations.
   use.
 - Approval envelopes are structurally validated and must be bound to the
   current pending device before decryption.
+- Recovery confirmation, recovery-key input, and one-time approval input are
+  scoped to the active account UI. An account identity change unmounts that
+  state synchronously, and successfully used codes are cleared immediately.
 - The displayed recovery code contains the recovery key plus a short checksum
   for detecting transcription mistakes.
 - The recovery key is never uploaded. Supabase stores only its encrypted
@@ -188,6 +191,8 @@ user-entered content.
 - Approval requests expire after 15 minutes. A trusted device can reject them,
   claimed envelopes are erased, and revoked devices cannot use approval to
   bypass recovery-key enrollment.
+- A trusted device clears its displayed one-time approval code at the
+  server-provided expiry even when no realtime event arrives.
 - A pending device persists the decrypted content key only after the server
   confirms trust and envelope claim. If an RPC response is lost after commit,
   the client verifies that exact resulting server state before proceeding.

@@ -84,13 +84,34 @@ export function AccountScreen() {
     const target = deviceState.devices.find(
       (device) => device.id === deviceApproval.deviceId,
     );
-    if (target?.trustedAt) {
+    if (target?.trustedAt && !target.revokedAt) {
       setDeviceApproval(undefined);
       setMessage("Device joined. The one-time code is no longer needed.");
-    } else if (target && !target.approvalRequestedAt) {
+      return;
+    }
+    if (target && (!target.approvalRequestedAt || target.revokedAt)) {
       setDeviceApproval(undefined);
       setMessage("The device approval expired or was canceled.");
+      return;
     }
+
+    const expiresAt = target?.approvalExpiresAt
+      ? new Date(target.approvalExpiresAt).getTime()
+      : Number.NaN;
+    if (!Number.isFinite(expiresAt)) return;
+
+    const remaining = expiresAt - Date.now();
+    if (remaining <= 0) {
+      setDeviceApproval(undefined);
+      setMessage("The device approval expired or was canceled.");
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setDeviceApproval(undefined);
+      setMessage("The device approval expired or was canceled.");
+    }, remaining);
+    return () => clearTimeout(timeout);
   }, [deviceApproval, deviceState.devices]);
 
   function exportData(): OrganaExportData {

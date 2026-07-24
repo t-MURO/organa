@@ -71,6 +71,9 @@ Local evidence:
 - recovery and approval envelopes must match their expected key/device IDs;
   decrypted approval keys are persisted only after server trust is confirmed,
   and ambiguous committed RPC responses require matching server state
+- recovery/approval UI state is account-bound, successfully used codes are
+  erased immediately, and approving devices hide unclaimed codes at server
+  expiry without waiting for a realtime event
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
