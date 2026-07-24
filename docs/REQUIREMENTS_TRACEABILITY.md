@@ -21,9 +21,9 @@ Status meanings:
 | 1 | Google, Apple, GitHub, and email account creation | OAuth and email-code adapters plus the sign-in UI are in `apps/mobile/src/auth`; local email-code contracts and a real local OTP walkthrough pass. | Connected gate: configure and exercise every hosted provider and redirect. |
 | 2 | Recovery confirmation and trusted-device enrollment | `packages/crypto` tests checked `ORG1` recovery and target-bound `ODA1` transfer; 54 authenticated backend checks exercise recovery proof, approval, claim, rejection, expiry, and revocation. | Connected and separate-device recovery drills remain. |
 | 3 | Create, edit, schedule, repeat, complete, and search tasks | Domain/task-context tests cover recurrence and completion; browser walkthroughs cover editor, Quick Add, dates, search, checkbox-only completion, fade, and Undo. | Physical smoke test on release builds. |
-| 4 | One-off, routine, and medication behavior | Domain task kinds, calendar recurrence, optional dose confirmation, medication copy, and completion history are implemented and tested. | Physical notification and accessibility walkthrough. |
+| 4 | One-off, routine, and medication behavior | Domain task kinds, one-off recurrence rejection across tasks/templates/restore, calendar recurrence, optional dose confirmation, medication copy, and completion history are implemented and tested; a live web save/reopen drill confirms One-off recurrence is cleared in both editors. | Physical notification and accessibility walkthrough. |
 | 5 | Multiple reminders, snooze presets, and a primary device | Native plans, task/subtask schedules, Web Push schedules, configurable task presets, ownership cache, and primary demotion are tested; database checks enforce quiet secondary devices. | Physical native actions plus hosted cross-device ownership and Web Push. |
-| 6 | Subtasks and optional subtask reminders | Editor, domain schedules, completion reconciliation, native payloads, Web Push plans, and browser persistence/ARIA drills provide local evidence. | Physical notification action drill. |
+| 6 | Subtasks and optional subtask reminders | Editor, explicit inherited-reminder materialization, domain schedules, completion reconciliation, native payloads, Web Push plans, and browser persistence/ARIA drills provide local evidence. | Physical notification action drill. |
 | 7 | Today, priority/time lanes, week/month calendar | `today-screen.tsx`, `planning-calendar.tsx`, and task planning/domain tests implement these views; browser walkthrough covers switching and task placement. | Release-device responsive smoke test. |
 | 8 | Browse, copy, create, edit, and delete templates | Template domain/context/screen code and tests cover official/private behavior, search, copy-before-edit, deletion, and date-safe instantiation. | Release-device smoke test. |
 | 9 | Focus from a task or reminder | Focus route, native response coordinator, active-tab reminder, Web Push deep link, and widget routes are implemented; payload/route tests pass. | Physical notification/widget and permission-granted Web Push drills. |
@@ -48,7 +48,7 @@ Status meanings:
 - `pnpm verify:performance`: Quick Add, recurring completion, Today planning,
   and search pass a 100 ms median budget against 2,000 local tasks on the
   verification host; release-device timing remains a physical gate
-- `pnpm test`: 126 tests (41 domain, 6 cryptography, 79 application)
+- `pnpm test`: 130 tests (43 domain, 6 cryptography, 81 application)
 - `pnpm typecheck`: all strict TypeScript packages pass
 - `pnpm verify:web-push`: VAPID authorization and encrypted payload pass
 - `pnpm verify:supabase`: 54 database, 13 deletion-function, and 15 Web Push

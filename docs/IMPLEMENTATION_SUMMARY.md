@@ -3,12 +3,10 @@
 Status recorded on 2026-07-24.
 
 This is the structured pause checkpoint requested after the implementation
-work. The committed implementation is complete through `b12bc7a`; the
-requirement-by-requirement audit and documentation checkpoint is committed in
-`9fe7c0e`. This file includes the Web Push and reminder-template milestones
-documented below, while `docs/REQUIREMENTS_TRACEABILITY.md` maps every
-controlled-beta acceptance criterion to direct evidence and its remaining
-gate.
+work. The implementation is complete through the task-type and
+subtask-reminder consistency milestone described below.
+`docs/REQUIREMENTS_TRACEABILITY.md` maps every controlled-beta acceptance
+criterion to direct evidence and its remaining gate.
 
 ## Current Checkpoint
 
@@ -22,15 +20,36 @@ Committed and verified milestones:
 - Recurrence, grace-day, inbox, and undated-task semantics
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
+- Explicit controlled-beta OS and browser support boundaries
+- Deterministic local performance checks against a 2,000-task dataset
+- Fail-closed encrypted-backup domain validation
 - A 20-item controlled-beta traceability matrix that separates locally
   verified behavior from connected-provider, physical-device, and external
   review gates
 
 Latest checkpoint commits:
 
+- `eee913d` rejects invalid decrypted backup domain records before restore.
+- `2c669ce` adds deterministic local task-performance verification.
+- `32bf4e9` pins and verifies the controlled-beta platform boundaries.
+- `632c799` refreshes this implementation checkpoint.
 - `9fe7c0e` documents requirement traceability and the remaining launch gates.
 - `b12bc7a` fixes reminder-bearing template instantiation.
 - `9bd7d24` delivers privacy-minimized standards-based Web Push.
+
+Latest verified task-type work:
+
+- Enforces that One-off tasks and templates cannot carry recurrence.
+- Clears and hides incompatible recurrence controls in both editors.
+- Rejects contradictory One-off recurrence during encrypted-backup restore.
+- Materializes legacy inherited subtask reminders when per-step editing is
+  enabled, keeping visible chips aligned with the actual saved schedule.
+- A live web walkthrough confirms the One-off-to-Routine-to-One-off transition
+  in both task and template editors. A saved task reopens as One-off with no
+  recurrence control.
+- Passes strict TypeScript, 130 automated tests, the 2,000-task performance
+  verifier, iOS and Android Hermes exports, the production PWA export, the
+  production dependency audit, and `git diff --check`.
 
 ## Platform Compatibility Milestone
 
@@ -76,6 +95,23 @@ Latest checkpoint commits:
 - Validation still completes before any local repository write, preserving the
   fail-closed restore boundary.
 - Eighteen export/restore tests and the full 126-test suite pass.
+
+## Task-Type Invariant Milestone
+
+- Makes “One-off” an enforced non-recurring task kind in the shared domain.
+- Rejects contradictory recurrence in task creation, user/official template
+  creation, and decrypted backup restoration.
+- Task and template editors clear recurrence when switched to One-off and hide
+  repeat/grace controls that cannot apply.
+- Template saves strip stale grace-day and dose-confirmation settings when the
+  selected kind no longer supports them.
+- Enabling per-step reminder configuration now makes inherited parent timings
+  explicit for legacy subtasks, so the visible chips match the saved schedule
+  while already explicit quiet steps remain quiet.
+- A live web walkthrough confirms both editor transitions and a save/reopen
+  cycle confirms One-off persistence without recurrence.
+- The complete suite passes 130 tests: 43 domain, 6 cryptography, and 81
+  application tests.
 
 Latest committed implementation milestones:
 
@@ -339,10 +375,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 126 automated tests pass:
-  - 41 domain tests
+- 130 automated tests pass:
+  - 43 domain tests
   - 6 cryptography tests
-  - 79 application integration tests
+  - 81 application integration tests
 - All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
@@ -422,6 +458,11 @@ Major implementation commits:
 - `263427d` - quiet demoted reminder devices
 - `9bd7d24` - deliver private Web Push reminders
 - `b12bc7a` - anchor reminder templates to use date
+- `9fe7c0e` - trace controlled-beta requirements and remaining gates
+- `632c799` - refresh the implementation checkpoint
+- `32bf4e9` - pin controlled-beta platform support
+- `2c669ce` - enforce local task performance
+- `eee913d` - reject invalid backup domain records
 
 ## Latest Security Hardening
 

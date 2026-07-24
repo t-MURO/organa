@@ -30,6 +30,8 @@ document names those rules and explains the user-facing policy.
 - A date-only deadline does not invent an end-of-day time and cannot schedule
   an exact-time reminder.
 - Title is required after trimming.
+- One-off tasks never carry recurrence. Repeating schedules belong to Routine
+  or Medication task kinds.
 - Completion changes only through the task checkbox.
 - Completion and medication dose confirmation are separate transitions.
 - A completed task keeps its original configuration and subtask states as

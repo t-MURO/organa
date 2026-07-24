@@ -180,6 +180,7 @@ function isTaskInput(value: unknown): value is Record<string, unknown> {
 
   return (
     validShape &&
+    (value.recurrence === undefined || kind !== "one_off") &&
     (value.graceDays === undefined ||
       (kind !== "one_off" && value.recurrence !== undefined)) &&
     (value.requireDoseConfirmation === undefined || kind === "medication")

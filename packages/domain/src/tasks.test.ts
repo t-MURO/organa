@@ -232,6 +232,7 @@ describe("task transitions", () => {
   it("clamps monthly recurrence to the last valid calendar day", () => {
     const task = createTask(
       {
+        kind: "habit",
         title: "Monthly review",
         plannedFor: "2027-01-31",
         recurrence: { frequency: "monthly", interval: 1 },
@@ -254,6 +255,7 @@ describe("task transitions", () => {
   it("preserves a monthly anchor on ordinary edits and resets it after a move", () => {
     const january = createTask(
       {
+        kind: "habit",
         plannedFor: "2027-01-31",
         recurrence: { frequency: "monthly", interval: 1 },
         title: "Monthly review",
@@ -269,6 +271,7 @@ describe("task transitions", () => {
     const renamed = updateTask(
       february,
       {
+        kind: "habit",
         plannedFor: "2027-02-28",
         recurrence: { frequency: "monthly", interval: 1 },
         title: "Renamed review",
@@ -278,6 +281,7 @@ describe("task transitions", () => {
     const moved = updateTask(
       renamed,
       {
+        kind: "habit",
         plannedFor: "2027-02-15",
         recurrence: { frequency: "monthly", interval: 1 },
         title: "Moved review",
@@ -292,6 +296,7 @@ describe("task transitions", () => {
   it("moves through selected weekdays and then skips interval weeks", () => {
     const task = createTask(
       {
+        kind: "habit",
         plannedFor: "2026-07-21",
         recurrence: {
           frequency: "weekly",
@@ -324,6 +329,7 @@ describe("task transitions", () => {
       {
         dueAt: "2026-07-21T18:30:00.000Z",
         dueDate: "2026-07-21",
+        kind: "habit",
         plannedFor: "2026-07-21",
         recurrence: {
           frequency: "weekly",
@@ -351,6 +357,7 @@ describe("task transitions", () => {
     const task = createTask(
       {
         dueDate: "2026-07-22",
+        kind: "habit",
         plannedFor: "2026-07-21",
         recurrence: { frequency: "weekly", interval: 1 },
         title: "Weekly paperwork",
@@ -373,6 +380,7 @@ describe("task transitions", () => {
   it("does not materialize a backlog of missed recurring dates", () => {
     const task = createTask(
       {
+        kind: "habit",
         plannedFor: "2026-07-01",
         recurrence: { frequency: "daily", interval: 1 },
         title: "Daily reset",
@@ -395,6 +403,7 @@ describe("task transitions", () => {
     expect(() =>
       createTask(
         {
+          kind: "habit",
           plannedFor: "2026-07-23",
           recurrence: { frequency: "daily", interval: 0 },
           title: "Invalid interval",
@@ -406,6 +415,7 @@ describe("task transitions", () => {
     expect(() =>
       createTask(
         {
+          kind: "habit",
           plannedFor: "2026-07-23",
           recurrence: {
             frequency: "weekly",
@@ -418,6 +428,21 @@ describe("task transitions", () => {
         now,
       ),
     ).toThrow("between 0 and 6");
+  });
+
+  it("rejects recurrence on a one-off task", () => {
+    expect(() =>
+      createTask(
+        {
+          kind: "one_off",
+          plannedFor: "2026-07-23",
+          recurrence: { frequency: "daily", interval: 1 },
+          title: "Contradictory task",
+        },
+        "invalid-one-off-recurrence",
+        now,
+      ),
+    ).toThrow("One-off tasks cannot repeat");
   });
 
   it("rejects impossible planned and due calendar dates", () => {

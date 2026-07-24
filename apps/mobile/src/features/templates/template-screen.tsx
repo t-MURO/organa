@@ -1,4 +1,5 @@
 import {
+  canTaskKindRepeat,
   formatLocalDate,
   instantiateTaskTemplate,
   searchTaskTemplates,
@@ -349,11 +350,23 @@ function TemplateEditor({
     setKind(template?.task.kind ?? "one_off");
     setPriority(template?.task.priority ?? "should");
     setDuration(template?.task.estimatedMinutes?.toString() ?? "");
-    setRecurrenceEnabled(Boolean(template?.task.recurrence));
+    setRecurrenceEnabled(
+      Boolean(template?.task.recurrence) &&
+        canTaskKindRepeat(template?.task.kind),
+    );
     setFrequency(template?.task.recurrence?.frequency ?? "daily");
     setError("");
     setConfirmDelete(false);
   }, [template, visible]);
+
+  function selectKind(nextKind: TaskKind) {
+    setKind(nextKind);
+    if (!canTaskKindRepeat(nextKind)) {
+      setRecurrenceEnabled(false);
+    } else if (!recurrenceEnabled) {
+      setRecurrenceEnabled(true);
+    }
+  }
 
   function submit() {
     if (!name.trim() || !title.trim()) {
@@ -377,14 +390,20 @@ function TemplateEditor({
         kind,
         priority,
         estimatedMinutes,
-        recurrence: recurrenceEnabled
+        recurrence: canTaskKindRepeat(kind) && recurrenceEnabled
           ? { frequency, interval: 1 }
           : undefined,
         reminders: template?.task.reminders,
         subtasks: template?.task.subtasks,
         snoozePresets: template?.task.snoozePresets,
-        graceDays: template?.task.graceDays,
-        requireDoseConfirmation: template?.task.requireDoseConfirmation,
+        graceDays:
+          canTaskKindRepeat(kind) && recurrenceEnabled
+            ? template?.task.graceDays
+            : undefined,
+        requireDoseConfirmation:
+          kind === "medication"
+            ? template?.task.requireDoseConfirmation
+            : undefined,
         subtaskRemindersEnabled: template?.task.subtaskRemindersEnabled,
         scheduledTime: template?.task.scheduledTime,
       },
@@ -460,7 +479,7 @@ function TemplateEditor({
               items={kinds}
               selected={kind}
               styles={styles}
-              onSelect={(value) => setKind(value as TaskKind)}
+              onSelect={(value) => selectKind(value as TaskKind)}
             />
             <Text style={styles.label}>Priority</Text>
             <ChipRow
@@ -478,31 +497,39 @@ function TemplateEditor({
               value={duration}
               onChange={setDuration}
             />
-            <View style={styles.toggleRow}>
-              <View style={styles.toggleCopy}>
-                <Text style={styles.label}>Repeating task</Text>
-                <Text style={styles.hint}>Create the next occurrence.</Text>
-              </View>
-              <Pressable
-                accessibilityLabel="Repeat this template task"
-                accessibilityRole="switch"
-                accessibilityState={{ checked: recurrenceEnabled }}
-                aria-checked={recurrenceEnabled}
-                style={[
-                  styles.toggle,
-                  recurrenceEnabled ? styles.toggleActive : undefined,
-                ]}
-                onPress={() => setRecurrenceEnabled((current) => !current)}
-              >
-                <View
+            {canTaskKindRepeat(kind) ? (
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleCopy}>
+                  <Text style={styles.label}>Repeating task</Text>
+                  <Text style={styles.hint}>Create the next occurrence.</Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Repeat this template task"
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: recurrenceEnabled }}
+                  aria-checked={recurrenceEnabled}
                   style={[
-                    styles.toggleThumb,
-                    recurrenceEnabled ? styles.toggleThumbActive : undefined,
+                    styles.toggle,
+                    recurrenceEnabled ? styles.toggleActive : undefined,
                   ]}
-                />
-              </Pressable>
-            </View>
-            {recurrenceEnabled ? (
+                  onPress={() => setRecurrenceEnabled((current) => !current)}
+                >
+                  <View
+                    style={[
+                      styles.toggleThumb,
+                      recurrenceEnabled
+                        ? styles.toggleThumbActive
+                        : undefined,
+                    ]}
+                  />
+                </Pressable>
+              </View>
+            ) : (
+              <Text style={styles.hint}>
+                Choose Routine or Medication for a repeating template.
+              </Text>
+            )}
+            {canTaskKindRepeat(kind) && recurrenceEnabled ? (
               <ChipRow
                 items={[
                   { value: "daily", label: "Daily" },

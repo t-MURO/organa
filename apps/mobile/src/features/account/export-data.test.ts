@@ -207,6 +207,17 @@ describe("encrypted backup restoration", () => {
         requireDoseConfirmation: true,
       },
     },
+    {
+      label: "recurrence on a one-off task",
+      value: {
+        ...createTask(
+          { title: "Invalid one-off recurrence" },
+          "invalid-one-off-recurrence",
+          new Date(data.exportedAt),
+        ),
+        recurrence: { frequency: "daily" as const, interval: 1 },
+      },
+    },
   ])("rejects restored tasks with $label", async ({ value }) => {
     const { backup, recoveryCode } = await createBackup({
       ...data,

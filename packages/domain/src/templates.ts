@@ -1,4 +1,4 @@
-import type { CreateTaskInput } from "./tasks";
+import { canTaskKindRepeat, type CreateTaskInput } from "./tasks";
 
 export type TaskTemplateSource = "official" | "user";
 
@@ -28,6 +28,12 @@ export function createTaskTemplate(
   const title = input.task.title.trim();
   if (!name) throw new Error("A template name is required.");
   if (!title) throw new Error("A template task title is required.");
+  if (
+    input.task.recurrence &&
+    !canTaskKindRepeat(input.task.kind)
+  ) {
+    throw new Error("One-off task templates cannot repeat.");
+  }
 
   const timestamp = now.toISOString();
   return {

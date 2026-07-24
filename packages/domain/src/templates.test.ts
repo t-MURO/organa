@@ -130,6 +130,24 @@ describe("task templates", () => {
     ).toThrow("copied");
   });
 
+  it("rejects recurrence on a one-off task template", () => {
+    expect(() =>
+      createTaskTemplate(
+        {
+          name: "Contradictory template",
+          task: {
+            kind: "one_off",
+            recurrence: { frequency: "daily", interval: 1 },
+            title: "One time but repeating",
+          },
+        },
+        "invalid-template",
+        "user",
+        now,
+      ),
+    ).toThrow("One-off task templates cannot repeat");
+  });
+
   it("searches names, descriptions, and task titles", () => {
     const plants = createTaskTemplate(
       {

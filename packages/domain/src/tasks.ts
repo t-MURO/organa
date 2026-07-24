@@ -103,6 +103,10 @@ export function formatLocalDate(date: Date): LocalDate {
   return `${year}-${month}-${day}`;
 }
 
+export function canTaskKindRepeat(kind: TaskKind | undefined) {
+  return (kind ?? "one_off") !== "one_off";
+}
+
 export function getTaskTimingState(
   task: Task,
   now = new Date(),
@@ -176,7 +180,7 @@ export function createTask(
   const kind = input.kind ?? "one_off";
   const plannedFor = normalizeLocalDate(input.plannedFor, "planned date");
   const dueDate = normalizeLocalDate(input.dueDate, "due date");
-  const recurrence = normalizeRecurrence(input.recurrence, plannedFor);
+  const recurrence = normalizeRecurrence(input.recurrence, plannedFor, kind);
 
   return {
     id,
@@ -419,8 +423,12 @@ function normalizeLocalDate(
 function normalizeRecurrence(
   recurrence: TaskRecurrence | undefined,
   plannedFor: LocalDate | undefined,
+  kind: TaskKind,
 ): TaskRecurrence | undefined {
   if (!recurrence) return undefined;
+  if (!canTaskKindRepeat(kind)) {
+    throw new Error("One-off tasks cannot repeat.");
+  }
   if (!Number.isInteger(recurrence.interval) || recurrence.interval <= 0) {
     throw new Error("A recurrence interval must be a positive whole number.");
   }

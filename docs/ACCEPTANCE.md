@@ -37,11 +37,12 @@ Status recorded on 2026-07-24.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 126 automated tests pass: 41 domain, 6 cryptography, and 79 application tests
+- 130 automated tests pass: 43 domain, 6 cryptography, and 81 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
-  and stale-schedule catch-up without backlog creation
+  one-off recurrence rejection, and stale-schedule catch-up without backlog
+  creation
 - task inbox tests cover undated, today, future, grace-window, overdue, and
   completed placement plus searchability
 - static security-contract tests prevent direct account-key writes and
@@ -128,9 +129,15 @@ Local evidence:
   backup through the file chooser, and verified the imported task and settings
   persisted after reload
 - encrypted backup validation rejects zero/duplicate/out-of-order snoozes,
-  invalid grace-day placement or limits, non-medication dose confirmation, and
-  empty, padded, or multi-word Check-In feeling labels before any repository
-  write
+  one-off recurrence, invalid grace-day placement or limits, non-medication
+  dose confirmation, and empty, padded, or multi-word Check-In feeling labels
+  before any repository write
+- task and template editors clear/hide recurrence when One-off is selected;
+  enabling per-step reminder configuration materializes inherited timings so
+  visible chips and the saved schedule agree
+- a live web walkthrough verified One-off-to-Routine-to-One-off transitions in
+  both editors; a task save/reopen cycle retained One-off with no repeat
+  control or recurrence
 - browser subtask-reminder drill verified independent timing choices,
   persistence after reopening, and explicit checked/selected ARIA states
 - template tests prove occurrence-specific dates/series metadata are removed

@@ -1,4 +1,9 @@
-import { formatLocalDate, type Task } from "@organa/domain";
+import {
+  formatLocalDate,
+  type Reminder,
+  type Task,
+  type TaskSubtask,
+} from "@organa/domain";
 
 export interface TaskDeadlineFields {
   dueDate: string;
@@ -34,6 +39,20 @@ export function createTaskDeadline(
     dueAt: new Date(`${dueDate}T${dueTime}:00`).toISOString(),
     dueDate,
   };
+}
+
+export function materializeInheritedSubtaskReminders(
+  subtasks: TaskSubtask[],
+  parentReminders: Reminder[],
+) {
+  return subtasks.map((subtask) =>
+    subtask.reminders === undefined
+      ? {
+          ...subtask,
+          reminders: parentReminders.map((reminder) => ({ ...reminder })),
+        }
+      : subtask,
+  );
 }
 
 function formatTime(date: Date) {

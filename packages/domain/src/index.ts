@@ -24,6 +24,7 @@ export type {
 
 export {
   buildDayPlan,
+  canTaskKindRepeat,
   completeTask,
   completeTaskOccurrence,
   confirmMedicationDose,

@@ -1,4 +1,5 @@
 import {
+  canTaskKindRepeat,
   type CreateTaskInput,
   type Reminder,
   type Task,
@@ -25,6 +26,7 @@ import { notificationCapability } from "../../data/create-notification-scheduler
 import type { OrganaTheme } from "../../theme";
 import {
   createTaskDeadline,
+  materializeInheritedSubtaskReminders,
   readTaskDeadline,
 } from "./task-editor-model";
 
@@ -120,7 +122,9 @@ export function TaskEditorModal({
     setDueDate(deadline.dueDate);
     setDueTime(deadline.dueTime);
     setDuration(task?.estimatedMinutes?.toString() ?? "");
-    setRecurrenceEnabled(Boolean(task?.recurrence));
+    setRecurrenceEnabled(
+      Boolean(task?.recurrence) && canTaskKindRepeat(task?.kind),
+    );
     setFrequency(task?.recurrence?.frequency ?? "daily");
     setInterval(task?.recurrence?.interval ?? 1);
     setWeekdays(
@@ -159,7 +163,9 @@ export function TaskEditorModal({
 
   function selectKind(nextKind: TaskKind) {
     setKind(nextKind);
-    if (nextKind !== "one_off" && !recurrenceEnabled) {
+    if (!canTaskKindRepeat(nextKind)) {
+      setRecurrenceEnabled(false);
+    } else if (!recurrenceEnabled) {
       setRecurrenceEnabled(true);
     }
   }
@@ -244,6 +250,18 @@ export function TaskEditorModal({
     );
   }
 
+  function toggleSubtaskReminderConfiguration() {
+    if (!subtaskRemindersEnabled) {
+      setSubtasks((current) =>
+        materializeInheritedSubtaskReminders(
+          current,
+          remindersFromSelection(selectedReminders),
+        ),
+      );
+    }
+    setSubtaskRemindersEnabled((current) => !current);
+  }
+
   function submit() {
     setError("");
     if (!title.trim()) {
@@ -285,14 +303,7 @@ export function TaskEditorModal({
 
     const reminders: Reminder[] =
       dueDate && dueTime
-        ? reminderOptions
-            .filter((option) => selectedReminders.includes(option.id))
-            .map((option) => ({
-              id: `${option.stage}-${option.offset}`,
-              stage: option.stage,
-              offsetMinutes: option.offset,
-              enabled: true,
-            }))
+        ? remindersFromSelection(selectedReminders)
         : [];
     const deadline = createTaskDeadline(dueDate, dueTime);
 
@@ -306,7 +317,7 @@ export function TaskEditorModal({
         scheduledTime: scheduledTime || undefined,
         ...deadline,
         estimatedMinutes,
-        recurrence: recurrenceEnabled
+        recurrence: canTaskKindRepeat(kind) && recurrenceEnabled
           ? {
               frequency,
               interval,
@@ -316,7 +327,10 @@ export function TaskEditorModal({
         reminders,
         subtasks,
         snoozePresets,
-        graceDays: kind === "one_off" ? undefined : graceDays,
+        graceDays:
+          canTaskKindRepeat(kind) && recurrenceEnabled
+            ? graceDays
+            : undefined,
         requireDoseConfirmation:
           kind === "medication" ? requireDoseConfirmation : undefined,
         subtaskRemindersEnabled,
@@ -530,13 +544,19 @@ export function TaskEditorModal({
               eyebrow="REPEAT"
               title="Should it come back?"
             >
-              <ToggleRow
-                active={recurrenceEnabled}
-                label="Repeat this task"
-                styles={styles}
-                onPress={() => setRecurrenceEnabled((current) => !current)}
-              />
-              {recurrenceEnabled ? (
+              {canTaskKindRepeat(kind) ? (
+                <ToggleRow
+                  active={recurrenceEnabled}
+                  label="Repeat this task"
+                  styles={styles}
+                  onPress={() => setRecurrenceEnabled((current) => !current)}
+                />
+              ) : (
+                <Text style={styles.sectionHint}>
+                  Choose Routine or Medication when this task should repeat.
+                </Text>
+              )}
+              {canTaskKindRepeat(kind) && recurrenceEnabled ? (
                 <>
                   <View style={styles.chipRow}>
                     {(["daily", "weekly", "monthly"] as const).map((item) => (
@@ -581,7 +601,7 @@ export function TaskEditorModal({
                   ) : null}
                 </>
               ) : null}
-              {kind !== "one_off" ? (
+              {canTaskKindRepeat(kind) && recurrenceEnabled ? (
                 <>
                   <FieldLabel styles={styles} label="Grace days" />
                   <View style={styles.chipRow}>
@@ -741,9 +761,7 @@ export function TaskEditorModal({
                 active={subtaskRemindersEnabled}
                 label="Configure reminders for individual steps"
                 styles={styles}
-                onPress={() =>
-                  setSubtaskRemindersEnabled((current) => !current)
-                }
+                onPress={toggleSubtaskReminderConfiguration}
               />
               {subtaskRemindersEnabled ? (
                 <Text style={styles.sectionHint}>
@@ -918,6 +936,17 @@ function isValidDate(value: string) {
     date.getMonth() === month - 1 &&
     date.getDate() === day
   );
+}
+
+function remindersFromSelection(selected: string[]): Reminder[] {
+  return reminderOptions
+    .filter((option) => selected.includes(option.id))
+    .map((option) => ({
+      enabled: true,
+      id: `${option.stage}-${option.offset}`,
+      offsetMinutes: option.offset,
+      stage: option.stage,
+    }));
 }
 
 function isValidTime(value: string) {
