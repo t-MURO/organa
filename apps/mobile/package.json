@@ -16,6 +16,7 @@
     "verify:yjs-runtime": "node scripts/verify-yjs-dev-runtime.mjs",
     "verify:connected:deletion": "node scripts/verify-connected-deletion.mjs",
     "verify:connected:supabase": "node scripts/verify-local-supabase.mjs --connected",
+    "verify:connected:web-push": "node scripts/verify-connected-web-push.mjs",
     "verify:migrations": "node scripts/verify-migration-preservation.mjs",
     "verify:web-push": "node scripts/verify-web-push-protocol.mjs",
     "verify:supabase": "node scripts/verify-local-supabase-all.mjs",

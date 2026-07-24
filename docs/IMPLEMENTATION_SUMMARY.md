@@ -1135,6 +1135,24 @@ silently creating an authentication client:
 - Shared-script syntax, JSON syntax, secret-file fail-closed behavior, strict
   TypeScript, and the production web/PWA build with all 18 artifact checks pass.
   No tests were added, changed, or run for this milestone.
+- Makes the Web Push worker derive and compare its configured P-256 VAPID
+  public key before claiming reminders. Missing, malformed, mismatched, or
+  invalid-subject configuration now returns a scheduler-visible `500` instead
+  of silently consuming delivery retries; the local worker drill now supplies
+  a real generated keypair.
+- Adds a separately consented `verify:connected:web-push` command. It creates
+  one disposable account and valid synthetic Push subscription, schedules
+  content-free metadata against the non-resolving `.invalid` namespace, and
+  waits without invoking the function for the real cron path to claim once,
+  clear the failed claim, apply the five-minute retry, and retain the
+  subscription.
+- The Web Push scheduler command is prepared but unrun because this workspace
+  has no private connected operator configuration. Actual browser delivery
+  remains explicitly unclaimed.
+- Script and JSON syntax, mode-600 connected-config rejection, Edge Function
+  TypeScript transpilation, canonical P-256 VAPID key derivation, strict
+  repository TypeScript, and the production web/PWA build with all 18 artifact
+  checks pass. No tests were added, changed, or run for this milestone.
 - Keeps decrypted UI propagation, field/CRDT conflict behavior, provider
   redirects, SMTP, functions, Push, and physical clients unclaimed until their
   separate connected drills run.

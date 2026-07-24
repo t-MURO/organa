@@ -288,6 +288,10 @@ Local evidence:
   for primary ownership, explicit secondary opt-in, target revocation, proof
   denial, and refresh-session invalidation. It remains unclaimed until the
   connected command and rendered-client cleanup drill pass.
+- `pnpm verify:connected:web-push` is prepared to observe a real cron-authorized
+  claim and retry through a VAPID-validated dispatcher. It has not been run
+  against a connected backend, so function/scheduler and browser-delivery rows
+  remain unchecked.
 - [ ] Google, Apple, GitHub, and email OTP against configured connected
   providers
 - [ ] Apply and lint the proven migrations against the self-hosted test

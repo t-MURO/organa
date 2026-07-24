@@ -16,6 +16,7 @@
     "verify:performance": "pnpm --filter @organa/app verify:performance",
     "verify:connected:deletion": "pnpm --filter @organa/app verify:connected:deletion",
     "verify:connected:supabase": "pnpm --filter @organa/app verify:connected:supabase",
+    "verify:connected:web-push": "pnpm --filter @organa/app verify:connected:web-push",
     "verify:web-push": "pnpm --filter @organa/app verify:web-push",
     "verify:supabase": "pnpm --filter @organa/app verify:supabase"
   },

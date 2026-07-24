@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createClient } from "@supabase/supabase-js";
+import webpush from "web-push";
 
 const repositoryRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const localEnvironment = readLocalEnvironment();
@@ -18,6 +19,7 @@ if (!apiUrl || !publishableKey || !serviceRoleKey) {
 }
 
 const schedulerSecret = `organa-web-push-${randomUUID()}`;
+const vapid = webpush.generateVAPIDKeys();
 const admin = createClient(apiUrl, serviceRoleKey, {
   auth: { persistSession: false },
 });
@@ -33,8 +35,8 @@ try {
     envFile,
     [
       `WEB_PUSH_SCHEDULER_SECRET=${schedulerSecret}`,
-      "WEB_PUSH_VAPID_PUBLIC_KEY=local-test-public-key",
-      "WEB_PUSH_VAPID_PRIVATE_KEY=local-test-private-key",
+      `WEB_PUSH_VAPID_PUBLIC_KEY=${vapid.publicKey}`,
+      `WEB_PUSH_VAPID_PRIVATE_KEY=${vapid.privateKey}`,
       "WEB_PUSH_VAPID_SUBJECT=mailto:web-push-test@example.test",
       "WEB_PUSH_TEST_MODE=local-only",
       "",

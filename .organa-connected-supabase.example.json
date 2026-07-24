@@ -2,6 +2,7 @@
   "purpose": "organa-controlled-beta-test",
   "allowSyntheticAccountCreationAndDeletion": false,
   "allowOneHourDeletionDrill": false,
+  "allowWebPushSchedulerDrill": false,
   "supabaseUrl": "https://supabase.example.net",
   "publishableKey": "sb_publishable_replace_with_real_value",
   "secretKey": "sb_secret_replace_with_real_value"

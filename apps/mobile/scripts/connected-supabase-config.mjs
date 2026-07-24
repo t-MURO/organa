@@ -46,6 +46,8 @@ export function readConnectedSupabaseConfig(configPath) {
 
   return {
     allowOneHourDeletionDrill: config.allowOneHourDeletionDrill === true,
+    allowWebPushSchedulerDrill:
+      config.allowWebPushSchedulerDrill === true,
     publishableKey: config.publishableKey,
     secretKey: config.secretKey,
     supabaseUrl,

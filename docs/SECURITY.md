@@ -166,10 +166,15 @@ the platform JWT check, requires a separate scheduler secret, and accepts only
 
 The Web Push dispatcher also disables the platform JWT check, requires its own
 server-only scheduler secret, and accepts only `POST`. The VAPID private key
-and scheduler secret are function secrets. Push payloads contain only a safe
-route and opaque tag and are encrypted by the Web Push protocol. The service
-worker always displays generic copy; task titles, medication data, and
-Check-In content are never sent to the Push service.
+and scheduler secret are function secrets. Before claiming due reminders, the
+function derives the P-256 public key from the private scalar and requires it
+to match the configured canonical, unpadded Base64URL VAPID public key;
+malformed subjects or keypairs fail the authenticated scheduler request
+instead of entering content-delivery retries. Push requests also have a
+bounded socket timeout. Payloads contain only a safe route and opaque tag and
+are encrypted by the Web Push protocol. The service worker always displays
+generic copy; task titles, medication data, and Check-In content are never sent
+to the Push service.
 
 Supabase must not receive task titles, details, medication text, reminder text,
 templates, Check-In content, mood values, Brain Dump text, or the plaintext

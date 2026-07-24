@@ -479,6 +479,46 @@ client, structured-field or Yjs merging, real provider redirects, SMTP
 delivery, Edge Function scheduling, browser Push, or physical-device behavior;
 perform the remaining drills below.
 
+After deploying the current Web Push function and observing the configured
+crontab run on consecutive minutes, use the short connected scheduler drill.
+In the private connected configuration, temporarily set:
+
+```text
+"allowWebPushSchedulerDrill": true
+```
+
+Then run:
+
+```sh
+pnpm verify:connected:web-push
+```
+
+The command creates one `web-push-live-` synthetic account and a valid P-256
+Push subscription with a content-free route. Its endpoint uses the reserved,
+non-resolving `.invalid` namespace, so no internal service, real Push provider,
+or third-party capture service receives the request. The command never invokes
+the Edge Function and never reads the scheduler bearer. It waits up to three
+minutes for the real cron path to:
+
+- authorize and invoke `dispatch-web-push`
+- validate that the configured VAPID public/private keys are a matching pair
+- claim the due reminder exactly once
+- construct the encrypted, VAPID-signed Web Push request
+- record the expected transport failure and clear the claim
+- reschedule the reminder by five minutes while retaining the subscription
+
+The dispatcher now returns `500` before claiming reminders when its VAPID pair
+or subject is malformed, so retry state cannot falsely count invalid server
+credentials as scheduler evidence. The operator command prints no account ID,
+key, proof, token, endpoint capability, payload, or scheduler secret and
+attempts bounded cleanup on failure or interruption. Set
+`allowWebPushSchedulerDrill` back to `false` after the run.
+
+A pass plus the full preflight, installed once-per-minute crontab, and
+consecutive scheduler logs supports the Web Push function/scheduler acceptance
+row. It does not prove successful delivery, replacement, deep links,
+cancellation, denial fallback, or sign-out behavior in any browser.
+
 After the account-deletion function and its once-per-minute scheduler are
 deployed, use the separate long-running drill to verify the real one-hour
 contract. Do not invoke the function manually or rewrite `execute_after` for

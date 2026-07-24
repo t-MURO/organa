@@ -1,3 +1,6 @@
+import { Buffer } from "node:buffer";
+import { createECDH, timingSafeEqual } from "node:crypto";
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
 
@@ -7,6 +10,12 @@ const schedulerSecret = Deno.env.get("WEB_PUSH_SCHEDULER_SECRET");
 const vapidPublicKey = Deno.env.get("WEB_PUSH_VAPID_PUBLIC_KEY");
 const vapidPrivateKey = Deno.env.get("WEB_PUSH_VAPID_PRIVATE_KEY");
 const vapidSubject = Deno.env.get("WEB_PUSH_VAPID_SUBJECT");
+const vapidConfigurationValid = validVapidConfiguration(
+  vapidPublicKey,
+  vapidPrivateKey,
+  vapidSubject,
+);
+const PUSH_REQUEST_TIMEOUT_MS = 15_000;
 const localTestMode =
   Deno.env.get("WEB_PUSH_TEST_MODE") === "local-only" &&
   Boolean(
@@ -29,21 +38,20 @@ interface ClaimedReminder {
 }
 
 Deno.serve(async (request) => {
-  if (
-    !supabaseUrl ||
-    !serviceRoleKey ||
-    !schedulerSecret ||
-    !vapidPublicKey ||
-    !vapidPrivateKey ||
-    !vapidSubject
-  ) {
-    return json({ error: "Function secrets are incomplete." }, 500);
+  if (!supabaseUrl || !serviceRoleKey || !schedulerSecret) {
+    return json({ error: "Function server secrets are incomplete." }, 500);
   }
   if (request.headers.get("authorization") !== `Bearer ${schedulerSecret}`) {
     return json({ error: "Unauthorized." }, 401);
   }
   if (request.method !== "POST") {
     return json({ error: "Method not allowed." }, 405, { allow: "POST" });
+  }
+  if (!vapidConfigurationValid) {
+    return json(
+      { error: "Function VAPID secrets are incomplete or invalid." },
+      500,
+    );
   }
 
   const client = createClient(supabaseUrl, serviceRoleKey, {
@@ -124,6 +132,7 @@ async function sendReminder(reminder: ClaimedReminder) {
     {
       TTL: 60 * 60,
       topic: reminder.id.replaceAll("-", "").slice(0, 32),
+      timeout: PUSH_REQUEST_TIMEOUT_MS,
       urgency: "normal",
       vapidDetails: {
         privateKey: vapidPrivateKey!,
@@ -254,6 +263,63 @@ function pushStatusCode(error: unknown) {
     return error.statusCode;
   }
   return undefined;
+}
+
+function validVapidConfiguration(
+  publicKey: string | undefined,
+  privateKey: string | undefined,
+  subject: string | undefined,
+) {
+  if (
+    !publicKey ||
+    !privateKey ||
+    !subject ||
+    !/^[A-Za-z0-9_-]+$/.test(publicKey) ||
+    !/^[A-Za-z0-9_-]+$/.test(privateKey) ||
+    /\s/.test(subject) ||
+    !validVapidSubject(subject)
+  ) {
+    return false;
+  }
+
+  try {
+    const publicBytes = Buffer.from(publicKey, "base64url");
+    const privateBytes = Buffer.from(privateKey, "base64url");
+    if (
+      publicBytes.length !== 65 ||
+      publicBytes[0] !== 4 ||
+      privateBytes.length !== 32 ||
+      publicBytes.toString("base64url") !== publicKey ||
+      privateBytes.toString("base64url") !== privateKey
+    ) {
+      return false;
+    }
+
+    const keyAgreement = createECDH("prime256v1");
+    keyAgreement.setPrivateKey(privateBytes);
+    const derivedPublicKey = keyAgreement.getPublicKey();
+    return (
+      derivedPublicKey.length === publicBytes.length &&
+      timingSafeEqual(derivedPublicKey, publicBytes)
+    );
+  } catch {
+    return false;
+  }
+}
+
+function validVapidSubject(subject: string) {
+  if (/^mailto:[^@\s]+@[^@\s]+$/.test(subject)) return true;
+  try {
+    const url = new URL(subject);
+    return (
+      url.protocol === "https:" &&
+      Boolean(url.hostname) &&
+      !url.username &&
+      !url.password
+    );
+  } catch {
+    return false;
+  }
 }
 
 function json(
