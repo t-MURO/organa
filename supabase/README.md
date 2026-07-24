@@ -4,6 +4,12 @@ Organa uses Supabase for authentication, encrypted synchronization, private
 Realtime signals, trusted-device metadata, browser reminder delivery, and
 delayed account deletion.
 
+For a Docker instance on a home server used only for connected testing, follow
+`docs/SELF_HOSTED_TESTING.md`. It covers TLS, generated publishable/asymmetric
+keys, Auth/SMTP/OAuth, private migration access, self-hosted functions,
+schedulers, backup responsibility, and which production gates remain open.
+The production instructions below continue to assume a reviewed EU deployment.
+
 ## 1. Create The Project
 
 Create the project in an EU region. Record the project URL and publishable key:

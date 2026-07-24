@@ -7,6 +7,9 @@ store artifacts. It does not replace the connected-backend, physical-device,
 security, legal, or store review gates in `docs/ACCEPTANCE.md`.
 The engineering disclosure inventory and unresolved declaration decisions are
 in `docs/PRIVACY_DATA_MAP.md`.
+Connected functional testing may use the isolated Docker path in
+`docs/SELF_HOSTED_TESTING.md`; production artifacts still require the reviewed
+release backend and every gate in this runbook.
 
 ## Release Boundaries
 

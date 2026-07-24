@@ -23,6 +23,14 @@ Expo EAS is a build and artifact service, not an application runtime
 processor. No analytics, advertising, crash-reporting, or session-recording
 SDK is included in the release source.
 
+During self-hosted testing, the home-server operator controls Supabase Auth,
+database, Realtime, Edge Functions, reverse-proxy, SMTP, scheduler, backup, and
+request-log infrastructure. Use synthetic test accounts and content until
+access controls, retention, encrypted backups, restore, monitoring, and
+incident handling are reviewed. Self-hosting changes the operator and
+processor inventory; it does not change Organa's client-side content
+encryption or minimize the operational metadata visible to that operator.
+
 ## Local-Only Data
 
 The following plaintext is required locally for offline use and is not sent

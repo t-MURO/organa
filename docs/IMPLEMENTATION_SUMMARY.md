@@ -33,6 +33,7 @@ Committed and verified milestones:
 - Reproducible internal-preview and store-release packaging boundaries
 - Protected browser session/device-proof persistence and a store-facing data map
 - Fail-closed public Supabase endpoint and publishable-key validation
+- Documented self-hosted Docker path for connected home-server testing
 - Deterministic local performance checks against a 2,000-task dataset
 - Fail-closed encrypted-backup domain validation
 - Byte-for-byte encrypted-row preservation across database upgrades
@@ -1036,6 +1037,31 @@ silently creating an authentication client:
 - Uncached strict TypeScript, the production web/PWA build with all 18 artifact
   checks, iOS and Android Hermes exports, and the production dependency audit
   pass. No tests were added, changed, or run for this milestone.
+
+## Self-Hosted Connected-Testing Milestone
+
+- Adds a home-server runbook based on the current official Supabase Docker
+  distribution rather than vendoring a Compose stack that would become stale.
+- Keeps only the TLS reverse proxy public and requires WebSocket forwarding for
+  private Realtime; database, pooler, Studio, gateway, and Edge Runtime access
+  remain private.
+- Uses generated asymmetric signing material plus the `sb_publishable_` client
+  key expected by Organa, while keeping database, secret/service-role, OAuth,
+  SMTP, scheduler, and VAPID private material server-side.
+- Defines self-hosted email OTP templates, Google/Apple/GitHub callbacks,
+  migration push/lint over a private database path, Edge Function installation,
+  scheduler setup, and the exact public client environment.
+- Corrects the monorepo setup path to `apps/mobile/.env.local`, where Expo
+  actually loads the untracked public client environment.
+- Provides a two-client connected validation sequence and separates evidence
+  that a home server can produce from production operations, regional/legal,
+  physical-device, independent-review, signing, and store gates.
+- Uncached strict TypeScript, the production web/PWA build with all 18 artifact
+  checks, iOS and Android Hermes exports, and the production dependency audit
+  pass. No tests were added, changed, or run.
+- The runbook is prepared but no home server has been connected in this
+  workspace yet; all connected rows remain unchecked until real evidence is
+  captured.
 
 ## Brain Dump Compaction Milestone
 

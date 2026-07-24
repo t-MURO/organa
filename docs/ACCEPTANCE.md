@@ -275,18 +275,24 @@ Local evidence:
 
 ## Requires Connected Backend Validation
 
-- [ ] Google, Apple, GitHub, and email OTP against configured hosted providers
-- [ ] Apply and lint the proven migrations against the selected EU project
+- A self-hosted Docker instance may provide functional evidence for this
+  section when it follows `docs/SELF_HOSTED_TESTING.md`. It does not replace
+  the final region, operations, legal, or independent-review gates.
+- [ ] Google, Apple, GitHub, and email OTP against configured connected
+  providers
+- [ ] Apply and lint the proven migrations against the self-hosted test
+  instance, then repeat against the selected production deployment
 - [ ] Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
-  checks against the deployed EU project
+  checks against the connected test instance and production deployment
 - [ ] Two-client encrypted sync latency and missed-broadcast recovery
 - [ ] Device reminder ownership and revocation across live sessions
-- [ ] Configure hosted VAPID/function secrets and the once-per-minute Web Push
+- [ ] Configure VAPID/function secrets and the once-per-minute Web Push
   dispatcher schedule
 - [ ] Permission-granted closed-app Web Push delivery, deep-link,
   replacement, cancellation, denial fallback, and sign-out drill in every
   supported release browser; iOS/iPadOS uses an installed Home Screen PWA
-- [ ] Repeat the scheduled deletion finalizer drill against the hosted project
+- [ ] Repeat the scheduled deletion finalizer drill against the connected
+  backend
 - [ ] Export recovery drill using a separate clean device
 
 ## Requires Physical Device Validation
