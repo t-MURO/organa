@@ -3,9 +3,10 @@
 Status recorded on 2026-07-24.
 
 This is the structured pause checkpoint requested after the implementation
-work. The prior committed implementation is complete through `263427d`, with
-its documentation ledger complete through `b1ffc7a`. The verified Web Push
-milestone documented below is the next implementation boundary.
+work. The committed implementation is complete through `b12bc7a`, including
+the Web Push and reminder-template milestones documented below. The
+requirement-by-requirement completion audit is recorded in
+`docs/REQUIREMENTS_TRACEABILITY.md`.
 
 ## Current Checkpoint
 
@@ -116,6 +117,25 @@ Verification evidence:
 The remaining Web Push gate is a real permission-granted, closed-app delivery
 drill against the hosted function and scheduler in each supported release
 browser. iOS and iPadOS require an installed Home Screen PWA.
+
+## Reminder Template Instantiation Milestone
+
+This milestone closes a reminder gap in the official and restored template
+flows:
+
+- Reusable templates remove absolute due dates, exact due timestamps, and
+  recurrence occurrence/series identifiers when saved.
+- Using a template always assigns the selected planning date.
+- When a template has an enabled reminder and a scheduled time, instantiation
+  derives a fresh exact due timestamp from that local day and time.
+- Templates without reminders keep their planning time without inventing a
+  deadline.
+- The official Morning medication preset now creates a schedulable at-due
+  reminder instead of carrying a reminder with no due timestamp.
+- Six template tests cover reusable metadata, local reminder anchoring,
+  no-reminder behavior, copy-before-edit, identity, and search.
+- The full suite passes 110 tests, strict TypeScript passes, and configured
+  web plus iOS/Android Hermes exports succeed.
 
 ## Sign-Out Privacy Milestone
 
@@ -263,8 +283,8 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 108 automated tests pass:
-  - 39 domain tests
+- 110 automated tests pass:
+  - 41 domain tests
   - 6 cryptography tests
   - 63 application integration tests
 - All five migrations apply cleanly from scratch to local
@@ -344,6 +364,8 @@ Major implementation commits:
 - `babc42d` - preserve reminder authorization offline
 - `e9b6893` - clear private surfaces on sign out
 - `263427d` - quiet demoted reminder devices
+- `9bd7d24` - deliver private Web Push reminders
+- `b12bc7a` - anchor reminder templates to use date
 
 ## Latest Security Hardening
 

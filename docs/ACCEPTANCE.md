@@ -35,7 +35,7 @@ Status recorded on 2026-07-24.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 108 automated tests pass: 39 domain, 6 cryptography, and 63 application tests
+- 110 automated tests pass: 41 domain, 6 cryptography, and 63 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
@@ -118,6 +118,10 @@ Local evidence:
   persisted after reload
 - browser subtask-reminder drill verified independent timing choices,
   persistence after reopening, and explicit checked/selected ARIA states
+- template tests prove occurrence-specific dates/series metadata are removed
+  and enabled reminder presets receive a fresh local due timestamp when used;
+  the official Morning medication reminder now schedules from its selected day
+  and time
 - browser recurrence drill persisted a two-week Monday/Thursday/Saturday
   routine, kept an undated task searchable but out of dated lanes, classified a
   stale routine inside its three-day grace window, and advanced its completion

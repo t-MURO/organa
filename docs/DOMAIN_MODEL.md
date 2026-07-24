@@ -127,3 +127,24 @@ Rules:
 - Field-level synchronization merges unrelated changes and resolves the same
   field by the repository's deterministic version rule.
 - Realtime signals are hints; durable reconciliation remains authoritative.
+
+## Disconnected Reminder Devices
+
+- Organa never reroutes an unacknowledged reminder automatically.
+- A reminder device that has previously synchronized uses its last
+  server-confirmed, content-free authorization state while offline.
+- If authorization has never been confirmed, the state is unresolved and
+  schedulers neither create nor cancel device notifications.
+- Existing native schedules remain in place while authorization is unresolved.
+- Offline task changes update local native schedules immediately. Web schedule
+  changes remain in a per-user/device content-free queue and flush after
+  reconnect.
+- A device cannot learn that it was revoked while fully offline. Fresh server
+  device state is authoritative on reconnect; revocation clears local private
+  state, while demotion removes server Web Push state and keeps the device
+  quiet until explicit secondary opt-in.
+- Stale one-shot Web Push times are discarded rather than delivered late.
+  Stale daily Check-In schedules advance to the next selected local time.
+- Because there is no automatic fallback device, an offline device may deliver
+  the last schedule it knew about. The UI describes reminder-device ownership,
+  and users can revoke a device when it reconnects.

@@ -699,20 +699,28 @@ The MVP is ready for controlled beta when:
 ## 21. Open Decisions
 
 Resolved recurrence, grace-day, and parent/subtask decisions are recorded in
-`docs/DOMAIN_MODEL.md`. Notification permission is requested only from the
-direct user action that saves an enabled reminder; unsupported or denied web
-permission retains a visible active-tab fallback. The remaining product and
-launch decisions are:
+`docs/DOMAIN_MODEL.md`. The controlled-beta implementation also resolves:
+
+- Cryptography uses versioned AES-256-GCM envelopes from Expo Crypto with
+  record-bound additional authenticated data.
+- Brain Dump conflict-free editing uses encrypted Yjs updates.
+- Recovery uses a checked, versioned `ORG1` code; trusted-device transfer uses
+  a short-lived, target-bound `ODA1` approval code.
+- Notification permission is requested only from the direct user action that
+  saves an enabled reminder. Unsupported or denied web permission retains a
+  visible active-tab fallback.
+- Reminder behavior for disconnected or stale devices follows the policy in
+  `docs/DOMAIN_MODEL.md`: no automatic fallback device, last confirmed local
+  authorization while offline, and authoritative reconciliation on reconnect.
+- The starter catalog contains medication, plant-care, small-reset, and weekly
+  planning templates.
+- The controlled beta launches in English only. Localization infrastructure
+  and additional languages are post-MVP.
+
+The remaining product and launch decisions are:
 
 - Final product name and trademark validation
 - Supported OS and browser version matrix
-- Exact cryptographic library and key-envelope format
-- Conflict-free document library for Brain Dump
-- Recovery-key format and secure device-transfer flow
-- Reminder behavior when a device has not synchronized recently
-- Official starter-template catalog
-- Visual identity, typography, iconography, and final theme palette
-- Localization and first-launch language scope
 - Monetization and subscription model
 - Regulatory and legal review requirements
 
