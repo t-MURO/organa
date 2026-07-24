@@ -270,6 +270,15 @@ Local evidence:
 - browser backup drill rejected an invalid file, restored a real AES-GCM
   backup through the file chooser, and verified the imported task and settings
   persisted after reload
+- a clean-client recovery drill exported a real encrypted backup from an
+  authenticated `localhost` account, confirmed the file contained no task
+  plaintext, then restored it through the real file chooser into a separately
+  enrolled account on the untouched `127.0.0.1` origin; the one task and dark
+  theme appeared only after restore and both survived a full reload
+- the same drill exposed and fixed partial first-settings hydration and missing
+  recovery-envelope persistence; with Supabase stopped, the restored task and
+  dark theme remained available and encrypted full backup stayed enabled from
+  the protected local vault
 - encrypted backup validation rejects zero/duplicate/out-of-order snoozes,
   one-off recurrence, invalid grace-day placement or limits, non-medication
   dose confirmation, and empty, padded, or multi-word Check-In feeling labels
@@ -342,12 +351,12 @@ Local evidence:
   supported release browser; iOS/iPadOS uses an installed Home Screen PWA
 - [ ] Repeat the scheduled deletion finalizer drill against the connected
   backend
-- [ ] Export recovery drill using a separate clean device
 
 ## Requires Physical Device Validation
 
 - [ ] iOS and Android local notification scheduling/action/snooze
 - [ ] Offline reminders after process termination
+- [ ] Encrypted export restore on a separate physical release device
 - [ ] Biometric/device-PIN app lock
 - [ ] Sound and haptic preference behavior
 - [ ] iOS and Android widget rendering, resize, rollover, cleanup, and deep links

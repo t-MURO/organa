@@ -14,6 +14,7 @@ import {
   type PropsWithChildren,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Platform } from "react-native";
@@ -75,6 +76,8 @@ export function SecurityProvider({ children }: PropsWithChildren) {
   const activeOwnerId = auth.localPreview
     ? localPreviewOwnerId
     : (auth.user?.id ?? null);
+  const activeOwnerRef = useRef(activeOwnerId);
+  activeOwnerRef.current = activeOwnerId;
   const [scopedContentKey, setScopedContentKey] =
     useState<ScopedContentKey | null>(null);
   const contentKey =
@@ -124,11 +127,36 @@ export function SecurityProvider({ children }: PropsWithChildren) {
         return;
       }
 
-      const storedKey = await contentKeyVault.get(userId);
-      if (storedKey) {
+      const stored = await contentKeyVault.get(userId);
+      if (stored) {
         if (!active) return;
-        setScopedContentKey({ key: storedKey, ownerId });
+        setScopedContentKey({ key: stored.contentKey, ownerId });
+        setRecoveryEnvelope(stored.recoveryEnvelope);
         setLoading(false);
+        if (!stored.recoveryEnvelope) {
+          void loadRecoveryEnvelope(userId, stored.contentKey.id)
+            .then(async (nextRecoveryEnvelope) => {
+              if (!active) return;
+              await contentKeyVault.set(userId, {
+                contentKey: stored.contentKey,
+                recoveryEnvelope: nextRecoveryEnvelope,
+              });
+              if (!active) {
+                if (activeOwnerRef.current !== userId) {
+                  await contentKeyVault.remove(userId);
+                }
+                return;
+              }
+              setRecoveryEnvelope(nextRecoveryEnvelope);
+            })
+            .catch(() => {
+              if (active) {
+                setError(
+                  "Encrypted backup metadata will be refreshed when Organa is online.",
+                );
+              }
+            });
+        }
         void registerDevice(nextDevice).catch(() => {
           if (active) {
             setError("Device status will be checked when Organa is online.");
@@ -233,7 +261,10 @@ export function SecurityProvider({ children }: PropsWithChildren) {
     ) {
       throw result.error;
     }
-    await contentKeyVault.set(auth.user.id, contentKey);
+    await contentKeyVault.set(auth.user.id, {
+      contentKey,
+      recoveryEnvelope,
+    });
     setRecoveryCode(undefined);
   }
 
@@ -245,7 +276,10 @@ export function SecurityProvider({ children }: PropsWithChildren) {
     const restoredKey = await unwrapContentKey(code, recoveryEnvelope);
     const recoveryProof = await createRecoveryEnrollmentProof(code);
     await registerDevice(device, recoveryProof);
-    await contentKeyVault.set(auth.user.id, restoredKey);
+    await contentKeyVault.set(auth.user.id, {
+      contentKey: restoredKey,
+      recoveryEnvelope,
+    });
     setScopedContentKey({ key: restoredKey, ownerId: auth.user.id });
     setRestoreRequired(false);
   }
@@ -314,7 +348,10 @@ export function SecurityProvider({ children }: PropsWithChildren) {
       throw completion.error;
     }
 
-    await contentKeyVault.set(auth.user.id, restoredKey);
+    await contentKeyVault.set(auth.user.id, {
+      contentKey: restoredKey,
+      recoveryEnvelope,
+    });
     setScopedContentKey({ key: restoredKey, ownerId: auth.user.id });
     setApprovalRequest(null);
     setRestoreRequired(false);
@@ -376,6 +413,25 @@ async function registerDevice(
     p_recovery_proof: recoveryProof ?? null,
   });
   if (result.error) throw result.error;
+}
+
+async function loadRecoveryEnvelope(userId: string, keyId: string) {
+  if (!supabase) {
+    throw new Error("A connected account is required.");
+  }
+  const result = await supabase
+    .from("account_keys")
+    .select("key_id,recovery_key_envelope")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (result.error) throw result.error;
+  if (!result.data || result.data.key_id !== keyId) {
+    throw new Error("The stored recovery information is unavailable.");
+  }
+  return parseRecoveryKeyEnvelope(
+    result.data.recovery_key_envelope,
+    result.data.key_id,
+  );
 }
 
 async function loadDeviceApproval(userId: string, deviceId: string) {

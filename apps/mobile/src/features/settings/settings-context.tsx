@@ -10,6 +10,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -76,6 +77,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   );
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState(() => createUserSettings());
+  const settingsRef = useRef(settings);
   const [checkInReminderNotice, setCheckInReminderNotice] = useState("");
 
   useEffect(() => {
@@ -85,8 +87,12 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     let active = true;
     void repository.initialize().then(async () => {
-      const stored = (await repository.get()) ?? createUserSettings();
+      const stored = mergeSettingsPatch(
+        createUserSettings(),
+        (await repository.get()) ?? {},
+      );
       if (!active) return;
+      settingsRef.current = stored;
       setSettings(stored);
       setLoading(false);
       if (devices.reminderAuthorizationReady) {
@@ -116,13 +122,15 @@ export function SettingsProvider({ children }: PropsWithChildren) {
 
   useEffect(
     () =>
-      sync.subscribe<UserSettings>("settings", (change) => {
+      sync.subscribe<Partial<UserSettings>>("settings", (change) => {
         if (change.operation === "delete" || !change.value) return;
-        setSettings(change.value);
-        void repository.upsert(change.value);
+        const next = mergeSettingsPatch(settingsRef.current, change.value);
+        settingsRef.current = next;
+        setSettings(next);
+        void repository.upsert(next);
         if (devices.reminderAuthorizationReady) {
           void syncCheckInReminder(
-            reminderSettings(change.value, devices.remindersAllowed),
+            reminderSettings(next, devices.remindersAllowed),
             false,
             setCheckInReminderNotice,
           );
@@ -136,10 +144,12 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   );
 
   function update(input: UserSettingsInput) {
-    const next = updateUserSettings(settings, input);
+    const previous = settingsRef.current;
+    const next = updateUserSettings(previous, input);
+    settingsRef.current = next;
     setSettings(next);
     void repository.upsert(next);
-    void sync.queueUpsert("settings", next.id, next, settings);
+    void sync.queueUpsert("settings", next.id, next, previous);
     if (devices.reminderAuthorizationReady) {
       void syncCheckInReminder(
         reminderSettings(next, devices.remindersAllowed),
@@ -151,8 +161,10 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   }
 
   async function restore(next: UserSettings) {
+    const previous = settingsRef.current;
     await repository.upsert(next);
-    await sync.queueUpsert("settings", next.id, next, settings);
+    await sync.queueUpsert("settings", next.id, next, previous);
+    settingsRef.current = next;
     setSettings(next);
     if (devices.reminderAuthorizationReady) {
       await syncCheckInReminder(
@@ -202,6 +214,51 @@ function reminderSettings(settings: UserSettings, allowed: boolean) {
         ...settings,
         checkInReminder: { ...settings.checkInReminder, enabled: false },
       };
+}
+
+function mergeSettingsPatch(
+  current: UserSettings,
+  patch: Partial<UserSettings>,
+): UserSettings {
+  const checkInReminder =
+    patch.checkInReminder &&
+    typeof patch.checkInReminder.enabled === "boolean" &&
+    isLocalTime(patch.checkInReminder.time)
+      ? patch.checkInReminder
+      : current.checkInReminder;
+
+  return {
+    appSoundsEnabled:
+      typeof patch.appSoundsEnabled === "boolean"
+        ? patch.appSoundsEnabled
+        : current.appSoundsEnabled,
+    checkInReminder,
+    createdAt: isTimestamp(patch.createdAt)
+      ? patch.createdAt
+      : current.createdAt,
+    hapticsEnabled:
+      typeof patch.hapticsEnabled === "boolean"
+        ? patch.hapticsEnabled
+        : current.hapticsEnabled,
+    id: "user-settings",
+    theme:
+      patch.theme === "system" ||
+      patch.theme === "light" ||
+      patch.theme === "dark"
+        ? patch.theme
+        : current.theme,
+    updatedAt: isTimestamp(patch.updatedAt)
+      ? patch.updatedAt
+      : current.updatedAt,
+  };
+}
+
+function isLocalTime(value: unknown): value is string {
+  return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function isTimestamp(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
 
 export function useSettings() {

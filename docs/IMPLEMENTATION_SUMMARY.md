@@ -1388,6 +1388,37 @@ No tests were added, changed, or run for this milestone.
   runs from a clean commit; rendered two-client and physical keyboard drills
   remain separate acceptance gates.
 
+## Clean-Client Encrypted Restore Drill
+
+- A fresh authenticated source account created one uniquely named task, changed
+  from system to dark theme, and generated a real encrypted full backup through
+  the Account UI.
+- Direct file inspection confirmed the backup used the
+  `organa-encrypted-backup-v1` AES-256-GCM envelope and did not contain the task
+  title in plaintext.
+- A separately enrolled account on the untouched `127.0.0.1` browser origin
+  began with no source task and the system theme. Its real recovery input and
+  transient document picker restored the source backup without bypassing app
+  code.
+- The UI reported one merged record; the source task and dark preference then
+  appeared and both survived a full client reload.
+- The drill exposed a first-settings sync defect: a new server row can contain
+  only changed encrypted fields, but the settings provider had treated that
+  partial patch as a complete IndexedDB value. Remote patches now merge through
+  validated settings fields over the current complete record, with a ref-backed
+  current value preventing rapid updates from using a stale render snapshot.
+- The drill also exposed that a reloaded trusted device restored its content
+  key but not the recovery envelope, disabling encrypted export. Web and native
+  vaults now persist the validated recovery envelope beside the protected
+  content key, accept legacy key-only entries, and repair those entries from
+  the connected account metadata without delaying offline app access.
+- With local Supabase stopped, the target still loaded the restored task and
+  dark preference and kept encrypted full backup enabled. The backend was
+  restarted afterward; three synthetic accounts, the backup, and the temporary
+  verification-code file were removed.
+- This is direct clean-client application evidence, not a claim of physical
+  iOS/Android validation. A release-device repeat remains explicit.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
@@ -1406,12 +1437,12 @@ Connected Supabase project:
 - Validate permission-granted Web Push delivery, replacement, cancellation,
   deep links, denial fallback, and sign-out in every supported release browser.
 - Repeat the scheduled deletion finalizer drill against the hosted project.
-- Restore an encrypted export on a separate clean client.
 
 Physical devices:
 
 - Validate iOS and Android notification scheduling, actions, and snooze.
 - Validate reminders after process termination and while offline.
+- Restore an encrypted export on a separate physical release device.
 - Validate biometric/device-PIN app lock.
 - Validate sound and haptic preferences.
 - Validate iOS and Android widget rendering, resize, rollover, cleanup, and

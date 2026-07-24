@@ -1,7 +1,8 @@
-import type { ContentKey } from "@organa/crypto";
-
-import type { ContentKeyVault } from "./content-key-vault.types";
-import { parseContentKey } from "./content-key-vault.validation";
+import type {
+  ContentKeyVault,
+  ContentKeyVaultValue,
+} from "./content-key-vault.types";
+import { parseContentKeyVaultValue } from "./content-key-vault.validation";
 
 interface WrappedContentKey {
   ciphertext: ArrayBuffer;
@@ -9,7 +10,7 @@ interface WrappedContentKey {
   wrappingKey: CryptoKey;
 }
 
-const memoryFallback = new Map<string, ContentKey>();
+const memoryFallback = new Map<string, ContentKeyVaultValue>();
 const databaseName = "organa-protected-key-vault";
 const storeName = "content-keys";
 
@@ -23,13 +24,15 @@ export const contentKeyVault: ContentKeyVault = {
         wrapped.wrappingKey,
         wrapped.ciphertext,
       );
-      return parseContentKey(new TextDecoder().decode(plaintext));
+      return parseContentKeyVaultValue(
+        new TextDecoder().decode(plaintext),
+      );
     } catch {
       return memoryFallback.get(userId) ?? null;
     }
   },
-  async set(userId, key) {
-    memoryFallback.set(userId, key);
+  async set(userId, value) {
+    memoryFallback.set(userId, value);
     try {
       const wrappingKey = await crypto.subtle.generateKey(
         { length: 256, name: "AES-GCM" },
@@ -40,7 +43,7 @@ export const contentKeyVault: ContentKeyVault = {
       const ciphertext = await crypto.subtle.encrypt(
         { iv, name: "AES-GCM" },
         wrappingKey,
-        new TextEncoder().encode(JSON.stringify(key)),
+        new TextEncoder().encode(JSON.stringify(value)),
       );
       await writeWrappedKey(userId, { ciphertext, iv, wrappingKey });
     } catch {

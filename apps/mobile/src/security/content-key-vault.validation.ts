@@ -1,7 +1,31 @@
 import type { ContentKey } from "@organa/crypto";
 
-export function parseContentKey(value: string): ContentKey {
+import type { ContentKeyVaultValue } from "./content-key-vault.types";
+import { parseRecoveryKeyEnvelope } from "./security-envelope-validation";
+
+export function parseContentKeyVaultValue(value: string): ContentKeyVaultValue {
   const parsed: unknown = JSON.parse(value);
+  if (
+    parsed &&
+    typeof parsed === "object" &&
+    "contentKey" in parsed
+  ) {
+    const contentKey = parseContentKey(parsed.contentKey);
+    return {
+      contentKey,
+      recoveryEnvelope:
+        "recoveryEnvelope" in parsed && parsed.recoveryEnvelope
+          ? parseRecoveryKeyEnvelope(
+              parsed.recoveryEnvelope,
+              contentKey.id,
+            )
+          : null,
+    };
+  }
+  return { contentKey: parseContentKey(parsed), recoveryEnvelope: null };
+}
+
+function parseContentKey(parsed: unknown): ContentKey {
   if (
     !parsed ||
     typeof parsed !== "object" ||
