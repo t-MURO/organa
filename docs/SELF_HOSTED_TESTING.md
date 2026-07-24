@@ -51,6 +51,8 @@ mkdir -p "$HOME/organa-supabase"
 cp -a supabase/docker/. "$HOME/organa-supabase/"
 cd "$HOME/organa-supabase"
 git -C ../supabase rev-parse HEAD
+[ -f .env ] || cp .env.example .env
+chmod 600 .env
 sh utils/generate-keys.sh
 sh utils/add-new-auth-keys.sh
 ```
