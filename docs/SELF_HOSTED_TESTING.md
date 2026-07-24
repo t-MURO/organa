@@ -507,6 +507,16 @@ broadcast reaches a separate same-account session within the one-second target
 and that an unsubscribed session can recover a later ciphertext row with the
 app's overlapping durable cursor.
 
+The baseline also creates one current-format Brain Dump bullet and two
+concurrent Yjs edits from separate authenticated sessions using separate
+trusted-device proofs. It encrypts every field with the same record-bound
+AES-GCM envelope contract as the app, verifies the peer can recover a missed
+delta from durable ciphertext, decrypts and merges both edits in either order,
+rejects an incomplete compaction set, retains one converged encrypted snapshot,
+and races a structured stale update against deletion. The final state must
+contain only the encrypted bullet tombstone with no identifiable delta row or
+delta history.
+
 The same command creates a separate live target-device session on the private
 device channel. It verifies content-free primary-switch, restoration,
 secondary-opt-in, and revocation broadcasts within the one-second target; the
@@ -516,10 +526,11 @@ revoked proof is rejected and the target refresh token fails after the revoker
 invalidates other account sessions, matching the app's revocation sequence.
 
 This is direct backend/live-session evidence, not a rendered-app walkthrough.
-It does not prove decrypted UI propagation, local erasure on a real target
-client, structured-field or Yjs merging, real provider redirects, SMTP
-delivery, Edge Function scheduling, browser Push, or physical-device behavior;
-perform the remaining drills below.
+It proves the verifier's client-format encrypted Yjs protocol, but not
+decrypted UI propagation, offline repository replay, local erasure on a real
+target client, real provider redirects, SMTP delivery, Edge Function
+scheduling, browser Push, or physical-device behavior; perform the remaining
+drills below.
 
 After deploying the current Web Push function and observing the configured
 crontab run on consecutive minutes, use the short connected scheduler drill.

@@ -26,6 +26,10 @@ The criterion-by-criterion status and evidence boundary is recorded in
 - [x] Atomic cleanup of current structured Brain Dump deltas and history on
   bullet deletion, with stale server writes rejected and in-flight client
   updates ignored after the tombstone
+- [x] Local two-session Brain Dump backend drill with client-format AES-GCM
+  fields, concurrent Yjs edits from two trusted device proofs, order-independent
+  convergence, durable missed-event recovery, exact-set compaction, and a real
+  delete-versus-update race
 - [x] SQLite native persistence and IndexedDB web persistence
 - [x] Encrypted field outbox, idempotent RPC contract, private Broadcast, and
   incremental durable reconciliation integration
@@ -113,13 +117,19 @@ Local evidence:
   schema with synthetic account keys, devices, encrypted records, encrypted
   history, outbox mutations, and deletion state; every seeded row remains
   byte-for-byte unchanged after all later migrations
-- `pnpm verify:supabase` includes those 6 migration checks and passes 54
+- `pnpm verify:supabase` includes those 6 migration checks and passes 75
   authenticated database checks covering
   cross-account RLS, direct-write denial, invalid proofs, encrypted
   trusted-device approval and claim, envelope erasure, request rejection,
   revocation, anonymous denial, deletion read-only enforcement,
   duplicate-safe primary reminder-device switching, proof-gated Web Push
-  scheduling/removal, hidden endpoint capabilities, and demotion cleanup
+  scheduling/removal, hidden endpoint capabilities, demotion cleanup, and a
+  real client-format encrypted Brain Dump lifecycle
+- the Brain Dump database phase uses two authenticated sessions and two trusted
+  device proofs, verifies that durable rows contain no plaintext thought
+  content, decrypts and merges concurrent Yjs deltas in both orders, rejects an
+  incomplete compaction set, retains one converged encrypted snapshot, and
+  proves a deletion race leaves no identifiable delta row or history
 - the same command passes 13 live account-deletion Edge Function checks
   covering scheduler
   authorization, POST-only execution, the one-hour deadline, due processing,
@@ -305,8 +315,10 @@ Local evidence:
   so the corresponding row remains unchecked.
 - `pnpm verify:connected:acceptance` prepares direct private-channel evidence
   for primary ownership, explicit secondary opt-in, target revocation, proof
-  denial, and refresh-session invalidation. It remains unclaimed until the
-  connected command and rendered-client cleanup drill pass.
+  denial, refresh-session invalidation, encrypted Brain Dump delta latency,
+  missed-event recovery, convergence, compaction, and delete-versus-update
+  safety. It remains unclaimed until the connected command and rendered-client
+  cleanup/editing drills pass.
 - `pnpm verify:connected:acceptance:web-push` is prepared to rerun the baseline
   and observe a real cron-authorized claim and retry through a VAPID-validated
   dispatcher. It has not been run against a connected backend, so

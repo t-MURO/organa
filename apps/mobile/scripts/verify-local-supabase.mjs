@@ -1,8 +1,9 @@
 import { execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID, webcrypto } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { createClient } from "@supabase/supabase-js";
+import * as Y from "yjs";
 
 import { readConnectedSupabaseConfig } from "./connected-supabase-config.mjs";
 
@@ -294,6 +295,19 @@ async function verifyDeviceApprovalContract() {
       Boolean(claimedApproval.claimed_at),
     "claimed envelope is erased",
   );
+
+  await verifyEncryptedBrainDumpContract({
+    client: client1,
+    connected: verificationEnvironment.connected,
+    currentDeviceId: trustedDeviceId,
+    currentDeviceProof: trustedProof,
+    email: users[0].email,
+    keyId,
+    password,
+    targetDeviceId: approvedDeviceId,
+    targetDeviceProof: approvedProof,
+    userId: users[0].id,
+  });
 
   const webPushSubscription = {
     auth: "B".repeat(22),
@@ -616,6 +630,656 @@ async function verifyDeviceApprovalContract() {
     /Authentication is required|permission denied/i,
     "anonymous approval request is rejected",
   );
+}
+
+async function verifyEncryptedBrainDumpContract({
+  client,
+  connected,
+  currentDeviceId,
+  currentDeviceProof,
+  email,
+  keyId,
+  password,
+  targetDeviceId,
+  targetDeviceProof,
+  userId,
+}) {
+  const peer = createClient(apiUrl, publishableKey, clientOptions);
+  const contentKey = await webcrypto.subtle.importKey(
+    "raw",
+    randomBytes(32),
+    "AES-GCM",
+    false,
+    ["decrypt", "encrypt"],
+  );
+  const suffix = randomUUID().replaceAll("-", "").slice(0, 12);
+  const bulletId = `thought-${Date.now().toString(36)}-${suffix}`;
+  const baseTimestamp = new Date().toISOString();
+  const baseDocument = new Y.Doc();
+  baseDocument.getText("text").insert(0, "Plan");
+  const baseState = encodeBytes(Y.encodeStateAsUpdate(baseDocument));
+  const baseBullet = {
+    createdAt: baseTimestamp,
+    crdtState: baseState,
+    id: bulletId,
+    rank: 1_024,
+    text: "Plan",
+    updatedAt: baseTimestamp,
+  };
+  const leftUpdate = createBrainDumpEdit({
+    baseState,
+    bulletId,
+    createdAt: nextIsoTimestamp(baseTimestamp, 1),
+    insertion: " alpha",
+    suffix: `left-${suffix}`,
+  });
+  const rightUpdate = createBrainDumpEdit({
+    baseState,
+    bulletId,
+    createdAt: nextIsoTimestamp(baseTimestamp, 2),
+    insertion: " beta",
+    suffix: `right-${suffix}`,
+  });
+  let channel;
+
+  try {
+    noError(
+      await peer.auth.signInWithPassword({ email, password }),
+      "second Brain Dump session authenticated",
+    );
+
+    const baseMutation = await applyEncryptedValue({
+      client,
+      contentKey,
+      createdAt: baseTimestamp,
+      deviceId: currentDeviceId,
+      deviceProof: currentDeviceProof,
+      keyId,
+      label: "encrypted Brain Dump bullet persisted",
+      recordId: bulletId,
+      recordType: "brain_dump_bullet",
+      value: baseBullet,
+    });
+    ok(
+      baseMutation.version === 1,
+      "Brain Dump bullet starts at version one",
+    );
+
+    let signalPromise;
+    let leftMutationStartedAt;
+    if (connected) {
+      await peer.realtime.setAuth();
+      let resolveSignal;
+      signalPromise = new Promise((resolve) => {
+        resolveSignal = resolve;
+      });
+      let resolveSubscription;
+      let rejectSubscription;
+      const subscriptionPromise = new Promise((resolve, reject) => {
+        resolveSubscription = resolve;
+        rejectSubscription = reject;
+      });
+      let subscriptionSettled = false;
+      channel = peer
+        .channel(`organa:${userId}:encrypted-records`, {
+          config: { private: true },
+        })
+        .on("broadcast", { event: "changed" }, ({ payload }) => {
+          if (
+            payload?.recordId === leftUpdate.id &&
+            payload?.recordType === "brain_dump_update"
+          ) {
+            resolveSignal({
+              payload,
+              receivedAt: performance.now(),
+            });
+          }
+        })
+        .subscribe((status) => {
+          if (subscriptionSettled) return;
+          if (status === "SUBSCRIBED") {
+            subscriptionSettled = true;
+            resolveSubscription();
+          } else if (
+            status === "CHANNEL_ERROR" ||
+            status === "TIMED_OUT" ||
+            status === "CLOSED"
+          ) {
+            subscriptionSettled = true;
+            rejectSubscription(
+              new Error(
+                "The Brain Dump private Realtime channel could not subscribe.",
+              ),
+            );
+          }
+        });
+      await withTimeout(
+        subscriptionPromise,
+        15_000,
+        "The Brain Dump private Realtime channel did not subscribe within 15 seconds.",
+      );
+      ok(true, "Brain Dump private Realtime channel subscribed");
+      leftMutationStartedAt = performance.now();
+    }
+
+    const leftMutation = await applyEncryptedValue({
+      client,
+      contentKey,
+      createdAt: leftUpdate.createdAt,
+      deviceId: currentDeviceId,
+      deviceProof: currentDeviceProof,
+      keyId,
+      label: "first encrypted Brain Dump delta persisted",
+      recordId: leftUpdate.id,
+      recordType: "brain_dump_update",
+      value: leftUpdate,
+    });
+    ok(leftMutation.version === 1, "first Brain Dump delta is durable");
+
+    if (connected) {
+      const signal = await withTimeout(
+        signalPromise,
+        10_000,
+        "The Brain Dump delta broadcast was not received within 10 seconds.",
+      );
+      ok(
+        signal.payload.recordId === leftUpdate.id &&
+          signal.payload.recordType === "brain_dump_update" &&
+          sameJson(Object.keys(signal.payload).sort(), [
+            "recordId",
+            "recordType",
+          ]),
+        "Brain Dump broadcast exposes only the expected record hint",
+      );
+      const latencyMilliseconds = Math.round(
+        signal.receivedAt - leftMutationStartedAt,
+      );
+      ok(
+        latencyMilliseconds <= 1_000,
+        `encrypted Brain Dump delta reached the active peer in ${latencyMilliseconds} ms`,
+      );
+      const removalStatus = await peer.removeChannel(channel);
+      channel = undefined;
+      ok(
+        removalStatus === "ok",
+        "Brain Dump peer disconnected before the missed broadcast",
+      );
+    }
+
+    const rightMutation = await applyEncryptedValue({
+      client: peer,
+      contentKey,
+      createdAt: rightUpdate.createdAt,
+      deviceId: targetDeviceId,
+      deviceProof: targetDeviceProof,
+      keyId,
+      label: "second-device encrypted Brain Dump delta persisted",
+      recordId: rightUpdate.id,
+      recordType: "brain_dump_update",
+      value: rightUpdate,
+    });
+    ok(rightMutation.version === 1, "second Brain Dump delta is durable");
+
+    const durableRows = noError(
+      await peer
+        .from("encrypted_records")
+        .select("record_id,record_type,ciphertext,deleted,updated_at")
+        .in("record_id", [bulletId, leftUpdate.id, rightUpdate.id])
+        .order("record_id", { ascending: true }),
+      "Brain Dump peer reconciled durable encrypted rows",
+    );
+    ok(
+      durableRows.length === 3 &&
+        durableRows.every((row) => !row.deleted && row.ciphertext),
+      "missed Brain Dump broadcast is recoverable from durable state",
+    );
+    const serializedRows = JSON.stringify(durableRows);
+    ok(
+      !serializedRows.includes("Plan") &&
+        !serializedRows.includes("alpha") &&
+        !serializedRows.includes("beta"),
+      "durable Brain Dump rows contain no plaintext thought content",
+    );
+
+    const recoveredBulletRow = durableRows.find(
+      (row) => row.record_id === bulletId,
+    );
+    const recoveredUpdateRows = durableRows.filter(
+      (row) => row.record_type === "brain_dump_update",
+    );
+    const recoveredBullet = await decryptEncryptedValue({
+      contentKey,
+      keyId,
+      recordId: bulletId,
+      recordType: "brain_dump_bullet",
+      row: recoveredBulletRow,
+    });
+    const recoveredUpdates = await Promise.all(
+      recoveredUpdateRows.map((row) =>
+        decryptEncryptedValue({
+          contentKey,
+          keyId,
+          recordId: row.record_id,
+          recordType: "brain_dump_update",
+          row,
+        }),
+      ),
+    );
+    const leftFirst = mergeBrainDumpUpdates(
+      recoveredBullet,
+      recoveredUpdates,
+    );
+    const rightFirst = mergeBrainDumpUpdates(
+      recoveredBullet,
+      [...recoveredUpdates].reverse(),
+    );
+    ok(
+      leftFirst.text === rightFirst.text &&
+        leftFirst.crdtState === rightFirst.crdtState &&
+        leftFirst.text.includes("alpha") &&
+        leftFirst.text.includes("beta"),
+      "two-device Brain Dump deltas converge in either delivery order",
+    );
+
+    const incompleteCompaction = await peer.rpc(
+      "compact_brain_dump_updates",
+      await encryptedCompactionArguments({
+        bullet: leftFirst,
+        bulletId,
+        contentKey,
+        createdAt: nextIsoTimestamp(baseTimestamp, 3),
+        deviceId: targetDeviceId,
+        deviceProof: targetDeviceProof,
+        keyId,
+        updateIds: [leftUpdate.id],
+      }),
+    );
+    expectedError(
+      incompleteCompaction,
+      /changed before compaction/i,
+      "incomplete Brain Dump compaction set is rejected",
+    );
+
+    noError(
+      await peer.rpc(
+        "compact_brain_dump_updates",
+        await encryptedCompactionArguments({
+          bullet: leftFirst,
+          bulletId,
+          contentKey,
+          createdAt: nextIsoTimestamp(baseTimestamp, 4),
+          deviceId: targetDeviceId,
+          deviceProof: targetDeviceProof,
+          keyId,
+          updateIds: [leftUpdate.id, rightUpdate.id],
+        }),
+      ),
+      "exact encrypted Brain Dump delta set compacted",
+    );
+    const compactedRows = noError(
+      await peer
+        .from("encrypted_records")
+        .select("record_id,record_type,ciphertext,deleted")
+        .in("record_id", [bulletId, leftUpdate.id, rightUpdate.id]),
+      "compacted Brain Dump rows loaded",
+    );
+    const compactedBulletRow = compactedRows.find(
+      (row) => row.record_id === bulletId,
+    );
+    const compactedBullet = await decryptEncryptedValue({
+      contentKey,
+      keyId,
+      recordId: bulletId,
+      recordType: "brain_dump_bullet",
+      row: compactedBulletRow,
+    });
+    ok(
+      compactedRows.length === 1 &&
+        compactedBullet.text === leftFirst.text &&
+        compactedBullet.crdtState === leftFirst.crdtState,
+      "compaction retains one converged encrypted snapshot",
+    );
+
+    const staleUpdate = createBrainDumpEdit({
+      baseState: compactedBullet.crdtState,
+      bulletId,
+      createdAt: nextIsoTimestamp(baseTimestamp, 5),
+      insertion: " stale",
+      suffix: `stale-${suffix}`,
+    });
+    const staleMutationId = randomUUID();
+    const staleCiphertext = await encryptFields({
+      contentKey,
+      keyId,
+      recordId: staleUpdate.id,
+      recordType: "brain_dump_update",
+      value: staleUpdate,
+    });
+    const deletionTimestamp = nextIsoTimestamp(baseTimestamp, 6);
+    const [deletionResult, staleResult] = await Promise.all([
+      client.rpc("apply_encrypted_mutation", {
+        p_base_version: 0,
+        p_ciphertext: null,
+        p_created_at: deletionTimestamp,
+        p_device_id: currentDeviceId,
+        p_device_proof: currentDeviceProof,
+        p_field_versions: { deleted: deletionTimestamp },
+        p_mutation_id: randomUUID(),
+        p_operation: "delete",
+        p_record_id: bulletId,
+        p_record_type: "brain_dump_bullet",
+      }),
+      peer.rpc("apply_encrypted_mutation", {
+        p_base_version: 0,
+        p_ciphertext: staleCiphertext,
+        p_created_at: staleUpdate.createdAt,
+        p_device_id: targetDeviceId,
+        p_device_proof: targetDeviceProof,
+        p_field_versions: Object.fromEntries(
+          Object.keys(staleCiphertext).map((field) => [
+            field,
+            staleUpdate.createdAt,
+          ]),
+        ),
+        p_mutation_id: staleMutationId,
+        p_operation: "upsert",
+        p_record_id: staleUpdate.id,
+        p_record_type: "brain_dump_update",
+      }),
+    ]);
+    noError(deletionResult, "Brain Dump bullet deletion won the final state");
+    if (
+      staleResult.error &&
+      !/Brain Dump bullet is unavailable/i.test(staleResult.error.message)
+    ) {
+      throw new Error(
+        `The racing stale Brain Dump delta failed unexpectedly: ${staleResult.error.message}`,
+      );
+    }
+    ok(
+      true,
+      "racing stale Brain Dump delta either precedes deletion or is rejected",
+    );
+
+    const deletedRows = noError(
+      await client
+        .from("encrypted_records")
+        .select("record_id,record_type,ciphertext,deleted")
+        .in("record_id", [
+          bulletId,
+          leftUpdate.id,
+          rightUpdate.id,
+          staleUpdate.id,
+        ]),
+      "deleted Brain Dump final state loaded",
+    );
+    const deletedBullet = deletedRows.find(
+      (row) => row.record_id === bulletId,
+    );
+    ok(
+      deletedRows.length === 1 &&
+        deletedBullet?.deleted === true &&
+        Boolean(deletedBullet.ciphertext),
+      "delete-versus-update race leaves only the bullet tombstone",
+    );
+    const residualHistory = noError(
+      await client
+        .from("encrypted_record_history")
+        .select("record_id")
+        .eq("record_type", "brain_dump_update")
+        .in("record_id", [
+          leftUpdate.id,
+          rightUpdate.id,
+          staleUpdate.id,
+        ]),
+      "deleted Brain Dump delta history checked",
+    );
+    ok(
+      residualHistory.length === 0,
+      "deletion removes identifiable Brain Dump delta history",
+    );
+  } finally {
+    if (channel) {
+      await peer.removeChannel(channel).catch(() => undefined);
+    }
+    await peer.realtime.disconnect().catch(() => undefined);
+  }
+}
+
+async function applyEncryptedValue({
+  client,
+  contentKey,
+  createdAt,
+  deviceId,
+  deviceProof,
+  keyId,
+  label,
+  recordId,
+  recordType,
+  value,
+}) {
+  const ciphertext = await encryptFields({
+    contentKey,
+    keyId,
+    recordId,
+    recordType,
+    value,
+  });
+  const mutationId = randomUUID();
+  const version = noError(
+    await client.rpc("apply_encrypted_mutation", {
+      p_base_version: 0,
+      p_ciphertext: ciphertext,
+      p_created_at: createdAt,
+      p_device_id: deviceId,
+      p_device_proof: deviceProof,
+      p_field_versions: Object.fromEntries(
+        Object.keys(ciphertext).map((field) => [field, createdAt]),
+      ),
+      p_mutation_id: mutationId,
+      p_operation: "upsert",
+      p_record_id: recordId,
+      p_record_type: recordType,
+    }),
+    label,
+  );
+  return { mutationId, version };
+}
+
+async function encryptedCompactionArguments({
+  bullet,
+  bulletId,
+  contentKey,
+  createdAt,
+  deviceId,
+  deviceProof,
+  keyId,
+  updateIds,
+}) {
+  const ciphertext = await encryptFields({
+    contentKey,
+    keyId,
+    recordId: bulletId,
+    recordType: "brain_dump_bullet",
+    value: bullet,
+  });
+  return {
+    p_bullet_id: bulletId,
+    p_ciphertext: ciphertext,
+    p_created_at: createdAt,
+    p_device_id: deviceId,
+    p_device_proof: deviceProof,
+    p_field_versions: Object.fromEntries(
+      Object.keys(ciphertext).map((field) => [field, createdAt]),
+    ),
+    p_mutation_id: randomUUID(),
+    p_update_ids: [...updateIds].sort(),
+  };
+}
+
+async function encryptFields({
+  contentKey,
+  keyId,
+  recordId,
+  recordType,
+  value,
+}) {
+  const ciphertext = {};
+  for (const [field, fieldValue] of Object.entries(value)) {
+    ciphertext[field] = await encryptField({
+      contentKey,
+      keyId,
+      recordId: `${recordId}:${field}`,
+      recordType,
+      value: { present: true, value: fieldValue },
+    });
+  }
+  return ciphertext;
+}
+
+async function encryptField({
+  contentKey,
+  keyId,
+  recordId,
+  recordType,
+  value,
+}) {
+  const aad = `organa:record:v1:${recordType}:${recordId}`;
+  const iv = randomBytes(12);
+  const encrypted = new Uint8Array(
+    await webcrypto.subtle.encrypt(
+      {
+        additionalData: new TextEncoder().encode(aad),
+        iv,
+        name: "AES-GCM",
+        tagLength: 128,
+      },
+      contentKey,
+      new TextEncoder().encode(JSON.stringify(value)),
+    ),
+  );
+  return {
+    aad,
+    algorithm: "AES-256-GCM",
+    combined: Buffer.concat([iv, encrypted]).toString("base64"),
+    keyId,
+    version: 1,
+  };
+}
+
+async function decryptEncryptedValue({
+  contentKey,
+  keyId,
+  recordId,
+  recordType,
+  row,
+}) {
+  if (!row?.ciphertext || row.deleted) {
+    throw new Error("The encrypted Brain Dump row is unavailable.");
+  }
+  const value = {};
+  for (const [field, envelope] of Object.entries(row.ciphertext)) {
+    const fieldValue = await decryptField({
+      contentKey,
+      envelope,
+      keyId,
+      recordId: `${recordId}:${field}`,
+      recordType,
+    });
+    if (fieldValue.present) value[field] = fieldValue.value;
+  }
+  return value;
+}
+
+async function decryptField({
+  contentKey,
+  envelope,
+  keyId,
+  recordId,
+  recordType,
+}) {
+  const expectedAad = `organa:record:v1:${recordType}:${recordId}`;
+  if (
+    envelope?.algorithm !== "AES-256-GCM" ||
+    envelope?.version !== 1 ||
+    envelope?.keyId !== keyId ||
+    envelope?.aad !== expectedAad
+  ) {
+    throw new Error("The encrypted Brain Dump metadata is invalid.");
+  }
+  const combined = Buffer.from(envelope.combined, "base64");
+  if (combined.length < 29) {
+    throw new Error("The encrypted Brain Dump payload is invalid.");
+  }
+  const plaintext = await webcrypto.subtle.decrypt(
+    {
+      additionalData: new TextEncoder().encode(expectedAad),
+      iv: combined.subarray(0, 12),
+      name: "AES-GCM",
+      tagLength: 128,
+    },
+    contentKey,
+    combined.subarray(12),
+  );
+  return JSON.parse(new TextDecoder().decode(plaintext));
+}
+
+function createBrainDumpEdit({
+  baseState,
+  bulletId,
+  createdAt,
+  insertion,
+  suffix,
+}) {
+  const document = new Y.Doc();
+  Y.applyUpdate(document, decodeBytes(baseState));
+  let incrementalUpdate;
+  document.on("update", (update) => {
+    incrementalUpdate = Uint8Array.from(update);
+  });
+  const text = document.getText("text");
+  text.insert(text.length, insertion);
+  if (!incrementalUpdate) {
+    throw new Error("The Brain Dump edit did not produce a Yjs update.");
+  }
+  return {
+    bulletId,
+    createdAt,
+    id: `brain-update:${bulletId}:${suffix}`,
+    update: encodeBytes(incrementalUpdate),
+  };
+}
+
+function mergeBrainDumpUpdates(bullet, updates) {
+  const document = new Y.Doc();
+  Y.applyUpdate(document, decodeBytes(bullet.crdtState));
+  for (const update of updates) {
+    Y.applyUpdate(document, decodeBytes(update.update));
+  }
+  return {
+    ...bullet,
+    crdtState: encodeBytes(Y.encodeStateAsUpdate(document)),
+    text: document.getText("text").toString(),
+    updatedAt: updates.reduce(
+      (latest, update) =>
+        update.createdAt > latest ? update.createdAt : latest,
+      bullet.updatedAt,
+    ),
+  };
+}
+
+function encodeBytes(value) {
+  return Buffer.from(value).toString("base64");
+}
+
+function decodeBytes(value) {
+  return Uint8Array.from(Buffer.from(value, "base64"));
+}
+
+function nextIsoTimestamp(timestamp, offsetMilliseconds) {
+  return new Date(
+    Date.parse(timestamp) + offsetMilliseconds,
+  ).toISOString();
 }
 
 async function verifyConnectedReminderDeviceSessions({

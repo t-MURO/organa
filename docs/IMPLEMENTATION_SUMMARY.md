@@ -208,7 +208,7 @@ Latest verified task-type work:
 - Removes the temporary Realtime policy, isolated schema, and Auth user after
   both successful and failed runs.
 - The standalone verifier passes 6 checks. `pnpm verify:supabase` now passes
-  those checks before its existing 54 authenticated database, 13 deletion
+  those checks before its existing 75 authenticated database, 13 deletion
   function, and 15 Web Push function checks.
 
 ## Task-Type Invariant Milestone
@@ -388,7 +388,7 @@ Verification evidence:
 - Both iOS and Android Hermes exports passed from the same source state.
 - All seven migrations applied from an empty database and database lint
   reported no findings.
-- The local authenticated database verifier passed 54 checks.
+- The local authenticated database verifier passed 75 checks.
 - The live account-deletion verifier passed 13 checks, including cascading
   removal of Web Push state.
 - The local Web Push Edge Function verifier passed 15 checks for authorization,
@@ -1312,7 +1312,7 @@ No tests were added, changed, or run for this milestone.
   intentionally limited to current structured identifiers.
 - A rollback-only local PostgreSQL drill proved delta/history removal, receipt
   ciphertext stripping, and stale-update rejection. All 151 existing tests,
-  uncached strict TypeScript, all 6 migration-preservation checks, 54 database
+  uncached strict TypeScript, all 6 migration-preservation checks, 75 database
   checks, 13 account-deletion checks, 15 Web Push checks, database lint, the
   production web/PWA build, and both native Hermes exports pass.
 - No test files were added or changed for this milestone.
@@ -1361,6 +1361,32 @@ No tests were added, changed, or run for this milestone.
 - A full local Gradle APK build remains paused because downloading the missing
   Android SDK requires accepting Google's SDK License Agreement; no
   third-party terms were accepted on the user's behalf.
+
+## Encrypted Brain Dump Backend Drill
+
+- The baseline Supabase verifier now creates two authenticated same-account
+  sessions with separate trusted-device proofs and one disposable current-format
+  Brain Dump bullet.
+- It produces two Yjs edits from the same base document, encrypts every bullet
+  and delta field with the app's record-bound AES-256-GCM envelope layout, and
+  persists the edits through the real mutation RPC.
+- The peer loads only durable ciphertext, confirms no thought plaintext appears
+  in server rows, decrypts both deltas locally, and reaches the same merged text
+  and canonical Yjs state in either delivery order.
+- An incomplete compaction set is rejected. The exact set atomically becomes
+  one converged encrypted snapshot with the covered delta rows removed.
+- A real concurrent delete-versus-update attempt accepts either legal lock
+  order, then requires the final database state to contain only the encrypted
+  bullet tombstone with no identifiable child delta or delta history.
+- The guarded connected baseline additionally measures the first Brain Dump
+  delta broadcast against the one-second target, disconnects the peer, and
+  requires the second edit to remain recoverable from durable ciphertext.
+- The targeted local drill and full `pnpm verify:supabase` gate pass: 6
+  migration-preservation, 75 authenticated database, 13 deletion-function, and
+  15 Web Push function checks. No test files were added or changed.
+- Home-server evidence remains unclaimed until the guarded connected command
+  runs from a clean commit; rendered two-client and physical keyboard drills
+  remain separate acceptance gates.
 
 ## Remaining Acceptance Gates
 
