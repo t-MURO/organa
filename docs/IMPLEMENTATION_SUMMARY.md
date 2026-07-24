@@ -3,8 +3,8 @@
 Status recorded on 2026-07-24.
 
 This is the structured pause checkpoint requested after the implementation
-work. The implementation is complete through the PWA update reliability
-milestone described below.
+work. The locally verified implementation is complete through the PWA update
+reliability and browser update-drill milestones described below.
 `docs/REQUIREMENTS_TRACEABILITY.md` maps every controlled-beta acceptance
 criterion to direct evidence and its remaining gate.
 
@@ -29,6 +29,7 @@ Committed and verified milestones:
 
 Latest checkpoint commits:
 
+- `fb12dac` records the real same-origin PWA update and recovery drill.
 - `c55b294` hardens deliberate PWA update activation and failure recovery.
 - `241da5c` enforces accessible interaction targets across app surfaces.
 - `9fd4429` keeps One-off tasks and templates non-recurring.
@@ -53,6 +54,25 @@ Latest verified task-type work:
 - Passes strict TypeScript, 130 automated tests, the 2,000-task performance
   verifier, iOS and Android Hermes exports, the production PWA export, the
   production dependency audit, and `git diff --check`.
+
+## Paused Work
+
+Native OAuth callback recovery was the next active implementation milestone
+when this summary was refreshed:
+
+- `apps/mobile/src/auth/oauth-callback.ts` has been added locally to parse only
+  the configured redirect, map provider failures to safe local messages, and
+  deduplicate simultaneous or repeated exchanges of a one-time PKCE code.
+- `apps/mobile/src/auth/oauth-callback.test.ts` has been added locally with
+  focused coverage for redirect matching, safe errors, duplicate callbacks,
+  and retry after a failed exchange.
+- These two files are intentionally uncommitted at this pause point.
+- They have not yet been integrated into `auth-context.tsx`, exercised through
+  native cold-start/resume linking, or included in the verified test totals
+  below.
+- The next implementation step is to use one callback coordinator for both the
+  Expo WebBrowser result and native `Linking` events, then run the complete
+  TypeScript, test, web, and native export checks before committing.
 
 ## Platform Compatibility Milestone
 
@@ -503,6 +523,10 @@ Major implementation commits:
 - `32bf4e9` - pin controlled-beta platform support
 - `2c669ce` - enforce local task performance
 - `eee913d` - reject invalid backup domain records
+- `9fd4429` - keep one-off tasks non-recurring
+- `241da5c` - enforce accessible interaction targets
+- `c55b294` - harden deliberate PWA update activation
+- `fb12dac` - record the real PWA update drill
 
 ## Latest Security Hardening
 
