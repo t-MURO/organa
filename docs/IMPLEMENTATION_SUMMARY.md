@@ -1678,6 +1678,37 @@ No tests were added, changed, or run for this milestone.
   failures propagate into the deletion retry and visible cleanup error.
 - No test files were added or changed for this milestone.
 
+## Opaque Deterministic Check-In IDs
+
+- Check-In records previously used `check-in-YYYY-MM-DD` as their synchronized
+  record ID. Although mood, feeling, reflection, and date fields were
+  encrypted, the identifier exposed the Check-In calendar date contrary to the
+  documented opaque-metadata boundary.
+- The crypto package now derives a record-ID key from the account content key
+  with RFC 5869 HKDF-SHA-256 and derives each stable Check-In ID with RFC 2104
+  HMAC-SHA-256. Domain-separated inputs and a `rid1_` version prefix make the
+  format explicit without exposing the date or linking IDs across accounts.
+- The implementation uses audited `@noble/hashes` primitives rather than a
+  custom MAC/KDF. Temporary raw and derived key byte arrays are zeroed after
+  derivation.
+- New entries on different trusted devices derive the same ID for the same
+  date. Encrypted-backup restore also normalizes Check-In IDs through the
+  current account key, while an existing local entry for that date keeps its
+  current ID to avoid duplicate daily entries.
+- Check-In save waits for the durable local/outbox commit before showing
+  success. Edits made while that commit is in flight remain visibly unsaved,
+  and failures leave the entered words in place with a gentle retry message.
+- Strict TypeScript, all 19 platform checks, the production PWA export with 18
+  artifact checks and 22 precached URLs, and both iOS and Android Hermes
+  exports pass with the new derivation path included.
+- The unchanged test suite passes 151 checks: 6 crypto, 43 domain, and 102 app
+  checks. No test files were added or changed for this milestone.
+- The installed `@noble/hashes` `2.2.0` artifact is integrity-pinned, MIT
+  licensed, and has no runtime dependencies. A full production advisory audit
+  of the changed lockfile remains a release gate: the npm audit endpoint was
+  unavailable inside the sandbox, and external dependency-graph egress was
+  not authorized.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

@@ -16,6 +16,7 @@ import {
 
 import { useAuth } from "../../auth/auth-context";
 import { createCheckInRepository } from "../../data/create-check-in-repository";
+import { useSecurity } from "../../security/security-context";
 import { useSync } from "../../sync/sync-context";
 import { selectRestoreChanges } from "../account/restore-merge";
 
@@ -30,7 +31,7 @@ type CheckInAction =
 
 interface CheckInContextValue extends CheckInState {
   restoreEntries(entries: CheckInEntry[]): Promise<number>;
-  saveEntry(input: CheckInInput): CheckInEntry;
+  saveEntry(input: CheckInInput): Promise<CheckInEntry>;
 }
 
 const CheckInContext = createContext<CheckInContextValue | undefined>(
@@ -67,6 +68,7 @@ function checkInReducer(
 
 export function CheckInProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
+  const security = useSecurity();
   const sync = useSync();
   const namespace = auth.user?.id ?? "local-preview";
   const repository = useMemo(
@@ -108,20 +110,39 @@ export function CheckInProvider({ children }: PropsWithChildren) {
     [repository],
   );
 
-  function saveEntry(input: CheckInInput) {
+  async function saveEntry(input: CheckInInput) {
     const existing = state.entries.find((entry) => entry.date === input.date);
     const entry = existing
       ? updateCheckInEntry(existing, input)
-      : createCheckInEntry(input, `check-in-${input.date}`);
+      : createCheckInEntry(
+          input,
+          await security.deriveRecordId("check_in", input.date),
+        );
 
+    const committed = await sync.commitUpsert(
+      "check_in",
+      entry.id,
+      entry,
+      existing,
+    );
+    if (!committed) {
+      throw new Error("This Check-In could not be saved safely.");
+    }
     dispatch({ type: "upserted", entry });
-    void sync.commitUpsert("check_in", entry.id, entry, existing);
     return entry;
   }
 
   async function restoreEntries(entries: CheckInEntry[]) {
     const current = await repository.list();
-    const changes = selectRestoreChanges(current, entries);
+    const normalized = await Promise.all(
+      entries.map(async (entry) => ({
+        ...entry,
+        id:
+          current.find((candidate) => candidate.date === entry.date)?.id ??
+          (await security.deriveRecordId("check_in", entry.date)),
+      })),
+    );
+    const changes = selectRestoreChanges(current, normalized);
     const committed = await sync.commit(
       changes.map(({ previous, value }) => ({
         operation: "upsert",

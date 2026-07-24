@@ -1,3 +1,7 @@
+import { hkdf } from "@noble/hashes/hkdf.js";
+import { hmac } from "@noble/hashes/hmac.js";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
 import {
   aesDecryptAsync,
   aesEncryptAsync,
@@ -19,6 +23,38 @@ export async function createContentKey(): Promise<ContentKey> {
 
 export function importContentKey(contentKey: ContentKey) {
   return AESEncryptionKey.import(contentKey.encoded, "base64");
+}
+
+export async function deriveOpaqueRecordId(
+  contentKey: ContentKey,
+  recordType: string,
+  stableValue: string,
+) {
+  if (!recordType || !stableValue) {
+    throw new Error("Opaque record IDs require a type and stable value.");
+  }
+  const key = await importContentKey(contentKey);
+  const keyBytes = await key.bytes();
+  const identifierKey = hkdf(
+    sha256,
+    keyBytes,
+    utf8ToBytes("organa:record-id:salt:v1"),
+    utf8ToBytes(`organa:record-id:key:v1:${recordType}`),
+    32,
+  );
+  let identifier: Uint8Array | undefined;
+  try {
+    identifier = hmac(
+      sha256,
+      identifierKey,
+      utf8ToBytes(`organa:record-id:value:v1:${stableValue}`),
+    );
+    return `rid1_${bytesToHex(identifier)}`;
+  } finally {
+    identifier?.fill(0);
+    keyBytes.fill(0);
+    identifierKey.fill(0);
+  }
 }
 
 export async function encryptJson(

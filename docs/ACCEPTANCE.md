@@ -59,6 +59,9 @@ The criterion-by-criterion status and evidence boundary is recorded in
   resume, and cold start with one-time PKCE exchange deduplication
 - [x] Account-scoped content-key readiness and runtime validation for native
   and web key-vault records
+- [x] New and restored Check-In rows derive deterministic opaque record IDs
+  from the account content key with HKDF/HMAC-SHA-256; calendar dates remain
+  inside encrypted fields while same-day multi-device writes still converge
 - [x] Browser auth sessions and device proof secrets migrate from plaintext
   local storage into record-bound AES-GCM IndexedDB entries with
   non-extractable wrapping keys where supported
@@ -334,7 +337,14 @@ Local evidence:
   then activated a marked third version with one reload and no stale prompt
 - production Lighthouse scores 100% for accessibility and 100% for best
   practices on the configured sign-in screen
-- production dependency audit reports no known vulnerabilities
+- the last production dependency audit reported no known vulnerabilities
+  before the opaque-ID crypto dependency was added; the current lockfile's
+  online advisory audit remains a release gate because the npm audit endpoint
+  was unavailable in the sandbox and external dependency-graph egress was not
+  authorized
+- the installed `@noble/hashes` `2.2.0` manifest and lock entry identify one
+  integrity-pinned MIT package with no runtime dependencies; this targeted
+  inspection does not replace the pending full production audit
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks
@@ -361,6 +371,10 @@ Local evidence:
   one-off recurrence, invalid grace-day placement or limits, non-medication
   dose confirmation, and empty, padded, or multi-word Check-In feeling labels
   before any repository write
+- Check-In save now waits for the atomic local/encrypted-outbox commit before
+  claiming success, preserves edits made during an in-flight save as unsaved,
+  and reports a pressure-free retry message when derivation or persistence
+  fails
 - task and template editors clear/hide recurrence when One-off is selected;
   enabling per-step reminder configuration materializes inherited timings so
   visible chips and the saved schedule agree

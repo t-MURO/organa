@@ -5,7 +5,7 @@ import {
   type CheckInEntry,
   type MoodRating,
 } from "@organa/domain";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -46,6 +46,9 @@ export function CheckInScreen() {
   const [feeling, setFeeling] = useState("");
   const [reflection, setReflection] = useState("");
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const editVersion = useRef(0);
   const [query, setQuery] = useState("");
   const [trendDays, setTrendDays] = useState<7 | 30>(7);
   const trend = checkInTrend(entries, today, trendDays);
@@ -62,7 +65,9 @@ export function CheckInScreen() {
   }, [todayEntry?.id]);
 
   function markChanged() {
+    editVersion.current += 1;
     setSaved(false);
+    setSaveError("");
   }
 
   function selectMood(nextMood: MoodRating) {
@@ -80,16 +85,28 @@ export function CheckInScreen() {
     markChanged();
   }
 
-  function submit() {
-    if (!mood) return;
+  async function submit() {
+    if (!mood || saving) return;
 
-    saveEntry({
-      date: today,
-      mood,
-      feeling,
-      reflection,
-    });
-    setSaved(true);
+    const submittedVersion = editVersion.current;
+    setSaving(true);
+    setSaveError("");
+    try {
+      await saveEntry({
+        date: today,
+        mood,
+        feeling,
+        reflection,
+      });
+      if (editVersion.current === submittedVersion) setSaved(true);
+    } catch {
+      setSaved(false);
+      setSaveError(
+        "This Check-In did not save safely. Your words are still here so you can try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) {
@@ -301,8 +318,13 @@ export function CheckInScreen() {
               isCompact ? styles.saveRowCompact : undefined,
             ]}
           >
-            <Text style={styles.saveHint}>
-              {saved
+            <Text
+              accessibilityLiveRegion="polite"
+              style={styles.saveHint}
+            >
+              {saveError
+                ? saveError
+                : saved
                 ? "Saved. You can change it whenever you need."
                 : todayEntry
                   ? "Saving updates today's entry."
@@ -310,18 +332,24 @@ export function CheckInScreen() {
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityState={{ disabled: !mood }}
-              aria-disabled={!mood}
-              disabled={!mood}
+              accessibilityState={{ disabled: !mood || saving }}
+              aria-disabled={!mood || saving}
+              disabled={!mood || saving}
               style={({ pressed }) => [
                 styles.saveButton,
-                !mood ? styles.saveButtonDisabled : undefined,
-                pressed && mood ? styles.buttonPressed : undefined,
+                !mood || saving ? styles.saveButtonDisabled : undefined,
+                pressed && mood && !saving
+                  ? styles.buttonPressed
+                  : undefined,
               ]}
-              onPress={submit}
+              onPress={() => void submit()}
             >
               <Text style={styles.saveButtonText}>
-                {todayEntry ? "Update check-in" : "Save check-in"}
+                {saving
+                  ? "Saving..."
+                  : todayEntry
+                    ? "Update check-in"
+                    : "Save check-in"}
               </Text>
             </Pressable>
           </View>

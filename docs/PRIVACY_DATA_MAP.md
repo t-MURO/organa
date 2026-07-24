@@ -83,6 +83,11 @@ Encrypted cloud payloads include:
 The server can distinguish encrypted record types and field names. These are
 operational metadata and must never contain user-entered text.
 
+New and restored Check-In records use a versioned identifier derived locally
+from the account content key, record type, and date with HKDF/HMAC-SHA-256.
+Trusted devices derive the same opaque ID for same-day convergence, but the
+backend cannot recover the date or correlate that ID across accounts.
+
 ## Server-Readable Data
 
 | Data | Purpose | Current retention boundary |

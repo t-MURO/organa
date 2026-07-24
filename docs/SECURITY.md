@@ -209,6 +209,12 @@ URL or key.
 Field names and record types are operational metadata. They should not contain
 user-entered content.
 
+Check-In dates are also excluded from record identifiers. New and restored
+Check-In rows derive a versioned deterministic ID from the account content key
+using HKDF-SHA-256 for key separation and HMAC-SHA-256 over the date. This
+preserves one-record-per-day convergence across trusted devices while leaving
+only an opaque, account-unlinkable identifier visible to Supabase.
+
 ## Authorization
 
 - Every public user table has RLS.

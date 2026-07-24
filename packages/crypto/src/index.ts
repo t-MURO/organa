@@ -1,6 +1,7 @@
 export {
   createContentKey,
   decryptJson,
+  deriveOpaqueRecordId,
   encryptJson,
   importContentKey,
 } from "./record-encryption";

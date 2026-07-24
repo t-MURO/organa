@@ -2,6 +2,7 @@ import {
   createKeyHierarchy,
   createRecoveryEnrollmentProof,
   decryptJson,
+  deriveOpaqueRecordId,
   encryptJson,
   type ContentKey,
   type EncryptedEnvelope,
@@ -37,6 +38,10 @@ interface SecurityContextValue {
   recoveryCode?: string;
   recoveryEnvelope: RecoveryKeyEnvelope | null;
   restoreRequired: boolean;
+  deriveRecordId(
+    recordType: string,
+    stableValue: string,
+  ): Promise<string>;
   encryptRecord(
     recordType: string,
     recordId: string,
@@ -366,6 +371,11 @@ export function SecurityProvider({ children }: PropsWithChildren) {
     return encryptJson(value, contentKey, recordType, recordId);
   }
 
+  async function deriveRecordId(recordType: string, stableValue: string) {
+    if (!contentKey) throw new Error("The account content key is unavailable.");
+    return deriveOpaqueRecordId(contentKey, recordType, stableValue);
+  }
+
   async function decryptRecord<T>(
     envelope: EncryptedEnvelope,
     recordType: string,
@@ -382,6 +392,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
         confirmRecoverySaved,
         contentKey,
         decryptRecord,
+        deriveRecordId,
         device,
         encryptRecord,
         error,
