@@ -16,6 +16,7 @@ module.exports = {
     "**/300Light/**",
     "**/500Medium/**"
   ],
+  importScripts: ["push-handler.js"],
   maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
   navigateFallback: "/index.html",
   runtimeCaching: [

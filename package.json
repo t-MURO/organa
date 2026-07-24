@@ -11,6 +11,7 @@
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "verify:yjs-runtime": "pnpm --filter @organa/app verify:yjs-runtime",
+    "verify:web-push": "pnpm --filter @organa/app verify:web-push",
     "verify:supabase": "pnpm --filter @organa/app verify:supabase"
   },
   "devDependencies": {

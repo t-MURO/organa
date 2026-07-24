@@ -125,9 +125,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       await clearPrivatePlatformState();
       return;
     }
+    await clearPrivatePlatformState();
     const result = await supabase.auth.signOut({ scope: "local" });
     if (result.error) throw result.error;
-    await clearPrivatePlatformState();
   }
 
   return (

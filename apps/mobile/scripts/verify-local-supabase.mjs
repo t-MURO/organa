@@ -107,8 +107,8 @@ async function verifyDeviceApprovalContract() {
     await client1.rpc("request_device_approval", {
       p_device_id: approvedDeviceId,
       p_device_proof: approvedProof,
-      p_name: "New phone",
-      p_platform: "ios",
+      p_name: "New browser",
+      p_platform: "web",
     }),
     "new device approval requested",
   );
@@ -228,6 +228,151 @@ async function verifyDeviceApprovalContract() {
     "claimed envelope is erased",
   );
 
+  const webPushSubscription = {
+    auth: "B".repeat(22),
+    endpoint: "https://push.example.test/subscription",
+    expirationTime: null,
+    p256dh: "A".repeat(65),
+  };
+  const webPushEntries = [
+    {
+      fireAt: new Date(Date.now() + 60 * 60 * 1_000).toISOString(),
+      key: "task:at-due",
+      route: "/focus?taskId=opaque-task",
+    },
+  ];
+  expectedError(
+    await client1.rpc("replace_web_push_schedule", {
+      p_current_device_id: approvedDeviceId,
+      p_current_device_proof: "wrong-proof".repeat(8),
+      p_entries: webPushEntries,
+      p_scope: "task:opaque-task",
+      p_subscription: webPushSubscription,
+    }),
+    /proof is invalid/i,
+    "invalid Web Push device proof is rejected",
+  );
+  expectedError(
+    await client2.rpc("replace_web_push_schedule", {
+      p_current_device_id: approvedDeviceId,
+      p_current_device_proof: approvedProof,
+      p_entries: webPushEntries,
+      p_scope: "task:opaque-task",
+      p_subscription: webPushSubscription,
+    }),
+    /proof is invalid/i,
+    "cross-account Web Push device proof is rejected",
+  );
+  expectedError(
+    await client1.rpc("replace_web_push_schedule", {
+      p_current_device_id: approvedDeviceId,
+      p_current_device_proof: approvedProof,
+      p_entries: webPushEntries,
+      p_scope: "task:opaque-task",
+      p_subscription: webPushSubscription,
+    }),
+    /not enabled/i,
+    "quiet secondary device cannot schedule Web Push",
+  );
+  expectedError(
+    await client1.from("web_push_subscriptions").select("id"),
+    /permission denied/i,
+    "Web Push capability URLs are hidden from authenticated clients",
+  );
+  expectedError(
+    await client1.from("web_push_reminders").insert({
+      fire_at: new Date().toISOString(),
+      reminder_key: "forbidden",
+      route: "/",
+      scope: "forbidden",
+      subscription_id: randomUUID(),
+    }),
+    /permission denied/i,
+    "direct Web Push reminder writes are blocked",
+  );
+  expectedError(
+    await client1.rpc("claim_due_web_push_reminders", { p_limit: 10 }),
+    /permission denied/i,
+    "authenticated clients cannot claim Web Push deliveries",
+  );
+  noError(
+    await client1.rpc("configure_reminder_device", {
+      p_current_device_id: trustedDeviceId,
+      p_current_device_proof: trustedProof,
+      p_device_id: approvedDeviceId,
+      p_make_primary: false,
+      p_notifications_enabled: true,
+    }),
+    "secondary Web Push reminders explicitly enabled",
+  );
+  noError(
+    await client1.rpc("replace_web_push_schedule", {
+      p_current_device_id: approvedDeviceId,
+      p_current_device_proof: approvedProof,
+      p_entries: webPushEntries,
+      p_scope: "task:opaque-task",
+      p_subscription: webPushSubscription,
+    }),
+    "proof-gated Web Push schedule stored",
+  );
+  const storedWebPush = noError(
+    await admin
+      .from("web_push_subscriptions")
+      .select(
+        "endpoint,web_push_reminders(scope,reminder_key,route,fire_at)",
+      )
+      .eq("user_id", users[0].id)
+      .eq("device_id", approvedDeviceId)
+      .single(),
+    "service role loaded Web Push operational metadata",
+  );
+  ok(
+    storedWebPush.endpoint === webPushSubscription.endpoint &&
+      storedWebPush.web_push_reminders.length === 1 &&
+      storedWebPush.web_push_reminders[0].scope === "task:opaque-task" &&
+      storedWebPush.web_push_reminders[0].route ===
+        "/focus?taskId=opaque-task" &&
+      !JSON.stringify(storedWebPush).includes("Private"),
+    "Web Push storage contains only capability and routing metadata",
+  );
+  expectedError(
+    await client1.rpc("remove_current_web_push_subscription", {
+      p_current_device_id: approvedDeviceId,
+      p_current_device_proof: "wrong-proof".repeat(8),
+    }),
+    /proof is invalid/i,
+    "invalid proof cannot remove a Web Push subscription",
+  );
+  noError(
+    await client1.rpc("remove_current_web_push_subscription", {
+      p_current_device_id: approvedDeviceId,
+      p_current_device_proof: approvedProof,
+    }),
+    "signed-in browser removed its Web Push subscription",
+  );
+  const removedWebPush = noError(
+    await admin
+      .from("web_push_subscriptions")
+      .select("id")
+      .eq("user_id", users[0].id)
+      .eq("device_id", approvedDeviceId),
+    "removed Web Push subscription checked",
+  );
+  ok(
+    removedWebPush.length === 0,
+    "subscription removal cascades scheduled Web Push reminders",
+  );
+  noError(
+    await client1.rpc("replace_web_push_schedule", {
+      p_current_device_id: approvedDeviceId,
+      p_current_device_proof: approvedProof,
+      p_entries: webPushEntries,
+      p_scope: "task:opaque-task",
+      p_subscription: webPushSubscription,
+    }),
+    "Web Push schedule restored for demotion verification",
+  );
+
   noError(
     await client1.rpc("configure_reminder_device", {
       p_current_device_id: trustedDeviceId,
@@ -288,6 +433,18 @@ async function verifyDeviceApprovalContract() {
       !quietSecondary?.primary_reminder &&
       !quietSecondary?.notifications_enabled,
     "demoted secondary stays quiet until explicitly enabled",
+  );
+  const demotedSubscriptions = noError(
+    await admin
+      .from("web_push_subscriptions")
+      .select("id")
+      .eq("user_id", users[0].id)
+      .eq("device_id", approvedDeviceId),
+    "demoted Web Push subscriptions checked",
+  );
+  ok(
+    demotedSubscriptions.length === 0,
+    "demotion removes the quiet device Web Push subscription",
   );
 
   noError(

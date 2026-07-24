@@ -1,17 +1,33 @@
 import type { CheckInReminderScheduler } from "./check-in-reminder-scheduler.types";
+import { buildCheckInWebPushSchedule } from "./web-push-plan";
+import {
+  flushPendingSchedules,
+  initializeWebPushScheduler,
+  syncWebPushSchedule,
+  webPushConfigured,
+} from "./web-push-scheduler.web";
 
 export const checkInReminderCapability = {
-  supported: false,
-  reason:
-    "The web reminder appears only while Organa is open. Keep a mobile reminder device enabled if you want a nudge when the tab is closed.",
+  supported: webPushConfigured,
+  reason: webPushConfigured
+    ? "With permission, the browser can show this gentle reminder while Organa is closed. The open app remains the fallback."
+    : "System Web Push is not configured for this build. The reminder appears only while Organa is open.",
 };
 
 export function createCheckInReminderScheduler(): CheckInReminderScheduler {
   return {
     capability: checkInReminderCapability,
-    async initialize() {},
-    async sync() {
-      return false;
+    async initialize() {
+      initializeWebPushScheduler();
+      void flushPendingSchedules(false).catch(() => undefined);
+    },
+    async sync(settings, requestPermission = false) {
+      const schedule = buildCheckInWebPushSchedule(settings);
+      const permission = await syncWebPushSchedule(
+        schedule,
+        requestPermission && schedule.entries.length > 0,
+      );
+      return permission === "granted";
     },
   };
 }

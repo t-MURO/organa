@@ -41,3 +41,6 @@ content_path = "./supabase/templates/email-code.html"
 
 [functions.finalize-account-deletions]
 verify_jwt = false
+
+[functions.dispatch-web-push]
+verify_jwt = false

@@ -22,7 +22,7 @@ iOS, Android, responsive web, and installable PWA from one Expo codebase.
 - Google, Apple, GitHub, and email-code authentication
 - Recovery key onboarding, trusted reminder devices, local app lock, export,
   and one-hour account deletion
-- Native local notifications and active-tab web reminder fallback
+- Native local notifications plus Web Push and active-tab web fallback
 - iOS widgets for today's tasks and the next reminder
 - Light, dark, and system themes, reduced motion, optional sounds, and haptics
 - Static PWA export with an app manifest and Workbox offline shell
@@ -35,7 +35,7 @@ The full product contract is in [REQUIREMENTS.md](./REQUIREMENTS.md).
 apps/mobile/       Expo Router app for iOS, Android, and web
 packages/domain/   Platform-independent entities and planning rules
 packages/crypto/   AES-256-GCM record and recovery-key envelopes
-supabase/          Database migration and deletion finalizer
+supabase/          Database migrations and scheduled Edge Functions
 docs/              Security, compatibility, and acceptance gates
 ```
 
@@ -78,6 +78,7 @@ Expo Go.
 pnpm typecheck
 pnpm test
 pnpm verify:yjs-runtime
+pnpm verify:web-push
 pnpm build:native
 pnpm build:web
 pnpm dlx expo-doctor@latest apps/mobile
@@ -89,7 +90,8 @@ Backend verification additionally requires Docker:
 ```sh
 pnpm dlx supabase start
 pnpm dlx supabase db reset
-pnpm dlx supabase db lint --local
+pnpm dlx supabase db lint --local --level warning
+pnpm verify:supabase
 ```
 
 See [supabase/README.md](./supabase/README.md) for production setup and

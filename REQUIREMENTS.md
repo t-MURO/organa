@@ -699,14 +699,16 @@ The MVP is ready for controlled beta when:
 ## 21. Open Decisions
 
 Resolved recurrence, grace-day, and parent/subtask decisions are recorded in
-`docs/DOMAIN_MODEL.md`. The remaining product and launch decisions are:
+`docs/DOMAIN_MODEL.md`. Notification permission is requested only from the
+direct user action that saves an enabled reminder; unsupported or denied web
+permission retains a visible active-tab fallback. The remaining product and
+launch decisions are:
 
 - Final product name and trademark validation
 - Supported OS and browser version matrix
 - Exact cryptographic library and key-envelope format
 - Conflict-free document library for Brain Dump
 - Recovery-key format and secure device-transfer flow
-- Notification permission onboarding sequence
 - Reminder behavior when a device has not synchronized recently
 - Official starter-template catalog
 - Visual identity, typography, iconography, and final theme palette

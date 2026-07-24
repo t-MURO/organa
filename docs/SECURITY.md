@@ -53,6 +53,10 @@ Web:
 - This protects against simple storage export, not malicious same-origin
   JavaScript. XSS while Organa is unlocked can access decrypted application
   state.
+- The browser Push subscription endpoint and its `p256dh`/authentication keys
+  are sent only through a proof-gated RPC. They are capability-bearing
+  operational metadata, not user content, and authenticated clients cannot
+  select the stored rows directly.
 
 Reminder authorization:
 
@@ -91,12 +95,22 @@ Supabase can read:
 - device-approval request, approval, expiry, and claim timestamps, the
   approving device ID, and a target-bound encrypted content-key envelope
 - user-scoped Realtime topic plus opaque changed record/device identifiers
+- browser Push endpoint, Push encryption keys, expiry, opaque schedule scope
+  and reminder key, safe task/Check-In route, fire time, and the selected
+  Check-In local time/time zone
 
 The account-deletion scheduler uses the server-side service role. Its table
 grant is limited to selecting the user ID, execution deadline, cancellation
 state, and completion state needed to find due requests. The endpoint disables
 the platform JWT check, requires a separate scheduler secret, and accepts only
 `POST`.
+
+The Web Push dispatcher also disables the platform JWT check, requires its own
+server-only scheduler secret, and accepts only `POST`. The VAPID private key
+and scheduler secret are function secrets. Push payloads contain only a safe
+route and opaque tag and are encrypted by the Web Push protocol. The service
+worker always displays generic copy; task titles, medication data, and
+Check-In content are never sent to the Push service.
 
 Supabase must not receive task titles, details, medication text, reminder text,
 templates, Check-In content, mood values, Brain Dump text, or the plaintext
@@ -125,6 +139,11 @@ user-entered content.
 - Promoting a new primary reminder device atomically disables reminder delivery
   on every other active device. A demoted device can receive reminders again
   only after an explicit secondary-device enable action.
+- Web Push schedule replacement and current-browser subscription removal both
+  require the active device proof. Schedule rows are never client-writable or
+  client-readable directly.
+- Due Web Push rows can be claimed only by the service role. Claims use row
+  locking, bounded retries, and stale-claim recovery.
 - Security-definer RPC execution is revoked from `public` and `anon`.
 - Mutation RPCs validate authentication, trusted-device state, record type,
   patch shape, and future clock skew.
@@ -150,7 +169,11 @@ It cancels scheduled native notifications, dismisses displayed notifications,
 and replaces iOS widget timelines with content-free states. It retains local
 repositories, the content-key vault, and device identity so the same trusted
 device can recover its offline state after a future successful sign-in.
-Supabase-driven `SIGNED_OUT` events use the same private-surface cleanup.
+On web, explicit sign-out first removes the current server subscription while
+the session is authenticated, then closes visible notifications, clears the
+content-free pending schedule queue, and unsubscribes locally. A
+Supabase-driven `SIGNED_OUT` event repeats the local cleanup; unsubscribe is
+the fallback when authenticated server cleanup is no longer possible.
 
 Content-key rotation after device compromise is not implemented in this MVP.
 Treat that as a production threat-model decision, not as a guaranteed remote
@@ -179,8 +202,8 @@ wipe.
   before returning decrypted data.
 - The one-hour deletion period is read-only and cancellable.
 - The scheduled Edge Function deletes the Auth user, causing account rows to
-  cascade. The app removes its local database and content key when deletion is
-  due.
+  cascade, including browser Push subscriptions and schedules. The app removes
+  its local database and content key when deletion is due.
 - Local deletion clears every known SQLite/IndexedDB store before attempting
   database-file removal, so an open database handle cannot silently preserve
   readable records. The per-device proof secret is removed at the same time.
@@ -207,5 +230,7 @@ Before production:
    target-binding protocol.
 4. Test token expiry and device revocation under offline/reconnect conditions.
 5. Review XSS/CSP, PWA caching, OAuth redirects, and browser key storage.
-6. Test native secure storage, biometrics, notifications, and backups.
-7. Resolve every critical or high finding and record the evidence.
+6. Review Web Push capability storage, VAPID/scheduler-secret handling,
+   delivery retry semantics, and generic payload boundaries.
+7. Test native secure storage, biometrics, notifications, and backups.
+8. Resolve every critical or high finding and record the evidence.

@@ -3,9 +3,10 @@ import { fileURLToPath } from "node:url";
 
 const appRoot = fileURLToPath(new URL("..", import.meta.url));
 const distRoot = new URL("../dist/", import.meta.url);
-const [html, manifestText, serviceWorker] = await Promise.all([
+const [html, manifestText, pushHandler, serviceWorker] = await Promise.all([
   readFile(new URL("index.html", distRoot), "utf8"),
   readFile(new URL("manifest.json", distRoot), "utf8"),
+  readFile(new URL("push-handler.js", distRoot), "utf8"),
   readFile(new URL("sw.js", distRoot), "utf8"),
 ]);
 const manifest = JSON.parse(manifestText);
@@ -42,6 +43,26 @@ ok(
 ok(
   /_expo\/static\/js\/web\/entry-[a-f0-9]+\.js/.test(serviceWorker),
   "service worker precaches the application bundle",
+);
+ok(
+  serviceWorker.includes("push-handler.js"),
+  "service worker imports the Web Push handler",
+);
+ok(
+  pushHandler.includes('addEventListener("push"') &&
+    pushHandler.includes("showNotification"),
+  "Web Push displays a persistent system notification",
+);
+ok(
+  pushHandler.includes('addEventListener("notificationclick"') &&
+    pushHandler.includes("openWindow"),
+  "Web Push notifications deep-link back into Organa",
+);
+ok(
+  pushHandler.includes("Something in Organa is ready when you are.") &&
+    !pushHandler.includes("taskTitle") &&
+    !pushHandler.includes("medication"),
+  "Web Push handler contains only generic notification copy",
 );
 
 for (const weight of [

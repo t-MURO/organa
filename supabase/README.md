@@ -1,7 +1,8 @@
 # Organa Supabase Setup
 
 Organa uses Supabase for authentication, encrypted synchronization, private
-Realtime signals, trusted-device metadata, and delayed account deletion.
+Realtime signals, trusted-device metadata, browser reminder delivery, and
+delayed account deletion.
 
 ## 1. Create The Project
 
@@ -78,6 +79,10 @@ The migration:
 - keeps structured conflict history for seven days
 - authorizes only the signed-in user's private Realtime topics
 - broadcasts opaque record identifiers rather than plaintext content
+- stores browser Push capabilities and content-free schedule metadata behind
+  proof-gated RPCs with no direct authenticated table access
+- removes a browser subscription when its trusted device is revoked or made
+  quiet
 
 In Realtime settings, disable public channel access for production. The client
 calls `realtime.setAuth()` and subscribes only to:
@@ -110,7 +115,57 @@ Use a managed secret store or Supabase Vault for the scheduler value. Do not
 put it in source control. Monitor non-2xx responses and the returned `failures`
 array.
 
-## 5. Beta Validation
+## 5. Configure Web Push
+
+Generate one VAPID keypair. Keep the private key server-only:
+
+```sh
+pnpm --dir apps/mobile exec web-push generate-vapid-keys --json
+```
+
+Set the generated public key in the web build environment:
+
+```sh
+EXPO_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY=URL_SAFE_PUBLIC_KEY
+```
+
+Set both keys, a contact subject, and an independent random scheduler secret
+on the hosted project:
+
+```sh
+pnpm dlx supabase secrets set \
+  WEB_PUSH_VAPID_PUBLIC_KEY=URL_SAFE_PUBLIC_KEY \
+  WEB_PUSH_VAPID_PRIVATE_KEY=PRIVATE_KEY \
+  WEB_PUSH_VAPID_SUBJECT=mailto:security@example.com \
+  WEB_PUSH_SCHEDULER_SECRET=LONG_INDEPENDENT_RANDOM_VALUE
+pnpm dlx supabase functions deploy dispatch-web-push
+```
+
+Never commit the private key or scheduler secret. Schedule this request once
+per minute using Supabase Cron plus Vault, or an equivalent managed scheduler:
+
+```text
+POST /functions/v1/dispatch-web-push
+Authorization: Bearer LONG_INDEPENDENT_RANDOM_VALUE
+```
+
+The official [Supabase scheduling
+guide](https://supabase.com/docs/guides/functions/schedule-functions)
+documents invoking Edge Functions with `pg_cron`, `pg_net`, and secrets stored
+in Vault. Monitor non-2xx responses and the returned processed, delivered,
+retried, expired-subscription, and failed counts.
+
+`EXPO_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY` is intentionally public. The private
+key, scheduler secret, browser endpoint capability, and Push authentication
+keys must be treated as sensitive. The dispatcher sends only an opaque route
+and tag; the browser displays generic notification copy.
+
+Before inviting beta users, validate a permission-granted delivery in every
+release browser. iOS and iPadOS require the PWA to be added to the Home Screen.
+Unconfigured, denied, and unsupported browsers retain the visible active-tab
+fallback.
+
+## 6. Beta Validation
 
 Use two accounts and two physical devices or browsers to verify:
 
@@ -130,9 +185,18 @@ Use two accounts and two physical devices or browsers to verify:
 - device reminder ownership updates on both clients
 - revocation clears the target on its next online status check
 - deletion is cancellable before one hour and finalizes after the deadline
+- a trusted web reminder device can schedule a content-free Push reminder
+- a quiet secondary browser cannot schedule Push until explicitly enabled
+- switching the primary reminder device removes the demoted browser
+  subscription
+- sign-out removes the server subscription and unsubscribes the browser
+- one-shot and daily Check-In reminders are dispatched and completed/advanced
+  by the scheduled Edge Function
 
-`pnpm verify:supabase` automates the local database checks and a live
-account-deletion Edge Function drill. The hosted beta validation must repeat
-them against the actual EU project.
+`pnpm verify:supabase` automates the local database checks plus live
+account-deletion and Web Push Edge Function drills. `pnpm verify:web-push`
+independently verifies VAPID headers and encrypted `aes128gcm` payload
+construction. The hosted beta validation must repeat the applicable checks
+against the actual EU project.
 
 Do not invite beta users until these tests pass against the actual EU project.

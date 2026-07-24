@@ -1,11 +1,11 @@
 # Organa Implementation Summary
 
-Status recorded on 2026-07-23.
+Status recorded on 2026-07-24.
 
 This is the structured pause checkpoint requested after the implementation
-work. The committed implementation is complete through `263427d`, including
-the verified reminder-authorization, sign-out privacy, and primary-device
-demotion work described below.
+work. The prior committed implementation is complete through `263427d`, with
+its documentation ledger complete through `b1ffc7a`. The verified Web Push
+milestone documented below is the next implementation boundary.
 
 ## Current Checkpoint
 
@@ -20,7 +20,7 @@ Committed and verified milestones:
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
 
-Latest committed milestone:
+Latest committed implementation milestones:
 
 - Cached per-user reminder-device authorization for offline startup
 - A fail-closed but non-destructive unresolved authorization state
@@ -30,6 +30,10 @@ Latest committed milestone:
 - Authorization-cache cleanup on revocation and final account deletion
 - Seven focused tests covering authorization resolution, web cache behavior,
   scheduler guards, web ownership, and cleanup contracts
+- Sign-out cleanup for scheduled and displayed notifications plus content-free
+  iOS widget states
+- Atomic demotion of previous primary reminder devices, which remain quiet
+  until the user explicitly enables secondary reminders
 
 Verification completed for the reminder-authorization work:
 
@@ -42,6 +46,76 @@ Verification completed for the reminder-authorization work:
 
 Both iOS and Android Hermes exports pass with the reminder-authorization
 changes.
+
+## Web Push Milestone
+
+This milestone extends browser reminders from the active-tab fallback to
+standards-based Web Push while preserving a visible fallback for denied,
+unsupported, and unconfigured browsers.
+
+Implemented:
+
+- A privacy-minimized browser scheduling plan for task, subtask, and daily
+  Check-In reminders
+- Browser Push subscription management using a configured public VAPID key
+- Permission requests only after a user explicitly saves a reminder
+- A per-user and per-device offline schedule queue that flushes after reconnect
+- Version-aware queue acknowledgement so an in-flight RPC cannot erase a newer
+  local schedule edit
+- Validation that safely ignores malformed local queue data
+- Proof-gated schedule replacement for trusted web reminder devices
+- Service-worker Push handling with generic notification copy and safe
+  task/Check-In deep links
+- Web sign-out and account-deletion cleanup that removes the current
+  server-side subscription while authenticated, clears pending schedules,
+  closes visible notifications, and unsubscribes the browser Push endpoint
+- New `web_push_subscriptions` and `web_push_reminders` tables with RLS,
+  service-role-only access, strict input validation, and cascading cleanup
+- Server enforcement of primary or explicitly enabled secondary reminder
+  ownership
+- A scheduler-authorized Edge Function that claims due reminders, sends
+  encrypted Web Push payloads, advances daily Check-In reminders across local
+  time zones, retries transient failures, and removes expired subscriptions
+- Static integration tests, scheduling/DST tests, local database checks, a
+  local Edge Function delivery verifier, production service-worker artifact
+  checks, and a deterministic VAPID/protocol-encryption verifier
+
+Privacy boundaries:
+
+- Supabase receives operational delivery metadata only: the endpoint
+  capability, Push encryption keys, user/device identifiers, opaque scope and
+  reminder keys, safe route, fire time, and Check-In time-zone metadata.
+- Task titles, task details, medication data, mood values, journal text, and
+  Brain Dump content are not included in Push schedule rows or payloads.
+- Notifications use the generic title `A gentle reminder` and body
+  `Something in Organa is ready when you are.`
+- The VAPID private key and scheduler secret remain server-only and are not
+  stored in the repository.
+
+Verification evidence:
+
+- The full automated suite passes 108 tests: 39 domain, 6 cryptography, and 63
+  application tests.
+- Strict TypeScript passed.
+- A configured production PWA export passed 16 artifact checks and precached
+  22 URLs, including the Push handler.
+- Both iOS and Android Hermes exports passed from the same source state.
+- All five migrations applied from an empty database and database lint
+  reported no findings.
+- The local authenticated database verifier passed 54 checks.
+- The live account-deletion verifier passed 13 checks, including cascading
+  removal of Web Push state.
+- The local Web Push Edge Function verifier passed 15 checks for authorization,
+  one-shot completion, and daily Check-In advancement.
+- The deterministic protocol verifier generated a real VAPID request and
+  confirmed `aes128gcm` payload encryption without plaintext leakage.
+- Browser UI verification confirmed the system-reminder capability copy and
+  fallback behavior. The in-app browser did not grant notification permission,
+  so no real browser subscription was created during that walkthrough.
+
+The remaining Web Push gate is a real permission-granted, closed-app delivery
+drill against the hosted function and scheduler in each supported release
+browser. iOS and iPadOS require an installed Home Screen PWA.
 
 ## Sign-Out Privacy Milestone
 
@@ -189,27 +263,32 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 99 automated tests pass:
+- 108 automated tests pass:
   - 39 domain tests
   - 6 cryptography tests
-  - 54 application integration tests
-- All three migrations apply cleanly from scratch to local
+  - 63 application integration tests
+- All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
-- `pnpm verify:supabase` passes 37 authenticated database checks for RLS,
+- `pnpm verify:supabase` passes 54 authenticated database checks for RLS,
   proof-gated approval, claim, rejection, revocation, and deletion read-only
-  behavior, including primary-device demotion.
-- The same command passes 12 live account-deletion Edge Function checks,
+  behavior, including primary-device demotion and Web Push scheduling/removal.
+- The same command passes 13 live account-deletion Edge Function checks,
   including scheduler authorization and cascading removal of the Auth user,
-  sessions, keys, devices, encrypted records, and deletion request.
+  sessions, keys, devices, encrypted records, deletion request, and Web Push
+  state.
+- The same command passes 15 live Web Push Edge Function checks for guarded
+  dispatch, one-shot completion, and daily schedule advancement.
+- The protocol verifier confirms VAPID authorization and encrypted
+  `aes128gcm` payload construction.
 - iOS Hermes export succeeds.
 - Android Hermes export succeeds.
 - Production web export succeeds.
-- Production web artifact verification passes 12 installability and offline
-  cache checks.
+- Production web artifact verification passes 16 installability, offline
+  cache, and Web Push checks.
 - Eight static web routes are generated.
-- Workbox precaches 21 URLs, including the render-critical Manrope fonts and
-  optional interaction sounds.
+- Workbox precaches 22 URLs, including the render-critical Manrope fonts,
+  optional interaction sounds, and Push handler.
 - Production Lighthouse scores 100% for accessibility and 100% for best
   practices on the configured sign-in screen.
 - Production dependency audit reports no known vulnerabilities.

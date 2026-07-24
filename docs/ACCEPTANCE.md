@@ -27,14 +27,15 @@ Status recorded on 2026-07-24.
   subtask reminder trigger, including midnight and fired-reminder transitions
 - [x] Installable PWA manifest, icons, static routes, signed-in offline reload,
   local mutation persistence, and reconnecting outbox
-- [x] Explicit active-tab-only web reminder fallback
+- [x] Standards-based Web Push with proof-gated content-free schedules,
+  generic service-worker notifications, and an active-tab fallback
 - [x] Keyboard roles/labels, visible focus, semantic state, reduced motion, and
   AA light/dark theme token contrast
 
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 99 automated tests pass: 39 domain, 6 cryptography, and 54 application tests
+- 108 automated tests pass: 39 domain, 6 cryptography, and 63 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
@@ -43,17 +44,24 @@ Local evidence:
   completed placement plus searchability
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
-- all three migrations apply from scratch to local Supabase/PostgreSQL and
+- all five migrations apply from scratch to local Supabase/PostgreSQL and
   `db lint --local --level warning` reports no schema errors or warnings
-- `pnpm verify:supabase` passes 37 authenticated database checks covering
+- `pnpm verify:supabase` passes 54 authenticated database checks covering
   cross-account RLS, direct-write denial, invalid proofs, encrypted
   trusted-device approval and claim, envelope erasure, request rejection,
-  revocation, anonymous denial, deletion read-only enforcement, and
-  duplicate-safe primary reminder-device switching
-- the same command passes 12 live Edge Function checks covering scheduler
+  revocation, anonymous denial, deletion read-only enforcement,
+  duplicate-safe primary reminder-device switching, proof-gated Web Push
+  scheduling/removal, hidden endpoint capabilities, and demotion cleanup
+- the same command passes 13 live account-deletion Edge Function checks
+  covering scheduler
   authorization, POST-only execution, the one-hour deadline, due processing,
   and cascading removal of the Auth user, sessions, device keys, and encrypted
-  records
+  records, including Web Push subscriptions and schedules
+- the same command passes 15 live Web Push Edge Function checks covering
+  scheduler authorization, POST-only execution, one-shot completion, and
+  daily Check-In advancement in the selected local time zone
+- `pnpm verify:web-push` constructs a real VAPID-authorized request and verifies
+  its payload uses `aes128gcm` encryption without plaintext leakage
 - local Supabase sends the six-digit code expected by both the first-time and
   returning-user passwordless sign-in forms
 - a two-origin browser walkthrough completed recovery setup, requested and
@@ -95,10 +103,10 @@ Local evidence:
 - a task-load race test contract verifies that reconciliation reads the latest
   authorization after asynchronous repository loading
 - production web export succeeds
-- production web artifact verification passes 12 installability and offline
-  cache checks
-- Workbox precaches 21 URLs, including every font weight loaded before render
-  and both optional interaction sounds
+- production web artifact verification passes 16 installability, offline
+  cache, and Push-handler checks
+- Workbox precaches 22 URLs, including every font weight loaded before render,
+  both optional interaction sounds, and the Push handler
 - production Lighthouse scores 100% for accessibility and 100% for best
   practices on the configured sign-in screen
 - production dependency audit reports no known vulnerabilities
@@ -124,6 +132,9 @@ Local evidence:
   the app server and Supabase, reloaded successfully, created another task
   offline, reloaded with the outbox still queued, restored Supabase, and
   reconciled automatically; both cloud rows remained ciphertext-only
+- browser UI verification showed the configured system-reminder and fallback
+  copy; the in-app browser did not grant notification permission, so
+  permission-granted closed-app delivery remains a release-browser gate
 
 ## Requires Connected Backend Validation
 
@@ -133,6 +144,11 @@ Local evidence:
   checks against the deployed EU project
 - [ ] Two-client encrypted sync latency and missed-broadcast recovery
 - [ ] Device reminder ownership and revocation across live sessions
+- [ ] Configure hosted VAPID/function secrets and the once-per-minute Web Push
+  dispatcher schedule
+- [ ] Permission-granted closed-app Web Push delivery, deep-link,
+  replacement, cancellation, denial fallback, and sign-out drill in every
+  supported release browser; iOS/iPadOS uses an installed Home Screen PWA
 - [ ] Repeat the scheduled deletion finalizer drill against the hosted project
 - [ ] Export recovery drill using a separate clean device
 

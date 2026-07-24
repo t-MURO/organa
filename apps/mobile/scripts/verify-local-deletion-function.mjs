@@ -117,6 +117,27 @@ try {
     }),
     "encrypted cloud record created",
   );
+  noError(
+    await client.rpc("replace_web_push_schedule", {
+      p_current_device_id: deviceId,
+      p_current_device_proof: deviceProof,
+      p_entries: [
+        {
+          fireAt: new Date(Date.now() + 60 * 60 * 1_000).toISOString(),
+          key: "task:deletion",
+          route: "/focus?taskId=deletion-test-task",
+        },
+      ],
+      p_scope: "task:deletion-test-task",
+      p_subscription: {
+        auth: "D".repeat(22),
+        endpoint: "https://push.example.test/deletion",
+        expirationTime: null,
+        p256dh: "C".repeat(65),
+      },
+    }),
+    "Web Push subscription and reminder created",
+  );
 
   const deletionRequest = noError(
     await client.rpc("request_account_deletion", {
@@ -144,8 +165,10 @@ try {
       before.accountKeys === 1 &&
       before.devices === 1 &&
       before.encryptedRecords === 1 &&
+      before.webPushSubscriptions === 1 &&
+      before.webPushReminders === 1 &&
       before.sessions >= 1,
-    "account, key, device, encrypted content, and session exist before finalization",
+    "account, key, device, encrypted content, Web Push state, and session exist before finalization",
   );
 
   const response = await fetch(
@@ -235,6 +258,17 @@ function accountRowCounts(userId) {
       'encryptedRecords', (
         select count(*) from public.encrypted_records
         where user_id = '${userId}'::uuid
+      ),
+      'webPushSubscriptions', (
+        select count(*) from public.web_push_subscriptions
+        where user_id = '${userId}'::uuid
+      ),
+      'webPushReminders', (
+        select count(*)
+        from public.web_push_reminders as reminders
+        join public.web_push_subscriptions as subscriptions
+          on subscriptions.id = reminders.subscription_id
+        where subscriptions.user_id = '${userId}'::uuid
       ),
       'deletionRequests', (
         select count(*) from public.account_deletion_requests
