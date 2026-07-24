@@ -35,11 +35,19 @@ Status recorded on 2026-07-24.
   expansion, and uncapped system text scaling
 - [x] Source-pinned iOS 16.4+ and Android 7+/API 36 build targets plus a
   documented browser and platform capability matrix
+- [x] Native OAuth callback recovery across attached browser sessions, app
+  resume, and cold start with one-time PKCE exchange deduplication
 
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 138 automated tests pass: 43 domain, 6 cryptography, and 89 application tests
+- 143 automated tests pass: 43 domain, 6 cryptography, and 94 application tests
+- OAuth callback tests accept only the configured app redirect, map remote
+  provider errors to safe local copy, deduplicate simultaneous and repeated
+  one-time codes, and allow a failed exchange to be retried
+- the authentication contract pins the `organa` scheme, local Supabase
+  redirect allowlist, PKCE mode, platform auth storage, initial native URL
+  recovery, resumed URL handling, and attached browser-session handling
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,

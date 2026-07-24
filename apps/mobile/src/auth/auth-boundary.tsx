@@ -43,10 +43,12 @@ function SignInScreen() {
   const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const displayedError = error || auth.callbackError;
 
   async function run(label: string, action: () => Promise<void>) {
     setBusy(label);
     setError("");
+    auth.clearCallbackError();
     try {
       await action();
     } catch (nextError) {
@@ -242,9 +244,9 @@ function SignInScreen() {
                 </View>
               )}
 
-              {error ? (
+              {displayedError ? (
                 <Text accessibilityRole="alert" style={styles.error}>
-                  {error}
+                  {displayedError}
                 </Text>
               ) : null}
               <Text style={styles.privacyNote}>

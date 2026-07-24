@@ -20,6 +20,8 @@ Committed and verified milestones:
 - Recurrence, grace-day, inbox, and undated-task semantics
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
+- Native OAuth callback recovery across browser completion, resume, and cold
+  start
 - Explicit controlled-beta OS and browser support boundaries
 - Deterministic local performance checks against a 2,000-task dataset
 - Fail-closed encrypted-backup domain validation
@@ -55,24 +57,28 @@ Latest verified task-type work:
   verifier, iOS and Android Hermes exports, the production PWA export, the
   production dependency audit, and `git diff --check`.
 
-## Paused Work
+## Native OAuth Callback Recovery Milestone
 
-Native OAuth callback recovery was the next active implementation milestone
-when this summary was refreshed:
-
-- `apps/mobile/src/auth/oauth-callback.ts` has been added locally to parse only
-  the configured redirect, map provider failures to safe local messages, and
-  deduplicate simultaneous or repeated exchanges of a one-time PKCE code.
-- `apps/mobile/src/auth/oauth-callback.test.ts` has been added locally with
-  focused coverage for redirect matching, safe errors, duplicate callbacks,
-  and retry after a failed exchange.
-- These two files are intentionally uncommitted at this pause point.
-- They have not yet been integrated into `auth-context.tsx`, exercised through
-  native cold-start/resume linking, or included in the verified test totals
-  below.
-- The next implementation step is to use one callback coordinator for both the
-  Expo WebBrowser result and native `Linking` events, then run the complete
-  TypeScript, test, web, and native export checks before committing.
+- Uses one callback coordinator for the Expo authentication-browser result,
+  native app-resume links, and cold-start initial URLs.
+- Accepts only the configured app redirect and ignores unrelated deep links.
+- Exchanges each successfully delivered one-time PKCE code at most once, even
+  when the browser and native linking APIs report the same callback together.
+- Keeps failed exchanges retryable rather than permanently consuming the code
+  locally.
+- Maps provider callback failures to fixed, pressure-free local messages
+  instead of exposing remote error descriptions.
+- Presents callback failures on the sign-in screen and clears them when the
+  user retries or signs out.
+- Adds four callback-model tests and one configuration/integration contract.
+- The complete suite passes 143 tests: 43 domain, 6 cryptography, and 94
+  application tests.
+- Strict TypeScript, all 19 platform checks, the 2,000-task performance
+  verifier, iOS and Android Hermes exports, the production PWA export with all
+  18 artifact checks, the production dependency audit, and `git diff --check`
+  pass.
+- Hosted Google, Apple, GitHub, and email provider configuration and live
+  redirect drills remain a connected-project gate.
 
 ## Platform Compatibility Milestone
 
@@ -373,6 +379,9 @@ Implemented user-facing areas:
 
 - Supabase Auth adapters support Google, Apple, GitHub, and email verification
   codes.
+- Native PKCE callbacks recover through browser completion, app resume, and
+  cold start while strict redirect matching and exchange deduplication prevent
+  unrelated or duplicate callback handling.
 - Production use requires an account.
 - Local preview is exposed only in development when Supabase is not configured.
 - Native sessions and content keys use platform secure storage.
@@ -435,10 +444,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 138 automated tests pass:
+- 143 automated tests pass:
   - 43 domain tests
   - 6 cryptography tests
-  - 89 application integration tests
+  - 94 application integration tests
 - All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.

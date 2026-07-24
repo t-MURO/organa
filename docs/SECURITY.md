@@ -33,6 +33,25 @@ storage, and deletion operations.
 The implementation does not define custom encryption primitives. It composes
 the platform AES-GCM and secure-random APIs exposed by Expo.
 
+## Authentication
+
+- Supabase Auth uses PKCE for Google, Apple, and GitHub OAuth. Passwordless
+  email access uses a six-digit verification code.
+- Native authentication state and the PKCE verifier use Expo SecureStore.
+  Web authentication state uses origin-scoped browser storage.
+- Native OAuth accepts callbacks only at the configured `organa` app redirect.
+  Unrelated deep links and mismatched paths or origins are ignored.
+- Both an attached authentication-browser result and native cold-start/resume
+  links pass through the same coordinator.
+- Simultaneous or repeated delivery of a one-time authorization code causes at
+  most one successful exchange during the provider lifecycle. A transiently
+  failed exchange may be retried.
+- Provider-supplied callback descriptions are not displayed. Cancellation has
+  fixed local copy and all other callback failures use a generic local message.
+- Callback URLs and authorization codes are not logged.
+- Hosted provider credentials, redirect allowlists, and end-to-end provider
+  drills remain deployment responsibilities for the selected EU project.
+
 ## Key Storage
 
 Native:

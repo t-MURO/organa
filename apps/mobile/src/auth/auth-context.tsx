@@ -11,6 +11,7 @@ import {
 import { AppState, Platform } from "react-native";
 
 import { clearPrivatePlatformState } from "../data/clear-private-platform-state";
+import { createOAuthCallbackCoordinator } from "./oauth-callback";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -23,6 +24,8 @@ interface AuthContextValue {
   localPreview: boolean;
   session: Session | null;
   user: User | null;
+  callbackError: string;
+  clearCallbackError(): void;
   startLocalPreview(): void;
   signInWithOAuth(provider: OAuthProvider): Promise<void>;
   sendEmailCode(email: string): Promise<void>;
@@ -36,6 +39,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [session, setSession] = useState<Session | null>(null);
   const [localPreview, setLocalPreview] = useState(false);
+  const [callbackError, setCallbackError] = useState("");
+  const [oauthRedirectUrl] = useState(() => Linking.createURL("/"));
+  const [oauthCallbackCoordinator] = useState(() => {
+    const client = supabase;
+    if (!client) return undefined;
+    return createOAuthCallbackCoordinator(oauthRedirectUrl, async (code) => {
+      const result = await client.auth.exchangeCodeForSession(code);
+      if (result.error) throw result.error;
+    });
+  });
 
   useEffect(() => {
     const client = supabase;
@@ -78,13 +91,48 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const coordinator = oauthCallbackCoordinator;
+    if (!coordinator) return;
+
+    let active = true;
+    const handleCallback = async (url: string | null) => {
+      if (!url) return;
+      try {
+        const handled = await coordinator.handle(url);
+        if (active && handled) setCallbackError("");
+      } catch (error) {
+        if (active) setCallbackError(oauthCallbackMessage(error));
+      }
+    };
+
+    void Linking.getInitialURL()
+      .then(handleCallback)
+      .catch(() => {
+        if (active) {
+          setCallbackError(
+            "The sign-in response could not be opened. Please try again.",
+          );
+        }
+      });
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      void handleCallback(url);
+    });
+
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, [oauthCallbackCoordinator]);
+
   async function signInWithOAuth(provider: OAuthProvider) {
     if (!supabase) throw new Error("Supabase is not configured.");
-    const redirectTo = Linking.createURL("/");
+    setCallbackError("");
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo,
+        redirectTo: oauthRedirectUrl,
         skipBrowserRedirect: Platform.OS !== "web",
       },
     });
@@ -92,12 +140,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (Platform.OS === "web") return;
     if (!data.url) throw new Error("The sign-in provider did not return a URL.");
 
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    const result = await WebBrowser.openAuthSessionAsync(
+      data.url,
+      oauthRedirectUrl,
+    );
     if (result.type !== "success") return;
-    const code = new URL(result.url).searchParams.get("code");
-    if (!code) throw new Error("The sign-in response did not include a code.");
-    const exchange = await supabase.auth.exchangeCodeForSession(code);
-    if (exchange.error) throw exchange.error;
+    if (!oauthCallbackCoordinator) {
+      throw new Error("Sign-in could not be completed. Please try again.");
+    }
+    try {
+      const handled = await oauthCallbackCoordinator.handle(result.url);
+      if (!handled) {
+        throw new Error("Sign-in could not be completed. Please try again.");
+      }
+    } catch (error) {
+      throw new Error(oauthCallbackMessage(error));
+    }
   }
 
   async function sendEmailCode(email: string) {
@@ -121,6 +179,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   async function signOut() {
     setLocalPreview(false);
+    setCallbackError("");
     if (!supabase) {
       await clearPrivatePlatformState();
       return;
@@ -133,6 +192,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   return (
     <AuthContext.Provider
       value={{
+        callbackError,
+        clearCallbackError: () => setCallbackError(""),
         configured: isSupabaseConfigured,
         loading,
         localPreview,
@@ -154,4 +215,10 @@ export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used inside AuthProvider.");
   return context;
+}
+
+function oauthCallbackMessage(error: unknown) {
+  return error instanceof Error && error.message === "Sign-in was cancelled."
+    ? error.message
+    : "Sign-in could not be completed. Please try again.";
 }

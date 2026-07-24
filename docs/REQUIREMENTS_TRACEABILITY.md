@@ -18,7 +18,7 @@ Status meanings:
 
 | # | Requirement | Current evidence | Remaining gate |
 | --- | --- | --- | --- |
-| 1 | Google, Apple, GitHub, and email account creation | OAuth and email-code adapters plus the sign-in UI are in `apps/mobile/src/auth`; local email-code contracts and a real local OTP walkthrough pass. | Connected gate: configure and exercise every hosted provider and redirect. |
+| 1 | Google, Apple, GitHub, and email account creation | OAuth and email-code adapters plus the sign-in UI are in `apps/mobile/src/auth`; local email-code contracts and a real local OTP walkthrough pass. Native PKCE callback tests and contracts cover attached browser completion, app resume, cold start, exact redirect matching, safe errors, and one-time code deduplication. | Connected gate: configure and exercise every hosted provider and redirect. |
 | 2 | Recovery confirmation and trusted-device enrollment | `packages/crypto` tests checked `ORG1` recovery and target-bound `ODA1` transfer; 54 authenticated backend checks exercise recovery proof, approval, claim, rejection, expiry, and revocation. | Connected and separate-device recovery drills remain. |
 | 3 | Create, edit, schedule, repeat, complete, and search tasks | Domain/task-context tests cover recurrence and completion; browser walkthroughs cover editor, Quick Add, dates, search, checkbox-only completion, fade, and Undo. | Physical smoke test on release builds. |
 | 4 | One-off, routine, and medication behavior | Domain task kinds, one-off recurrence rejection across tasks/templates/restore, calendar recurrence, optional dose confirmation, medication copy, and completion history are implemented and tested; a live web save/reopen drill confirms One-off recurrence is cleared in both editors. | Physical notification and accessibility walkthrough. |
@@ -48,12 +48,12 @@ Status meanings:
 - `pnpm verify:performance`: Quick Add, recurring completion, Today planning,
   and search pass a 100 ms median budget against 2,000 local tasks on the
   verification host; release-device timing remains a physical gate
-- `pnpm test`: 138 tests (43 domain, 6 cryptography, 89 application)
+- `pnpm test`: 143 tests (43 domain, 6 cryptography, 94 application)
 - `pnpm typecheck`: all strict TypeScript packages pass
 - `pnpm verify:web-push`: VAPID authorization and encrypted payload pass
 - `pnpm verify:supabase`: 54 database, 13 deletion-function, and 15 Web Push
   function checks pass
-- `pnpm build:web`: 16 production artifact checks and 22 precache URLs pass
+- `pnpm build:web`: 18 production artifact checks and 22 precache URLs pass
 - `pnpm build:native`: iOS and Android Hermes exports pass
 - `pnpm audit --prod`: no known production vulnerabilities
 
