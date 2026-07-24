@@ -41,13 +41,18 @@ Status recorded on 2026-07-24.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 143 automated tests pass: 43 domain, 6 cryptography, and 94 application tests
+- 146 automated tests pass: 43 domain, 6 cryptography, and 97 application tests
 - OAuth callback tests accept only the configured app redirect, map remote
   provider errors to safe local copy, deduplicate simultaneous and repeated
   one-time codes, and allow a failed exchange to be retried
 - the authentication contract pins the `organa` scheme, local Supabase
   redirect allowlist, PKCE mode, platform auth storage, initial native URL
   recovery, resumed URL handling, and attached browser-session handling
+- completion-feedback tests prove iOS and Android use their native system
+  haptic effects, web remains quiet, the preference disables feedback, and
+  unavailable haptic hardware does not interrupt task completion
+- optional creation/completion audio failures are absorbed instead of
+  producing an unhandled task-interaction rejection
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,

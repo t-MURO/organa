@@ -5,7 +5,9 @@ import {
   type PropsWithChildren,
   useContext,
 } from "react";
+import { Platform } from "react-native";
 
+import { deliverCompletionHaptic } from "./completion-haptic";
 import { useSettings } from "./settings-context";
 
 interface InteractionFeedbackContextValue {
@@ -30,7 +32,10 @@ export function InteractionFeedbackProvider({ children }: PropsWithChildren) {
 
   function play(player: typeof createPlayer) {
     if (!settings.appSoundsEnabled) return;
-    void player.seekTo(0).then(() => player.play());
+    void player
+      .seekTo(0)
+      .then(() => player.play())
+      .catch(() => undefined);
   }
 
   function created() {
@@ -39,11 +44,12 @@ export function InteractionFeedbackProvider({ children }: PropsWithChildren) {
 
   function completed() {
     play(completePlayer);
-    if (settings.hapticsEnabled) {
-      void Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Success,
-      ).catch(() => undefined);
-    }
+    void deliverCompletionHaptic(Platform.OS, settings.hapticsEnabled, {
+      androidConfirm: () =>
+        Haptics.performAndroidHapticsAsync(Haptics.AndroidHaptics.Confirm),
+      iosSuccess: () =>
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
+    });
   }
 
   return (

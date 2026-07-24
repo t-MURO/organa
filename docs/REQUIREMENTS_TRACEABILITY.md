@@ -36,7 +36,7 @@ Status meanings:
 | 16 | Light, dark, system, and manual themes | Theme tokens, system preference, manual override, synchronized settings, contrast checks, and browser walkthrough provide local evidence. | Physical system-theme and dynamic-type smoke test. |
 | 17 | Installable offline PWA | Manifest, icons, eight static routes, tested waiting-worker discovery/dismissal/activation/fallback, Workbox shell, 18 artifact checks, 22 precache URLs, an offline drill, and a real same-origin marked-worker replacement drill pass. | Repeat install/update in every supported release browser and installed mode. |
 | 18 | Export and one-hour deletion | Readable JSON/Markdown, strict encrypted backup validation against task/Check-In domain invariants, read-only boundary, cancellation UI, scheduled finalizer, 13 live function checks, and cascade tests pass locally. | Hosted finalizer and separate clean-device restore drill. |
-| 19 | Accessibility for critical workflows | Semantic roles/states, labels, keyboard focus CSS, reduced-motion handling, AA token contrast, shared native hit areas, 24-pixel web targets, 44-pixel coarse-pointer expansion, uncapped system text scaling, browser DOM measurements, keyboard/ARIA walkthroughs, and Lighthouse evidence exist. | VoiceOver, TalkBack, largest-text-size, physical touch-target, and release-browser walkthroughs. |
+| 19 | Accessibility for critical workflows | Semantic roles/states, labels, keyboard focus CSS, reduced-motion handling, AA token contrast, shared native hit areas, 24-pixel web targets, 44-pixel coarse-pointer expansion, uncapped system text scaling, native-only completion haptics with non-disruptive failure handling, browser DOM measurements, keyboard/ARIA walkthroughs, and Lighthouse evidence exist. | VoiceOver, TalkBack, largest-text-size, physical touch-target, sound/haptic preference, and release-browser walkthroughs. |
 | 20 | Critical/high security findings resolved | Security design, local abuse verifiers, dependency audit, and production gates are documented. | External gate: commission the independent review and resolve every critical/high finding. |
 
 ## Current Verification Baseline
@@ -48,7 +48,7 @@ Status meanings:
 - `pnpm verify:performance`: Quick Add, recurring completion, Today planning,
   and search pass a 100 ms median budget against 2,000 local tasks on the
   verification host; release-device timing remains a physical gate
-- `pnpm test`: 143 tests (43 domain, 6 cryptography, 94 application)
+- `pnpm test`: 146 tests (43 domain, 6 cryptography, 97 application)
 - `pnpm typecheck`: all strict TypeScript packages pass
 - `pnpm verify:web-push`: VAPID authorization and encrypted payload pass
 - `pnpm verify:supabase`: 54 database, 13 deletion-function, and 15 Web Push

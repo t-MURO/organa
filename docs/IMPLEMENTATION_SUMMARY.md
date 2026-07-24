@@ -22,6 +22,7 @@ Committed and verified milestones:
 - Stable single-runtime Yjs loading for Brain Dump
 - Native OAuth callback recovery across browser completion, resume, and cold
   start
+- Native-only completion haptics with non-disruptive feedback failure handling
 - Explicit controlled-beta OS and browser support boundaries
 - Deterministic local performance checks against a 2,000-task dataset
 - Fail-closed encrypted-backup domain validation
@@ -79,6 +80,27 @@ Latest verified task-type work:
   pass.
 - Hosted Google, Apple, GitHub, and email provider configuration and live
   redirect drills remain a connected-project gate.
+
+## Interaction Feedback Contract Milestone
+
+- Aligns runtime behavior with the controlled-beta capability matrix: iOS and
+  Android receive completion haptics while web remains quiet.
+- Uses the iOS success notification effect and Android's native confirm haptic
+  instead of the generic Android vibration path.
+- Keeps haptics behind their independent, default-enabled user preference.
+- Absorbs unavailable haptic hardware or platform API failures so task
+  completion still succeeds.
+- Absorbs optional audio seek or playback failures so task creation and
+  completion never produce an unhandled feedback rejection.
+- Three focused tests cover iOS, Android, web, disabled feedback, and a
+  rejecting platform driver.
+- The complete suite passes 146 tests: 43 domain, 6 cryptography, and 97
+  application tests.
+- Strict TypeScript, all 19 platform checks, iOS and Android Hermes exports,
+  the production PWA export with all 18 artifact checks, and `git diff --check`
+  pass.
+- Physical device sound, haptic, and operating-system preference behavior
+  remains a release gate.
 
 ## Platform Compatibility Milestone
 
@@ -444,10 +466,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 143 automated tests pass:
+- 146 automated tests pass:
   - 43 domain tests
   - 6 cryptography tests
-  - 94 application integration tests
+  - 97 application integration tests
 - All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.

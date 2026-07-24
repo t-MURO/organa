@@ -37,6 +37,10 @@ not a final-release polish pass.
 - Web and native completion motion respect the system reduced-motion setting.
 - Sounds remain optional and off by default; haptics remain separately
   configurable.
+- Completion haptics use native iOS and Android system effects only. Web stays
+  quiet, matching the controlled-beta capability matrix.
+- Unavailable audio or haptic APIs do not interrupt task creation or
+  completion.
 
 ## Automated Evidence
 
@@ -52,6 +56,9 @@ pnpm build:native
 `apps/mobile/src/accessibility/accessibility-contract.test.ts` prevents raw
 application pressables, underspecified web target CSS, text-scaling opt-outs,
 and single-line truncation from returning.
+`apps/mobile/src/features/settings/completion-haptic.test.ts` verifies the
+native-only platform boundary, the user preference, and non-disruptive
+hardware/API failure behavior.
 
 ## Release-Device Gate
 
