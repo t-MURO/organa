@@ -41,6 +41,9 @@ not a final-release polish pass.
   quiet, matching the controlled-beta capability matrix.
 - Unavailable audio or haptic APIs do not interrupt task creation or
   completion.
+- iOS widgets use native SwiftUI text semantics. Android Today and Next
+  Reminder widgets provide whole-widget accessibility labels, scalable text,
+  and explicit Home or Focus deep-link actions in light and dark modes.
 
 ## Automated Evidence
 

@@ -17,6 +17,7 @@ Committed and verified milestones:
 - Trusted-device approval, revocation, and account-deletion finalization
 - Offline PWA restoration and durable outbox behavior
 - Native reminder payloads, actions, reconciliation, and widget timelines
+- Dual-platform Today Tasks and Next Reminder mobile widgets
 - Recurrence, grace-day, inbox, and undated-task semantics
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
@@ -136,8 +137,8 @@ Latest verified task-type work:
 - Pins Android minimum API 24 and compile/target API 36.
 - Adds a release platform and capability contract covering native apps,
   browsers, reminders, biometrics, haptics, and widgets.
-- Explicitly limits the controlled-beta widget claim to iOS/iPadOS because the
-  selected Expo widget module is iOS-only.
+- Implements the controlled-beta widget claim on iOS/iPadOS and Android using
+  platform-specific widget runtimes over the shared snapshot model.
 - Adds a deterministic platform verifier covering source/generated build
   targets, sensitive Android manifest boundaries, browser policy, and the
   widget support claim.
@@ -263,7 +264,7 @@ Latest committed implementation milestones:
 - Seven focused tests covering authorization resolution, web cache behavior,
   scheduler guards, web ownership, and cleanup contracts
 - Sign-out cleanup for scheduled and displayed notifications plus content-free
-  iOS widget states
+  iOS and Android widget states
 - Atomic demotion of previous primary reminder devices, which remain quiet
   until the user explicitly enables secondary reminders
 
@@ -379,7 +380,7 @@ visible on native system surfaces after authentication ends:
   termination outside the Account screen.
 - Native cleanup cancels all scheduled notifications and dismisses displayed
   notifications.
-- iOS replaces Today Tasks and Next Reminder widget timelines with
+- iOS and Android replace Today Tasks and Next Reminder widget timelines with
   content-free states.
 - Widget and notification cleanup operations are failure-isolated with
   `Promise.allSettled`, so one platform API failure cannot prevent the others
@@ -420,9 +421,9 @@ Implemented user-facing areas:
 - Local readable exports and encrypted backups with an in-app restore/merge
   workflow
 - One-hour cancellable account-deletion flow
-- iOS Today Tasks and Next Reminder widgets; Next Reminder uses the earliest
-  actual enabled task or subtask reminder trigger, including configured
-  offsets, and both widgets receive future timeline transitions
+- iOS and Android Today Tasks and Next Reminder widgets; Next Reminder uses
+  the earliest actual enabled task or subtask reminder trigger, including
+  configured offsets, and both platforms receive future timeline transitions
 - Installable PWA with a Workbox offline application shell, cached render
   fonts, durable local mutations, and automatic reconnecting outbox
 
@@ -498,8 +499,8 @@ Implemented user-facing areas:
   a previous session stay hidden and cannot act on the active account.
 - Revocation and final account deletion remove the local device proof secret
   and clear all known SQLite/IndexedDB stores before database removal. Native
-  cleanup also removes scheduled and displayed notifications, while iOS clears
-  both widget timelines.
+  cleanup also removes scheduled and displayed notifications, while iOS and
+  Android clear both widget timelines.
 - The migration enables RLS, validates trusted-device writes, retains encrypted
   record history temporarily, and restricts private Realtime topics by user.
 - The client contains no product analytics, advertising identifiers, session
@@ -525,7 +526,11 @@ Known security work that remains mandatory before production:
 - Configured gentle-reminder notification channels and icons.
 - Added `expo-system-ui` for system light/dark preference support.
 - Added an explicit iOS widget extension bundle identifier.
+- Added generated Android AppWidget providers, accessible light/dark views,
+  secure bounded transition caching, launcher refresh, and deep links.
 - Clean Expo Prebuild completes without configuration warnings.
+- Android Hermes export succeeds. Gradle APK compilation is not locally
+  verified because this host does not have a Java runtime installed.
 - Generated iOS configuration contains no microphone or background-audio
   declarations.
 
@@ -725,9 +730,11 @@ This milestone includes:
   reopened, removing stale completed-step alerts
 - iOS Today and Next Reminder timelines that advance at local midnight and at
   each known reminder trigger without requiring the app to reopen
+- Android Today and Next Reminder providers that resolve a bounded SecureStore
+  transition timeline on app-driven and launcher updates
 - Native private-state cleanup that removes scheduled and displayed
-  notifications after revocation or deletion, plus content-free iOS widget
-  timelines before local database removal
+  notifications after revocation or deletion, plus content-free iOS and
+  Android widget timelines before local database removal
 - Successful iOS and Android Hermes exports after the platform-specific changes
 
 ## Task Semantics Milestone
@@ -910,7 +917,8 @@ Physical devices:
 - Validate reminders after process termination and while offline.
 - Validate biometric/device-PIN app lock.
 - Validate sound and haptic preferences.
-- Validate iOS widgets and deep links.
+- Validate iOS and Android widget rendering, resize, rollover, cleanup, and
+  deep links.
 - Complete VoiceOver/TalkBack and dynamic-type walkthroughs.
 
 Production:

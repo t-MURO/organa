@@ -234,7 +234,9 @@ local cleanup.
 
 Normal sign-out has a narrower privacy boundary than revocation or deletion.
 It cancels scheduled native notifications, dismisses displayed notifications,
-and replaces iOS widget timelines with content-free states. It retains local
+and replaces iOS and Android widget timelines with content-free states.
+Android's bounded widget projection is stored in SecureStore and malformed
+cached timelines fail closed to empty widgets. Sign-out retains local
 repositories, the content-key vault, and device identity so the same trusted
 device can recover its offline state after a future successful sign-in.
 On web, explicit sign-out first removes the current server subscription while

@@ -29,7 +29,7 @@ Status meanings:
 | 9 | Focus from a task or reminder | Focus route, native response coordinator, active-tab reminder, Web Push deep link, and widget routes are implemented; payload/route tests pass. | Physical notification/widget and permission-granted Web Push drills. |
 | 10 | Check-In mood, label, reflection, reminder, search, trends | Domain validation/tests and Check-In UI implement one daily entry, mood 1-5, one-word label, optional reflection, 7/30-day trends, search, and separate reminders. | Physical/system reminder drill. |
 | 11 | Continuous, searchable, offline, safely merged Brain Dump | IndexedDB/SQLite repositories, encrypted Yjs updates, merge tests, single-runtime verifier, and browser editing walkthrough provide local evidence. | Hosted two-client reconnect/compaction-volume validation. |
-| 12 | Mobile next-reminder and today widgets | iOS extension configuration, timeline coordinator, deep links, content-free cleanup, timeline tests, and the explicit capability contract in `docs/PLATFORM_SUPPORT.md` exist; Hermes export passes. | Physical iOS rendering and interaction. The selected Expo widget library is iOS-only, so Android widgets are explicitly outside the controlled-beta claim. |
+| 12 | Mobile next-reminder and today widgets | iOS extension timelines and Android AppWidget providers implement both views, deep links, light/dark accessible rendering, bounded secure transition caching, periodic refresh, and content-free cleanup; both Hermes exports pass. | Physical iOS and Android rendering, resize, rollover, cleanup, and deep-link interaction. |
 | 13 | Offline after initial sign-in | Local repositories/outbox and auth storage are implemented; production PWA offline sign-in/reload/mutation/reconnect drill passed. | Physical killed-process native drill. |
 | 14 | Active-device sync and offline recovery | Encrypted outbox, idempotent mutation RPC, private Broadcast, durable reconciliation, field merge, and two-origin local realtime drill pass. | Hosted latency, missed-event, and network-transition drill. |
 | 15 | End-to-end encrypted content inaccessible to backend | AES-256-GCM field envelopes, wrapped web keys, SecureStore native keys, ciphertext-only database inspection, RLS/RPC tests, and documented metadata boundaries provide local evidence. | Independent cryptographic/application review and hosted abuse testing. |
@@ -44,7 +44,7 @@ Status meanings:
 - Native source targets are pinned to iOS 16.4+ and Android 7+ (API 24) with
   Android compile/target API 36.
 - `pnpm verify:platform`: 19 source/generated target, sensitive Android
-  manifest, browser-policy, and iOS-only widget-claim checks pass
+  manifest, browser-policy, and dual-platform widget checks pass
 - `pnpm verify:performance`: Quick Add, recurring completion, Today planning,
   and search pass a 100 ms median budget against 2,000 local tasks on the
   verification host; release-device timing remains a physical gate

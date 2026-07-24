@@ -103,9 +103,11 @@ ok(
   "platform document states the selected native minimums",
 );
 ok(
-  platformSupport.includes("| Today Tasks widget | Supported | Not in controlled beta |") &&
-    platformSupport.includes("| Next Reminder widget | Supported | Not in controlled beta |"),
-  "platform document limits the widget claim to iOS/iPadOS",
+  platformSupport.includes("| Today Tasks widget | Supported | Supported |") &&
+    platformSupport.includes("| Next Reminder widget | Supported | Supported |") &&
+    androidManifest.includes('android:name=".widget.TodayTasksWidget"') &&
+    androidManifest.includes('android:name=".widget.NextReminderWidget"'),
+  "platform contract and generated Android manifest include both mobile widgets",
 );
 ok(
   platformSupport.includes("https://docs.expo.dev/versions/latest/") &&

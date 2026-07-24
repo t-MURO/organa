@@ -23,8 +23,8 @@ Status recorded on 2026-07-24.
 - [x] Local readable/encrypted exports, validated backup restore/merge, and
   one-hour deletion UI/backend worker
 - [x] Light/dark/system themes, reduced motion, sounds, haptics, and app lock
-- [x] iOS widget timelines for today's tasks and the next actual enabled task or
-  subtask reminder trigger, including midnight and fired-reminder transitions
+- [x] iOS and Android widgets for today's tasks and the next actual enabled
+  task or subtask reminder trigger, with deep links and timeline transitions
 - [x] Installable PWA manifest, icons, static routes, signed-in offline reload,
   local mutation persistence, and reconnecting outbox
 - [x] Standards-based Web Push with proof-gated content-free schedules,
@@ -119,6 +119,11 @@ Local evidence:
 - clean Expo Prebuild succeeds without configuration warnings
 - generated Android configuration disables application backup and removes
   recording, background-audio, broad-storage, and overlay permissions
+- generated Android configuration registers Today Tasks and Next Reminder
+  AppWidget providers, Java receivers, resize metadata, descriptions, and
+  30-minute launcher updates
+- the Android Hermes export succeeds; a local Gradle APK build remains
+  unverified because this host does not have a Java runtime installed
 - generated iOS configuration has no microphone or background-audio
   declarations, uses the explicit widget bundle ID, and produces an opaque
   1024-pixel App Store icon
@@ -126,8 +131,8 @@ Local evidence:
   minimum/compile/target values, matching the documented Expo SDK 57 support
   contract
 - `pnpm verify:platform` passes 19 checks for source and generated target
-  values, sensitive Android manifest boundaries, the browser policy, and the
-  iOS-only widget claim
+  values, sensitive Android manifest boundaries, the browser policy, and both
+  mobile widget implementations
 - `pnpm verify:performance` exercises the exact local task-list update model,
   recurring completion, Today planning, and search against 2,000 tasks with a
   100 ms median budget; physical release-device timing remains required
@@ -139,11 +144,14 @@ Local evidence:
   notifications so finished steps do not leave stale alerts
 - iOS widget timeline tests prove automatic local-midnight task rollover and
   advancement after each reminder trigger without reopening the app
+- Android widgets use light/dark accessible renderings, a bounded SecureStore
+  transition timeline, app-driven updates, launcher refresh, and Home/Focus
+  deep links; overflow ends in a content-free state rather than stale titles
 - account deletion and device revocation clear scheduled and displayed native
-  notifications; iOS also replaces both widget timelines with content-free
+  notifications and replace both iOS and Android widgets with content-free
   states before local database deletion
 - normal and Supabase-driven sign-out clear scheduled/displayed native
-  notifications and replace iOS widget timelines with content-free states
+  notifications and replace iOS/Android widgets with content-free states
   without deleting the returning user's local repositories
 - per-user reminder authorization is restored from a content-free local cache
   during offline startup; unresolved ownership does not cancel existing native
@@ -234,7 +242,7 @@ Local evidence:
 - [ ] Offline reminders after process termination
 - [ ] Biometric/device-PIN app lock
 - [ ] Sound and haptic preference behavior
-- [ ] iOS widget rendering and deep links
+- [ ] iOS and Android widget rendering, resize, rollover, cleanup, and deep links
 - [ ] Screen-reader and dynamic-type walkthroughs
 
 ## Mandatory Production Gate

@@ -51,15 +51,17 @@ release evidence for every beta build.
 | Biometric or device-auth app lock | Supported | Supported | Not in MVP |
 | Creation/completion sounds | Supported | Supported | Supported |
 | Completion haptics | Supported | Supported | Not available |
-| Today Tasks widget | Supported | Not in controlled beta | Not applicable |
-| Next Reminder widget | Supported | Not in controlled beta | Not applicable |
+| Today Tasks widget | Supported | Supported | Not applicable |
+| Next Reminder widget | Supported | Supported | Not applicable |
 
-The widget implementation uses `expo-widgets`, which the [official Expo
-documentation](https://docs.expo.dev/versions/latest/sdk/widgets/) defines as
-an iOS Home Screen widget library. Organa therefore claims and release-tests
-the two required widgets on iOS/iPadOS only. Android widget support is not
-silently implied and would require a separate native implementation after the
-MVP.
+The iOS implementation uses
+[`expo-widgets`](https://docs.expo.dev/versions/latest/sdk/widgets/). Android
+uses the Expo config plugin and headless task handler from
+[`react-native-android-widget`](https://saleksovski.github.io/react-native-android-widget/docs/tutorial/register-widget-expo).
+Both platforms render Today Tasks and Next Reminder, support app deep links,
+and replace private content with signed-out states. Android stores a bounded
+widget transition timeline in SecureStore and resolves it during app-driven or
+30-minute launcher updates.
 
 Web system reminders require HTTPS, a configured VAPID key, permission, and
 browser Push support. iOS/iPadOS Web Push requires an installed Home Screen
@@ -80,8 +82,8 @@ For every native beta build:
 6. Verify biometric or device-auth lock behavior.
 7. Run VoiceOver on iOS and TalkBack on Android with enlarged text.
 8. Verify light, dark, system, reduced-motion, sound, and haptic preferences.
-9. On iOS/iPadOS, verify both widget sizes, timeline rollover, content-free
-   signed-out state, and deep links.
+9. On iOS/iPadOS and Android, verify both widgets, supported resize states,
+   timeline rollover, content-free signed-out state, and deep links.
 
 For every web beta release, follow all checks in `docs/BROWSER_SUPPORT.md` and
 record the exact browser versions.
