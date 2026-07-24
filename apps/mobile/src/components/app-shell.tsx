@@ -15,6 +15,7 @@ import { AccessiblePressable as Pressable } from "../accessibility/accessible-pr
 import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
 import { useSync } from "../sync/sync-context";
 import { useSettings } from "../features/settings/settings-context";
+import { useTasks } from "../features/tasks/task-context";
 
 interface NavItem {
   href: "/" | "/check-in" | "/brain-dump" | "/templates" | "/account";
@@ -39,7 +40,17 @@ export function AppShell() {
   const { width } = useWindowDimensions();
   const pathname = usePathname();
   const sync = useSync();
-  const { settings, update } = useSettings();
+  const {
+    clearReminderNotice: clearTaskReminderNotice,
+    reminderNotice: taskReminderNotice,
+  } = useTasks();
+  const {
+    checkInReminderNotice,
+    clearCheckInReminderNotice,
+    settings,
+    update,
+  } = useSettings();
+  const reminderNotice = taskReminderNotice || checkInReminderNotice;
   const themeMode = settings.theme;
   const isWide = width >= 900;
   const effectiveMode =
@@ -61,6 +72,27 @@ export function AppShell() {
     <AppShellThemeContext.Provider value={{ theme }}>
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style={effectiveMode === "dark" ? "light" : "dark"} />
+        {reminderNotice ? (
+          <View
+            accessibilityLiveRegion="polite"
+            accessibilityRole="alert"
+            style={styles.reminderNotice}
+          >
+            <Text style={styles.reminderNoticeText}>{reminderNotice}</Text>
+            <Pressable
+              accessibilityLabel="Dismiss reminder delivery notice"
+              accessibilityRole="button"
+              style={styles.reminderNoticeButton}
+              onPress={
+                taskReminderNotice
+                  ? clearTaskReminderNotice
+                  : clearCheckInReminderNotice
+              }
+            >
+              <Text style={styles.reminderNoticeButtonText}>Dismiss</Text>
+            </Pressable>
+          </View>
+        ) : null}
         {pathname === "/focus" ? (
           <View style={styles.focusShell}>
             <Slot />
@@ -316,6 +348,36 @@ function createStyles(theme: OrganaTheme, isWide: boolean) {
     safeArea: {
       backgroundColor: theme.background,
       flex: 1,
+    },
+    reminderNotice: {
+      alignItems: "center",
+      backgroundColor: theme.shouldSoft,
+      borderBottomColor: theme.should,
+      borderBottomWidth: 1,
+      flexDirection: "row",
+      gap: 12,
+      justifyContent: "space-between",
+      paddingHorizontal: isWide ? 28 : 16,
+      paddingVertical: 12,
+    },
+    reminderNoticeText: {
+      color: theme.text,
+      flex: 1,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 13,
+      lineHeight: 19,
+    },
+    reminderNoticeButton: {
+      borderColor: theme.text,
+      borderRadius: 999,
+      borderWidth: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+    },
+    reminderNoticeButtonText: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 12,
     },
     shell: {
       backgroundColor: theme.background,

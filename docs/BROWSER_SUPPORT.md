@@ -55,6 +55,11 @@ explain that limitation and active-tab reminders remain available. A mobile
 reminder device should remain enabled when dependable closed-tab delivery has
 not been validated for that browser.
 
+When task or Check-In system permission is not requested, denied, unsupported,
+or a schedule update fails, Organa preserves the change and shows a persistent,
+dismissible delivery notice. The notice explains that system delivery should
+not be relied on and points to an open-app or reminder-enabled-device fallback.
+
 Active-tab reminders follow the signed-in browser's trusted-device reminder
 setting. A primary device is enabled by default; a secondary device remains
 quiet unless the user explicitly enables reminders for it. During an offline

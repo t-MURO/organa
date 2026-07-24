@@ -5,8 +5,16 @@ export interface CheckInReminderCapability {
   reason?: string;
 }
 
+export interface CheckInReminderSyncResult {
+  permission: "not_requested" | "granted" | "denied" | "unsupported";
+  scheduled: boolean;
+}
+
 export interface CheckInReminderScheduler {
   capability: CheckInReminderCapability;
   initialize(): Promise<void>;
-  sync(settings: UserSettings, requestPermission?: boolean): Promise<boolean>;
+  sync(
+    settings: UserSettings,
+    requestPermission?: boolean,
+  ): Promise<CheckInReminderSyncResult>;
 }

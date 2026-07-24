@@ -719,8 +719,8 @@ Resolved recurrence, grace-day, and parent/subtask decisions are recorded in
 - The controlled-beta platform matrix in `docs/PLATFORM_SUPPORT.md` targets
   iOS/iPadOS 16.4+, Android 7+ (API 24; compile/target API 36), and the current
   stable browser releases in `docs/BROWSER_SUPPORT.md`. The required Today and
-  Next Reminder widgets are supported on iOS/iPadOS, where the selected widget
-  library is available.
+  Next Reminder widgets are supported on iOS/iPadOS and Android through
+  platform-specific widget runtimes over the shared snapshot model.
 
 The remaining product and launch decisions are:
 

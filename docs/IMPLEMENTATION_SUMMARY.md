@@ -18,6 +18,7 @@ Committed and verified milestones:
 - Offline PWA restoration and durable outbox behavior
 - Native reminder payloads, actions, reconciliation, and widget timelines
 - Dual-platform Today Tasks and Next Reminder mobile widgets
+- Non-silent reminder delivery status across native and web
 - Recurrence, grace-day, inbox, and undated-task semantics
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
@@ -267,6 +268,20 @@ Latest committed implementation milestones:
   iOS and Android widget states
 - Atomic demotion of previous primary reminder devices, which remain quiet
   until the user explicitly enables secondary reminders
+
+Reminder-reliability milestone:
+
+- Task creation/editing and Check-In reminder changes stay optimistic when
+  notification delivery is unavailable.
+- Permission-not-requested, denied, unsupported, zero-schedule, initialization,
+  scheduling, and cancellation outcomes produce a global pressure-free notice.
+- The notice is exposed as an accessibility alert/live region and remains
+  visible until the user dismisses it, so concurrent successful scheduler work
+  cannot hide a failure.
+- The authoritative requirements document now reflects the implemented
+  Android widget support instead of the superseded iOS-only decision.
+- Strict TypeScript, the production web/PWA build, and iOS/Android Hermes
+  exports pass. No tests were added, changed, or run for this milestone.
 
 Verification completed for the reminder-authorization work:
 

@@ -27,7 +27,11 @@ export function createCheckInReminderScheduler(): CheckInReminderScheduler {
         schedule,
         requestPermission && schedule.entries.length > 0,
       );
-      return permission === "granted";
+      return {
+        permission,
+        scheduled:
+          permission === "granted" && schedule.entries.length > 0,
+      };
     },
   };
 }

@@ -9,8 +9,13 @@ export function createCheckInReminderScheduler(): CheckInReminderScheduler {
   return {
     capability: checkInReminderCapability,
     async initialize() {},
-    async sync() {
-      return false;
+    async sync(settings) {
+      return {
+        permission: settings.checkInReminder.enabled
+          ? ("unsupported" as const)
+          : ("not_requested" as const),
+        scheduled: false,
+      };
     },
   };
 }

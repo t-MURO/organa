@@ -17,11 +17,13 @@ import {
   useMemo,
   useReducer,
   useRef,
+  useState,
 } from "react";
 
 import { useAuth } from "../../auth/auth-context";
 import { createNotificationScheduler } from "../../data/create-notification-scheduler";
 import { createTaskRepository } from "../../data/create-task-repository";
+import type { NotificationSyncResult } from "../../data/notification-scheduler.types";
 import { useSync } from "../../sync/sync-context";
 import { useDevices } from "../account/device-context";
 import { selectRestoreChanges } from "../account/restore-merge";
@@ -41,7 +43,9 @@ type TaskAction =
 
 interface TaskContextValue extends TaskState {
   addTask(input: CreateTaskInput): Task;
+  clearReminderNotice(): void;
   editTask(task: Task, input: CreateTaskInput): Task;
+  reminderNotice: string;
   removeTask(id: string): void;
   restoreTasks(tasks: Task[]): Promise<number>;
   confirmDose(task: Task): void;
@@ -54,9 +58,12 @@ const notificationScheduler = createNotificationScheduler();
 let notificationInitialization: Promise<void> | undefined;
 
 function initializeNotifications() {
-  notificationInitialization ??= notificationScheduler
-    .initialize()
-    .catch(() => undefined);
+  notificationInitialization ??= notificationScheduler.initialize().catch(
+    (error: unknown) => {
+      notificationInitialization = undefined;
+      throw error;
+    },
+  );
   return notificationInitialization;
 }
 
@@ -65,21 +72,40 @@ function syncNotifications(
   requestPermission = false,
   enabled = true,
   authorizationReady = true,
+  report?: (message: string) => void,
 ) {
   if (!authorizationReady) return;
   if (!enabled) {
-    cancelNotifications(task.id);
+    cancelNotifications(task.id, report);
     return;
   }
   void initializeNotifications()
     .then(() => notificationScheduler.syncTask(task, requestPermission))
-    .catch(() => undefined);
+    .then((result) => {
+      if (!hasEnabledReminder(task)) return;
+      const notice = reminderNoticeFor(result);
+      if (notice) report?.(notice);
+    })
+    .catch(() => {
+      if (hasEnabledReminder(task)) {
+        report?.(
+          "Your task was saved, but this device could not schedule its reminder. Check system notification settings before relying on it.",
+        );
+      }
+    });
 }
 
-function cancelNotifications(taskId: string) {
+function cancelNotifications(
+  taskId: string,
+  report?: (message: string) => void,
+) {
   void initializeNotifications()
     .then(() => notificationScheduler.cancelTask(taskId))
-    .catch(() => undefined);
+    .catch(() =>
+      report?.(
+        "Organa could not update this device's scheduled reminders. Check system notification settings before relying on them.",
+      ),
+    );
 }
 
 function taskReducer(state: TaskState, action: TaskAction): TaskState {
@@ -169,6 +195,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     loading: true,
     tasks: [],
   });
+  const [reminderNotice, setReminderNotice] = useState("");
   const reminderAuthorizationRef = useRef({
     allowed: devices.remindersAllowed,
     ready: devices.reminderAuthorizationReady,
@@ -177,6 +204,10 @@ export function TaskProvider({ children }: PropsWithChildren) {
     allowed: devices.remindersAllowed,
     ready: devices.reminderAuthorizationReady,
   };
+
+  useEffect(() => {
+    setReminderNotice("");
+  }, [namespace]);
 
   useEffect(() => {
     let active = true;
@@ -202,6 +233,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
             false,
             authorization.allowed,
             authorization.ready,
+            setReminderNotice,
           ),
         );
       }
@@ -216,7 +248,13 @@ export function TaskProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     if (!devices.reminderAuthorizationReady) return;
     state.tasks.forEach((task) =>
-      syncNotifications(task, false, devices.remindersAllowed),
+      syncNotifications(
+        task,
+        false,
+        devices.remindersAllowed,
+        true,
+        setReminderNotice,
+      ),
     );
   }, [
     devices.reminderAuthorizationReady,
@@ -227,7 +265,8 @@ export function TaskProvider({ children }: PropsWithChildren) {
     () =>
       sync.subscribe<Task>("task", (change) => {
         void reconcileRemoteTaskChange(change, {
-          cancelNotifications,
+          cancelNotifications: (id) =>
+            cancelNotifications(id, setReminderNotice),
           remove: async (id) => {
             dispatch({ type: "removed", id });
             await repository.remove(id);
@@ -238,6 +277,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
               false,
               devices.remindersAllowed,
               devices.reminderAuthorizationReady,
+              setReminderNotice,
             ),
           upsert: async (task) => {
             dispatch({ type: "upserted", task });
@@ -262,6 +302,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       true,
       devices.remindersAllowed,
       devices.reminderAuthorizationReady,
+      setReminderNotice,
     );
     feedback.created();
     return task;
@@ -277,6 +318,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       true,
       devices.remindersAllowed,
       devices.reminderAuthorizationReady,
+      setReminderNotice,
     );
     return updated;
   }
@@ -285,7 +327,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     dispatch({ type: "removed", id });
     void repository.remove(id);
     void sync.queueDelete("task", id);
-    cancelNotifications(id);
+    cancelNotifications(id, setReminderNotice);
   }
 
   async function restoreTasks(tasks: Task[]) {
@@ -304,6 +346,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
         false,
         devices.remindersAllowed,
         devices.reminderAuthorizationReady,
+        setReminderNotice,
       );
     }
     return changes.length;
@@ -334,12 +377,13 @@ export function TaskProvider({ children }: PropsWithChildren) {
         false,
         devices.remindersAllowed,
         devices.reminderAuthorizationReady,
+        setReminderNotice,
       );
       if (generatedOccurrence) {
         dispatch({ type: "removed", id: generatedOccurrence.id });
         void repository.remove(generatedOccurrence.id);
         void sync.queueDelete("task", generatedOccurrence.id);
-        cancelNotifications(generatedOccurrence.id);
+        cancelNotifications(generatedOccurrence.id, setReminderNotice);
       }
       return;
     }
@@ -361,6 +405,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       false,
       devices.remindersAllowed,
       devices.reminderAuthorizationReady,
+      setReminderNotice,
     );
     feedback.completed();
 
@@ -373,6 +418,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
         false,
         devices.remindersAllowed,
         devices.reminderAuthorizationReady,
+        setReminderNotice,
       );
     }
   }
@@ -389,6 +435,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       false,
       devices.remindersAllowed,
       devices.reminderAuthorizationReady,
+      setReminderNotice,
     );
   }
 
@@ -397,8 +444,10 @@ export function TaskProvider({ children }: PropsWithChildren) {
       value={{
         ...state,
         addTask,
+        clearReminderNotice: () => setReminderNotice(""),
         confirmDose,
         editTask,
+        reminderNotice,
         removeTask,
         restoreTasks,
         toggleTask,
@@ -408,6 +457,35 @@ export function TaskProvider({ children }: PropsWithChildren) {
       {children}
     </TaskContext.Provider>
   );
+}
+
+function hasEnabledReminder(task: Task) {
+  if (task.completedAt || !task.dueAt) return false;
+  if (task.reminders.some((reminder) => reminder.enabled)) return true;
+  return Boolean(
+    task.subtaskRemindersEnabled &&
+      task.subtasks.some((subtask) =>
+        (subtask.reminders ?? task.reminders).some(
+          (reminder) => reminder.enabled && !subtask.completedAt,
+        ),
+      ),
+  );
+}
+
+function reminderNoticeFor(result: NotificationSyncResult) {
+  if (result.permission === "not_requested") {
+    return "This reminder is saved, but system notification permission has not been granted. Open the task and save it again when you are ready to allow reminders.";
+  }
+  if (result.permission === "denied") {
+    return "Your task was saved, but system reminders are off. Enable notifications in device or browser settings before relying on this reminder.";
+  }
+  if (result.permission === "unsupported") {
+    return "Your task was saved, but this app cannot deliver a system reminder here. Keep Organa open for in-app reminders or use a reminder-enabled device.";
+  }
+  if (result.scheduled === 0) {
+    return "This task has reminders, but no upcoming system notification could be scheduled. Check its due time before relying on it.";
+  }
+  return "";
 }
 
 export function useTasks() {

@@ -15,11 +15,14 @@ import {
 
 import { useAuth } from "../../auth/auth-context";
 import { createCheckInReminderScheduler } from "../../data/create-check-in-reminder-scheduler";
+import type { CheckInReminderSyncResult } from "../../data/check-in-reminder-scheduler.types";
 import { createSettingsRepository } from "../../data/create-settings-repository";
 import { useSync } from "../../sync/sync-context";
 import { useDevices } from "../account/device-context";
 
 interface SettingsContextValue {
+  checkInReminderNotice: string;
+  clearCheckInReminderNotice(): void;
   loading: boolean;
   settings: UserSettings;
   restore(settings: UserSettings): Promise<void>;
@@ -30,6 +33,37 @@ const SettingsContext = createContext<SettingsContextValue | undefined>(
   undefined,
 );
 const reminderScheduler = createCheckInReminderScheduler();
+let reminderInitialization: Promise<void> | undefined;
+
+function initializeReminderScheduler() {
+  reminderInitialization ??= reminderScheduler.initialize().catch(
+    (error: unknown) => {
+      reminderInitialization = undefined;
+      throw error;
+    },
+  );
+  return reminderInitialization;
+}
+
+async function syncCheckInReminder(
+  settings: UserSettings,
+  requestPermission: boolean,
+  report: (message: string) => void,
+) {
+  try {
+    await initializeReminderScheduler();
+    const result = await reminderScheduler.sync(settings, requestPermission);
+    if (!settings.checkInReminder.enabled) return;
+    const notice = checkInReminderNoticeFor(result);
+    if (notice) report(notice);
+  } catch {
+    report(
+      settings.checkInReminder.enabled
+        ? "Your Check-In reminder was saved, but this device could not schedule it. Check system notification settings before relying on it."
+        : "Organa could not remove the previous Check-In reminder. Check system notification settings before relying on its schedule.",
+    );
+  }
+}
 
 export function SettingsProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
@@ -42,6 +76,11 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   );
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState(() => createUserSettings());
+  const [checkInReminderNotice, setCheckInReminderNotice] = useState("");
+
+  useEffect(() => {
+    setCheckInReminderNotice("");
+  }, [namespace]);
 
   useEffect(() => {
     let active = true;
@@ -51,10 +90,10 @@ export function SettingsProvider({ children }: PropsWithChildren) {
       setSettings(stored);
       setLoading(false);
       if (devices.reminderAuthorizationReady) {
-        void reminderScheduler.initialize().then(() =>
-          reminderScheduler.sync(
-            reminderSettings(stored, devices.remindersAllowed),
-          ),
+        void syncCheckInReminder(
+          reminderSettings(stored, devices.remindersAllowed),
+          false,
+          setCheckInReminderNotice,
         );
       }
     });
@@ -65,8 +104,10 @@ export function SettingsProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     if (!devices.reminderAuthorizationReady) return;
-    void reminderScheduler.sync(
+    void syncCheckInReminder(
       reminderSettings(settings, devices.remindersAllowed),
+      false,
+      setCheckInReminderNotice,
     );
   }, [
     devices.reminderAuthorizationReady,
@@ -80,8 +121,10 @@ export function SettingsProvider({ children }: PropsWithChildren) {
         setSettings(change.value);
         void repository.upsert(change.value);
         if (devices.reminderAuthorizationReady) {
-          void reminderScheduler.sync(
+          void syncCheckInReminder(
             reminderSettings(change.value, devices.remindersAllowed),
+            false,
+            setCheckInReminderNotice,
           );
         }
       }),
@@ -98,9 +141,10 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     void repository.upsert(next);
     void sync.queueUpsert("settings", next.id, next, settings);
     if (devices.reminderAuthorizationReady) {
-      void reminderScheduler.sync(
+      void syncCheckInReminder(
         reminderSettings(next, devices.remindersAllowed),
         Boolean(input.checkInReminder?.enabled) && devices.remindersAllowed,
+        setCheckInReminderNotice,
       );
     }
     return next;
@@ -111,18 +155,44 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     await sync.queueUpsert("settings", next.id, next, settings);
     setSettings(next);
     if (devices.reminderAuthorizationReady) {
-      await reminderScheduler.sync(
+      await syncCheckInReminder(
         reminderSettings(next, devices.remindersAllowed),
         next.checkInReminder.enabled && devices.remindersAllowed,
+        setCheckInReminderNotice,
       );
     }
   }
 
   return (
-    <SettingsContext.Provider value={{ loading, restore, settings, update }}>
+    <SettingsContext.Provider
+      value={{
+        checkInReminderNotice,
+        clearCheckInReminderNotice: () => setCheckInReminderNotice(""),
+        loading,
+        restore,
+        settings,
+        update,
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );
+}
+
+function checkInReminderNoticeFor(result: CheckInReminderSyncResult) {
+  if (result.permission === "not_requested") {
+    return "Your Check-In reminder is saved, but system notification permission has not been granted. Toggle it off and on when you are ready to allow reminders.";
+  }
+  if (result.permission === "denied") {
+    return "Your Check-In reminder is saved, but system reminders are off. Enable notifications in device or browser settings before relying on it.";
+  }
+  if (result.permission === "unsupported") {
+    return "This app cannot deliver a closed-app Check-In reminder here. Keep Organa open near the selected time or use a reminder-enabled device.";
+  }
+  if (!result.scheduled) {
+    return "Your Check-In reminder is enabled, but no system notification could be scheduled.";
+  }
+  return "";
 }
 
 function reminderSettings(settings: UserSettings, allowed: boolean) {

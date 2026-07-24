@@ -9,6 +9,8 @@ Status recorded on 2026-07-24.
 - [x] One-off, routine, medication, dose confirmation, subtasks, and
   independently configurable optional subtask reminders
 - [x] Multiple reminder stages and per-task snooze presets
+- [x] Persistent, dismissible delivery notices when system reminder
+  permission or scheduling is unavailable
 - [x] Templates browse/copy/create/edit/delete
 - [x] Focus mode and reminder deep links
 - [x] Optional Check-In mood/reflection/search/trends/reminder setting
@@ -159,6 +161,12 @@ Local evidence:
 - task and Check-In schedulers guard unresolved reminder ownership, web
   active-tab reminders honor primary/secondary device settings, and revocation
   or final account deletion removes the authorization cache
+- task and Check-In saves remain successful when reminder delivery is
+  unavailable, while a global accessible notice reports permission,
+  capability, scheduling, and cancellation failures instead of silently
+  implying delivery
+- strict TypeScript and the web, iOS, and Android production exports pass after
+  the non-silent reminder-delivery changes; no test files were changed
 - promoting a new primary reminder device atomically makes every other device
   quiet; a demoted device requires a later explicit secondary-reminder opt-in
 - a task-load race test contract verifies that reconciliation reads the latest

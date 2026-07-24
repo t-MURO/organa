@@ -24,14 +24,21 @@ export function createCheckInReminderScheduler(): CheckInReminderScheduler {
     },
     async sync(settings, requestPermission = false) {
       await Notifications.cancelScheduledNotificationAsync(identifier);
-      if (!settings.checkInReminder.enabled) return true;
+      if (!settings.checkInReminder.enabled) {
+        return { permission: "not_requested", scheduled: false };
+      }
       let permission = await Notifications.getPermissionsAsync();
       if (!permission.granted && requestPermission) {
         permission = await Notifications.requestPermissionsAsync({
           ios: { allowAlert: true, allowBadge: false, allowSound: false },
         });
       }
-      if (!isGranted(permission)) return false;
+      if (!isGranted(permission)) {
+        return {
+          permission: requestPermission ? "denied" : "not_requested",
+          scheduled: false,
+        };
+      }
 
       const [hour, minute] = settings.checkInReminder.time
         .split(":")
@@ -51,7 +58,7 @@ export function createCheckInReminderScheduler(): CheckInReminderScheduler {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
         },
       });
-      return true;
+      return { permission: "granted", scheduled: true };
     },
   };
 }
