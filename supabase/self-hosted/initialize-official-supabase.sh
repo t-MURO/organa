@@ -59,7 +59,10 @@ report_failure() {
 
   exit "$status"
 }
-trap report_failure 0 HUP INT TERM
+trap report_failure 0
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 umask 077
 cp .env.example .env

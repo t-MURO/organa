@@ -1754,6 +1754,21 @@ No tests were added, changed, or run for this milestone.
   production artifact verifier and platform bundles remain the authoritative
   local evidence for this milestone.
 
+## Self-Hosted Bootstrap Signal Safety
+
+- Current official Supabase documentation and upstream scripts were rechecked:
+  both key generators support explicit `--update-env`, while the asymmetric
+  key generator intentionally requires an existing `.env` containing
+  `JWT_SECRET`.
+- The fresh-stack wrapper already creates a private `.env` before invoking
+  those scripts and suppresses their credential-bearing standard output.
+- HUP, INT, and TERM now exit with conventional nonzero statuses and flow
+  through the existing cleanup handler. An interrupted bootstrap still removes
+  its private temporary output and warns about the partially initialized
+  `.env`, but can no longer be reported to automation as a successful run.
+- POSIX shell syntax validation passes for both the initializer and full
+  self-hosted preflight.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
