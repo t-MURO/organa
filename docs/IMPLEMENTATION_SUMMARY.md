@@ -3,9 +3,9 @@
 Status recorded on 2026-07-23.
 
 This is the structured pause checkpoint requested after the implementation
-work. The committed implementation is complete through `e9b6893`, including
-the fully verified reminder-authorization and sign-out privacy work described
-below.
+work. The committed implementation is complete through `263427d`, including
+the verified reminder-authorization, sign-out privacy, and primary-device
+demotion work described below.
 
 ## Current Checkpoint
 
@@ -264,6 +264,7 @@ Major implementation commits:
 - `72ed273` - load Yjs once for Brain Dump
 - `babc42d` - preserve reminder authorization offline
 - `e9b6893` - clear private surfaces on sign out
+- `263427d` - quiet demoted reminder devices
 
 ## Latest Security Hardening
 
