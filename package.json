@@ -12,6 +12,7 @@
     "typecheck": "turbo typecheck",
     "verify:yjs-runtime": "pnpm --filter @organa/app verify:yjs-runtime",
     "verify:platform": "pnpm --filter @organa/app verify:platform",
+    "verify:performance": "pnpm --filter @organa/app verify:performance",
     "verify:web-push": "pnpm --filter @organa/app verify:web-push",
     "verify:supabase": "pnpm --filter @organa/app verify:supabase"
   },

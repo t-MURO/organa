@@ -37,7 +37,7 @@ Status recorded on 2026-07-24.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 110 automated tests pass: 41 domain, 6 cryptography, and 63 application tests
+- 116 automated tests pass: 41 domain, 6 cryptography, and 69 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
@@ -86,6 +86,9 @@ Local evidence:
 - `pnpm verify:platform` passes 19 checks for source and generated target
   values, sensitive Android manifest boundaries, the browser policy, and the
   iOS-only widget claim
+- `pnpm verify:performance` exercises the exact local task-list update model,
+  recurring completion, Today planning, and search against 2,000 tasks with a
+  100 ms median budget; physical release-device timing remains required
 - iOS and Android Hermes bundle exports succeed
 - native notification-plan tests cover task/subtask payloads, Focus and snooze
   actions, killed-app-compatible response delivery, completion suppression,

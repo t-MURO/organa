@@ -45,7 +45,10 @@ Status meanings:
   Android compile/target API 36.
 - `pnpm verify:platform`: 19 source/generated target, sensitive Android
   manifest, browser-policy, and iOS-only widget-claim checks pass
-- `pnpm test`: 110 tests (41 domain, 6 cryptography, 63 application)
+- `pnpm verify:performance`: Quick Add, recurring completion, Today planning,
+  and search pass a 100 ms median budget against 2,000 local tasks on the
+  verification host; release-device timing remains a physical gate
+- `pnpm test`: 116 tests (41 domain, 6 cryptography, 69 application)
 - `pnpm typecheck`: all strict TypeScript packages pass
 - `pnpm verify:web-push`: VAPID authorization and encrypted payload pass
 - `pnpm verify:supabase`: 54 database, 13 deletion-function, and 15 Web Push

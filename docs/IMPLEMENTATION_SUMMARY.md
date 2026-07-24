@@ -50,6 +50,20 @@ Latest checkpoint commits:
 - Expo Doctor passes 19 of 20 checks; only the previously documented local
   CocoaPods/full-Xcode tooling check remains unavailable on this host.
 
+## Local Performance Milestone
+
+- Extracts the exact task-list upsert/removal path into a small pure model used
+  by the live task provider.
+- Replaces the previous two-pass task replacement with a single lookup and
+  copy while preserving task order and immediate local rendering.
+- Adds repeatable median timing checks for Quick Add, recurring completion,
+  Today planning, and search against a 2,000-task personal dataset.
+- Each measured local operation has the requirements-level 100 ms budget.
+- The full suite passes 116 tests: 41 domain, 6 cryptography, and 69
+  application tests.
+- This verifier covers synchronous local interaction work only; signed
+  release-device timing and hosted realtime latency remain separate gates.
+
 Latest committed implementation milestones:
 
 - Cached per-user reminder-device authorization for offline startup
@@ -312,10 +326,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 110 automated tests pass:
+- 116 automated tests pass:
   - 41 domain tests
   - 6 cryptography tests
-  - 63 application integration tests
+  - 69 application integration tests
 - All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.

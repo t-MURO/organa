@@ -27,6 +27,7 @@ import { useDevices } from "../account/device-context";
 import { selectRestoreChanges } from "../account/restore-merge";
 import { useInteractionFeedback } from "../settings/interaction-feedback-context";
 import { reconcileRemoteTaskChange } from "./remote-task-reconciliation";
+import { removeTaskFromList, upsertTaskInList } from "./task-state-model";
 
 interface TaskState {
   loading: boolean;
@@ -86,20 +87,15 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
     case "loaded":
       return { loading: false, tasks: action.tasks };
     case "upserted": {
-      const exists = state.tasks.some((task) => task.id === action.task.id);
       return {
         ...state,
-        tasks: exists
-          ? state.tasks.map((task) =>
-              task.id === action.task.id ? action.task : task,
-            )
-          : [...state.tasks, action.task],
+        tasks: upsertTaskInList(state.tasks, action.task),
       };
     }
     case "removed":
       return {
         ...state,
-        tasks: state.tasks.filter((task) => task.id !== action.id),
+        tasks: removeTaskFromList(state.tasks, action.id),
       };
   }
 }

@@ -17,6 +17,7 @@
     "verify:web-push": "node scripts/verify-web-push-protocol.mjs",
     "verify:supabase": "node scripts/verify-local-supabase-all.mjs",
     "verify:platform": "node scripts/verify-platform-config.mjs",
+    "verify:performance": "vitest run src/performance/local-task-performance.test.ts --reporter=verbose",
     "web": "expo start --web"
   },
   "dependencies": {

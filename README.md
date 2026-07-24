@@ -78,6 +78,7 @@ Expo Go.
 pnpm typecheck
 pnpm test
 pnpm verify:platform
+pnpm verify:performance
 pnpm verify:yjs-runtime
 pnpm verify:web-push
 pnpm build:native
