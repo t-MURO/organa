@@ -93,9 +93,12 @@ sh initialize-official-supabase.sh --fresh
 ```
 
 The initializer creates the mode-600 `.env` before invoking either upstream
-key generator, runs both generators in explicit update mode, and finishes with
-Organa's non-secret-leaking key preflight. It refuses to run if any `.env`
-path already exists so an existing instance cannot be rotated accidentally.
+key generator, runs both generators in explicit update mode, captures their
+credential-bearing output in a mode-600 temporary file that is removed on
+success or interruption, and finishes with Organa's non-secret-leaking key
+preflight. On failure it prints only upstream error/warning lines and withholds
+generated values. It refuses to run if any `.env` path already exists so an
+existing instance cannot be rotated accidentally.
 
 If `add-new-auth-keys.sh` was run directly and reports that `.env` is missing,
 stop and verify the current directory before rerunning either key script. Use
@@ -116,9 +119,10 @@ sh validate-self-hosted.sh keys
 
 All six paths in the `ls` command must exist. If they do not, return to
 `$HOME/organa-supabase` or the directory where the official Docker files were
-copied. The scripts print generated credentials while writing them; do not
-copy their output into chat, logs, screenshots, or shell-history notes, and do
-not print or share the generated `.env`.
+copied. The manual upstream scripts print generated credentials while writing
+them; do not copy their output into chat, logs, screenshots, or shell-history
+notes, and do not print or share the generated `.env`. Organa's initializer
+suppresses that credential output, so prefer it for a fresh stack.
 
 Record the printed Git revision outside the server's secret files. Review the
 generated `.env`; never run the example passwords or keys. The second script

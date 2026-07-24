@@ -1419,6 +1419,23 @@ No tests were added, changed, or run for this milestone.
 - This is direct clean-client application evidence, not a claim of physical
   iOS/Android validation. A release-device repeat remains explicit.
 
+## Current Supabase Docker Initializer Smoke
+
+- A disposable sparse checkout of the current official Supabase Docker
+  directory at revision `8e75147f0c2a24202e0d53c75cddc5e3e06c531d`
+  completed Organa's fresh initializer and key preflight without starting or
+  modifying the development stack.
+- The smoke confirms the current upstream `--update-env`, opaque publishable
+  and secret keys, asymmetric JWT/JWKS, and Compose key paths remain compatible
+  with Organa's home-server bootstrap.
+- The initializer now keeps upstream credential-bearing generator output in a
+  mode-600 temporary directory, removes it on success or interruption, and
+  prints only safe error/warning lines on failure. Fresh setup no longer places
+  generated credentials in terminal scrollback or ordinary redirected output.
+- This is local upstream-compatibility evidence only. The user's actual
+  home-server URL, TLS, SMTP/OAuth, functions, schedulers, migrations, and
+  connected verifier remain separate gates.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
