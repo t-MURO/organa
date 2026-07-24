@@ -34,7 +34,7 @@ Status recorded on 2026-07-24.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 98 automated tests pass: 39 domain, 6 cryptography, and 53 application tests
+- 99 automated tests pass: 39 domain, 6 cryptography, and 54 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
@@ -80,6 +80,9 @@ Local evidence:
 - account deletion and device revocation clear scheduled and displayed native
   notifications; iOS also replaces both widget timelines with content-free
   states before local database deletion
+- normal and Supabase-driven sign-out clear scheduled/displayed native
+  notifications and replace iOS widget timelines with content-free states
+  without deleting the returning user's local repositories
 - per-user reminder authorization is restored from a content-free local cache
   during offline startup; unresolved ownership does not cancel existing native
   schedules, and fresh server device state always overrides the cache

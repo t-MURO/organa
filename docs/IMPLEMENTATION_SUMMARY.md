@@ -42,6 +42,30 @@ Verification completed for the reminder-authorization work:
 Both iOS and Android Hermes exports pass with the reminder-authorization
 changes.
 
+## Sign-Out Privacy Milestone
+
+This milestone prevents task, medication, and reminder content from remaining
+visible on native system surfaces after authentication ends:
+
+- The central authentication boundary clears private platform state after a
+  successful local sign-out.
+- Supabase-driven `SIGNED_OUT` events invoke the same cleanup, covering session
+  termination outside the Account screen.
+- Native cleanup cancels all scheduled notifications and dismisses displayed
+  notifications.
+- iOS replaces Today Tasks and Next Reminder widget timelines with
+  content-free states.
+- Widget and notification cleanup operations are failure-isolated with
+  `Promise.allSettled`, so one platform API failure cannot prevent the others
+  from running.
+- Normal sign-out deliberately retains local repositories, the content key,
+  and trusted-device identity for a later authenticated offline return.
+  Revocation and final account deletion continue to perform full local erasure.
+- The complete suite passes 99 tests: 39 domain, 6 cryptography, and 54
+  application tests.
+- Strict TypeScript, the configured production PWA with all 12 artifact
+  checks, and iOS and Android Hermes exports pass.
+
 ## Product Implemented
 
 Organa is implemented as a shared Expo application for iOS, Android, responsive
@@ -164,10 +188,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 98 automated tests pass:
+- 99 automated tests pass:
   - 39 domain tests
   - 6 cryptography tests
-  - 53 application integration tests
+  - 54 application integration tests
 - All three migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
@@ -269,7 +293,7 @@ This milestone includes:
 - Checked-in local confirmation and returning-user email templates that send
   the six-digit code expected by Organa
 - Web-storage and email-template regression tests; the complete automated suite
-  currently passes 98 tests
+  currently passes 99 tests
 
 Local Supabase has been reset successfully from all three migrations, database
 lint reports no schema errors, and all 43 live backend checks pass.
@@ -370,7 +394,7 @@ Automated coverage added in this milestone includes:
 - Invalid recurrence rejection tests
 - Inbox placement, search, overdue, completed, undated, and grace-window tests
 
-The current automated suite passes 98 tests: 39 domain, 6 cryptography, and 53
+The current automated suite passes 99 tests: 39 domain, 6 cryptography, and 54
 application tests. At the task-semantics milestone, Strict TypeScript,
 `git diff --check`, the configured production PWA build with all 12 artifact
 checks, and iOS and Android Hermes exports also passed.

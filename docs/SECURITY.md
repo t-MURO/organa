@@ -142,6 +142,13 @@ state. A device that remains offline cannot learn that it was revoked; the
 reconnect path makes the fresh server state authoritative and performs private
 local cleanup.
 
+Normal sign-out has a narrower privacy boundary than revocation or deletion.
+It cancels scheduled native notifications, dismisses displayed notifications,
+and replaces iOS widget timelines with content-free states. It retains local
+repositories, the content-key vault, and device identity so the same trusted
+device can recover its offline state after a future successful sign-in.
+Supabase-driven `SIGNED_OUT` events use the same private-surface cleanup.
+
 Content-key rotation after device compromise is not implemented in this MVP.
 Treat that as a production threat-model decision, not as a guaranteed remote
 wipe.

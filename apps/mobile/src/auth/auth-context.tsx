@@ -10,6 +10,7 @@ import {
 } from "react";
 import { AppState, Platform } from "react-native";
 
+import { clearPrivatePlatformState } from "../data/clear-private-platform-state";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
 WebBrowser.maybeCompleteAuthSession();
@@ -51,9 +52,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       }
     });
 
-    const { data } = client.auth.onAuthStateChange((_event, nextSession) => {
+    const { data } = client.auth.onAuthStateChange((event, nextSession) => {
       setSession(nextSession);
       setLoading(false);
+      if (event === "SIGNED_OUT") {
+        void clearPrivatePlatformState();
+      }
     });
 
     const appStateSubscription =
@@ -117,9 +121,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   async function signOut() {
     setLocalPreview(false);
-    if (!supabase) return;
+    if (!supabase) {
+      await clearPrivatePlatformState();
+      return;
+    }
     const result = await supabase.auth.signOut({ scope: "local" });
     if (result.error) throw result.error;
+    await clearPrivatePlatformState();
   }
 
   return (
