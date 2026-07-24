@@ -1093,6 +1093,31 @@ offline-first merge behavior:
   checks, iOS and Android Hermes exports, and the production dependency audit
   pass. No tests were added, changed, or run for this milestone.
 
+## Local Browser Walkthrough
+
+On 2026-07-24, the running Expo web development build was exercised directly
+at desktop width without a connected backend:
+
+- The signed-out boundary explained the two required public Supabase values
+  without exposing or requesting any server secret, and local preview remained
+  an explicit user action.
+- Today, Check-In, Brain Dump, Library, and Account all rendered with their
+  expected semantic controls and preview data.
+- Completing a task worked only through its checkbox, displayed a checkmark
+  and Undo during the five-second fade, then removed the task from active
+  priority and inbox counts.
+- The task editor exposed task type, priority, date-only planning and deadline
+  fields, optional scheduled/due times, recurrence, dose confirmation,
+  reminders, editable snooze presets, and subtasks.
+- Focus mode exposed an optional timer, the task's saved snooze presets, and a
+  checkbox-only completion action.
+- Browser runtime logs contained no warning or error from Organa during the
+  walkthrough. Only the expected React development-mode informational messages
+  were present.
+
+This walkthrough does not replace connected-backend, physical-device,
+production-build, screen-reader, or independent security evidence.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
