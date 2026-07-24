@@ -6,11 +6,36 @@ type YjsModule = typeof import("yjs");
 
 let yjsModule: YjsModule | undefined;
 
+export const brainDumpCompactionThreshold = 64;
+
 export interface BrainDumpCrdtUpdate {
   bulletId: string;
   createdAt: string;
   id: string;
   update: string;
+}
+
+export function createBrainDumpUpdateId(
+  bulletId: string,
+  suffix: string,
+) {
+  const prefix = brainDumpUpdatePrefix(bulletId);
+  return prefix ? `${prefix}${suffix}` : `brain-update-${suffix}`;
+}
+
+export function isCompactableBrainDumpUpdate(
+  update: BrainDumpCrdtUpdate,
+) {
+  const prefix = brainDumpUpdatePrefix(update.bulletId);
+  return Boolean(
+    prefix && update.id.startsWith(prefix) && update.id.length <= 256,
+  );
+}
+
+function brainDumpUpdatePrefix(bulletId: string) {
+  return /^thought-[a-z0-9]+-[a-z0-9]+$/.test(bulletId)
+    ? `brain-update:${bulletId}:`
+    : undefined;
 }
 
 export function initializeCrdtBullet(bullet: BrainDumpBullet) {

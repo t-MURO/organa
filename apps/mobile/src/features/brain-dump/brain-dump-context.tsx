@@ -19,8 +19,11 @@ import { createBrainDumpRepository } from "../../data/create-brain-dump-reposito
 import { useSync } from "../../sync/sync-context";
 import {
   applyCrdtUpdate,
+  brainDumpCompactionThreshold,
+  createBrainDumpUpdateId,
   editCrdtBullet,
   initializeCrdtBullet,
+  isCompactableBrainDumpUpdate,
   mergeCrdtBullets,
   type BrainDumpCrdtUpdate,
 } from "./brain-dump-crdt";
@@ -101,10 +104,17 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
   const pendingUpdates = useRef(
     new Map<string, BrainDumpCrdtUpdate[]>(),
   );
+  const confirmedUpdateIds = useRef(new Map<string, Set<string>>());
+  const compactingBullets = useRef(new Set<string>());
+  const namespaceRef = useRef(namespace);
+  namespaceRef.current = namespace;
   stateRef.current = state;
 
   useEffect(() => {
     let active = true;
+    pendingUpdates.current.clear();
+    confirmedUpdateIds.current.clear();
+    compactingBullets.current.clear();
 
     async function load() {
       await repository.initialize();
@@ -132,6 +142,8 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
           dispatch({ type: "removed", id: change.recordId });
           void repository.remove(change.recordId);
           pendingUpdates.current.delete(change.recordId);
+          confirmedUpdateIds.current.delete(change.recordId);
+          compactingBullets.current.delete(change.recordId);
           return;
         }
         if (!change.value) return;
@@ -141,10 +153,12 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
         let merged = mergeCrdtBullets(local, change.value);
         for (const update of pendingUpdates.current.get(change.recordId) ?? []) {
           merged = applyCrdtUpdate(merged, update);
+          rememberConfirmedUpdate(update);
         }
         pendingUpdates.current.delete(change.recordId);
         dispatch({ type: "upserted", bullet: merged });
         void repository.upsert(merged);
+        maybeCompact(merged);
       }),
     [repository],
   );
@@ -154,7 +168,12 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       sync.subscribe<BrainDumpCrdtUpdate>(
         "brain_dump_update",
         (change) => {
-          if (change.operation === "delete" || !change.value) return;
+          if (change.operation === "delete") {
+            forgetConfirmedUpdate(change.recordId);
+            return;
+          }
+          if (!change.value) return;
+          rememberConfirmedUpdate(change.value);
           const local = stateRef.current.bullets.find(
             (bullet) => bullet.id === change.value?.bulletId,
           );
@@ -170,10 +189,18 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
           const merged = applyCrdtUpdate(local, change.value);
           dispatch({ type: "upserted", bullet: merged });
           void repository.upsert(merged);
+          maybeCompact(merged);
         },
       ),
     [repository],
   );
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      stateRef.current.bullets.forEach(maybeCompact);
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [sync]);
 
   function addBullet(text = "", afterId?: string) {
     const bullet = initializeCrdtBullet(
@@ -195,9 +222,12 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
     const result = editCrdtBullet(
       bullet,
       text,
-      `brain-update-${Date.now().toString(36)}-${Math.random()
-        .toString(36)
-        .slice(2, 9)}`,
+      createBrainDumpUpdateId(
+        bullet.id,
+        `${Date.now().toString(36)}-${Math.random()
+          .toString(36)
+          .slice(2, 9)}`,
+      ),
     );
     dispatch({ type: "upserted", bullet: result.bullet });
     void repository.upsert(result.bullet);
@@ -212,6 +242,52 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
     dispatch({ type: "removed", id });
     void repository.remove(id);
     void sync.queueDelete("brain_dump_bullet", id);
+    confirmedUpdateIds.current.delete(id);
+    compactingBullets.current.delete(id);
+  }
+
+  function rememberConfirmedUpdate(update: BrainDumpCrdtUpdate) {
+    if (!isCompactableBrainDumpUpdate(update)) return;
+    const ids =
+      confirmedUpdateIds.current.get(update.bulletId) ?? new Set<string>();
+    ids.add(update.id);
+    confirmedUpdateIds.current.set(update.bulletId, ids);
+  }
+
+  function forgetConfirmedUpdate(updateId: string) {
+    for (const [bulletId, ids] of confirmedUpdateIds.current) {
+      ids.delete(updateId);
+      if (ids.size === 0) confirmedUpdateIds.current.delete(bulletId);
+    }
+  }
+
+  function maybeCompact(bullet: BrainDumpBullet) {
+    const compactionNamespace = namespace;
+    if (namespaceRef.current !== compactionNamespace) return;
+    const ids = confirmedUpdateIds.current.get(bullet.id);
+    if (
+      !ids ||
+      ids.size < brainDumpCompactionThreshold ||
+      compactingBullets.current.has(bullet.id)
+    ) {
+      return;
+    }
+
+    const includedIds = [...ids].sort();
+    compactingBullets.current.add(bullet.id);
+    void sync
+      .compactBrainDumpUpdates(bullet.id, bullet, includedIds)
+      .then((compacted) => {
+        if (!compacted || namespaceRef.current !== compactionNamespace) return;
+        const current = confirmedUpdateIds.current.get(bullet.id);
+        if (!current) return;
+        includedIds.forEach((id) => current.delete(id));
+        if (current.size === 0) confirmedUpdateIds.current.delete(bullet.id);
+      })
+      .finally(() => {
+        if (namespaceRef.current !== compactionNamespace) return;
+        compactingBullets.current.delete(bullet.id);
+      });
   }
 
   async function restoreBullets(bullets: BrainDumpBullet[]) {

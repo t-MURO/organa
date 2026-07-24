@@ -86,6 +86,7 @@ operational metadata and must never contain user-entered text.
 | Key ID and recovery envelope ciphertext | Recovery | Until account deletion or future key rotation |
 | Record type, opaque ID, encrypted field names, versions, timestamps, tombstones | Durable field merge and reconciliation | Current records until account deletion |
 | Previous encrypted record versions | Temporary conflict recovery | Seven days, pruned opportunistically on later mutations |
+| Brain Dump Yjs update ciphertext | Offline and concurrent text merge | New bullet-scoped updates compact into the canonical encrypted snapshot after 64 server-confirmed deltas; covered update/history rows are deleted and their mutation-receipt ciphertext is cleared. Legacy-format updates remain until account deletion for backward compatibility |
 | Mutation ID, operation, versions, timestamps | Idempotent retry evidence | Currently until account deletion |
 | Device approval timestamps and target-bound envelope ciphertext | Short-lived trusted-device handoff | One row per device; envelope clears on claim, row may remain until replacement, rejection, or account deletion |
 | Account-deletion timestamps | One-hour cancellation and finalization | Until Auth user deletion cascades the account |

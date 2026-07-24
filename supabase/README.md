@@ -85,6 +85,9 @@ The migration:
 - routes encrypted writes and device changes through validated
   security-definer RPCs
 - keeps structured conflict history for seven days
+- atomically compacts new bullet-scoped Brain Dump deltas into an encrypted
+  canonical snapshot only when the client's exact server-confirmed update set
+  is still current; legacy deltas remain compatible
 - authorizes only the signed-in user's private Realtime topics
 - broadcasts opaque record identifiers rather than plaintext content
 - stores browser Push capabilities and content-free schedule metadata behind

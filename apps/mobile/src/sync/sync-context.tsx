@@ -34,6 +34,11 @@ interface SyncContextValue {
   lastSyncedAt?: string;
   pending: number;
   status: "local" | "offline" | "syncing" | "synced" | "error";
+  compactBrainDumpUpdates(
+    bulletId: string,
+    snapshot: unknown,
+    updateIds: string[],
+  ): Promise<boolean>;
   flush(): Promise<void>;
   queueDelete(recordType: SyncRecordType, recordId: string): Promise<void>;
   queueUpsert(
@@ -217,6 +222,54 @@ export function SyncProvider({ children }: PropsWithChildren) {
       recordType,
       userId: auth.user.id,
     });
+  }
+
+  async function compactBrainDumpUpdates(
+    bulletId: string,
+    snapshot: unknown,
+    updateIds: string[],
+  ) {
+    try {
+      const normalizedUpdateIds = [...new Set(updateIds)].sort();
+      if (
+        !auth.user ||
+        !supabase ||
+        !security.device ||
+        normalizedUpdateIds.length < 1 ||
+        normalizedUpdateIds.length > 4096
+      ) {
+        return false;
+      }
+      const timestamp = new Date().toISOString();
+      const snapshotRecord = asRecord(snapshot);
+      const ciphertext: EncryptedFieldPatch = {};
+      const fieldVersions: Record<string, string> = {};
+      for (const [field, value] of Object.entries(snapshotRecord)) {
+        ciphertext[field] = await security.encryptRecord(
+          "brain_dump_bullet",
+          `${bulletId}:${field}`,
+          { present: true, value },
+        );
+        fieldVersions[field] = timestamp;
+      }
+      if (Object.keys(ciphertext).length === 0) return false;
+
+      const result = await supabase.rpc("compact_brain_dump_updates", {
+        p_bullet_id: bulletId,
+        p_ciphertext: ciphertext,
+        p_created_at: timestamp,
+        p_device_id: security.device.id,
+        p_device_proof: security.device.secret,
+        p_field_versions: fieldVersions,
+        p_mutation_id: randomUUID(),
+        p_update_ids: normalizedUpdateIds,
+      });
+      if (result.error) return false;
+      setLastSyncedAt(new Date().toISOString());
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async function enqueue(mutation: EncryptedMutation) {
@@ -479,6 +532,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
   return (
     <SyncContext.Provider
       value={{
+        compactBrainDumpUpdates,
         error: readError || outboxError,
         flush,
         lastSyncedAt,

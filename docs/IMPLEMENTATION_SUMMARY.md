@@ -3,8 +3,8 @@
 Status recorded on 2026-07-24.
 
 This is the structured pause checkpoint requested after the implementation
-work. The locally verified implementation is complete through the PWA update
-reliability and browser update-drill milestones described below.
+work. The locally verified implementation is complete through the Brain Dump
+compaction milestone described below.
 `docs/REQUIREMENTS_TRACEABILITY.md` maps every controlled-beta acceptance
 criterion to direct evidence and its remaining gate.
 
@@ -24,6 +24,7 @@ Committed and verified milestones:
 - Recurrence, grace-day, inbox, and undated-task semantics
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
+- Race-safe encrypted Yjs update compaction for Brain Dump
 - Native OAuth callback recovery across browser completion, resume, and cold
   start
 - Native-only completion haptics with non-disruptive feedback failure handling
@@ -1015,6 +1016,31 @@ switching:
 - `pnpm verify:supabase` passes 37 authenticated database checks, including two
   real primary switches across trusted devices, plus 12 live deletion-function
   checks.
+
+## Brain Dump Compaction Milestone
+
+This milestone bounds future Brain Dump delta growth without weakening its
+offline-first merge behavior:
+
+- New edits use recognizable, bullet-scoped update identifiers; legacy update
+  identifiers remain readable and are never deleted by compaction.
+- A client begins compaction only after it has observed 64 server-confirmed
+  compactable updates for one bullet. It sends a complete encrypted canonical
+  snapshot and the exact identifiers that snapshot covers.
+- PostgreSQL serializes compactable writes and compaction with a per-account,
+  per-bullet advisory transaction lock. It also locks the canonical bullet and
+  rejects the operation if an extra concurrent update exists.
+- Success updates the canonical encrypted snapshot atomically, deletes only
+  the covered delta and temporary-history rows, and clears duplicate
+  ciphertext from the retained idempotency receipts.
+- Failure, loss of connectivity, an account switch, or a racing edit leaves
+  the deltas intact. The client retries opportunistically, while later offline
+  outbox delivery remains safe through Yjs's idempotent update application.
+- The migration applied to the existing local Supabase stack and
+  `supabase db lint --local --level warning` reported no schema errors.
+- Uncached strict TypeScript, the production web/PWA build with all 18 artifact
+  checks, iOS and Android Hermes exports, and the production dependency audit
+  pass. No tests were added, changed, or run for this milestone.
 
 ## Remaining Acceptance Gates
 

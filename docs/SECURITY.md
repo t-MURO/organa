@@ -269,8 +269,22 @@ wipe.
 - Yjs is loaded once, on first CRDT use, rather than during Expo server
   rendering; `pnpm verify:yjs-runtime` guards against duplicate runtime
   evaluation.
-- Yjs update records currently accumulate and need a compaction policy before
-  high-volume production use.
+- New app-generated Yjs updates use bullet-scoped identifiers. After 64 of
+  those updates are confirmed by the server, the client opportunistically
+  submits a complete encrypted bullet snapshot plus the exact covered update
+  identifiers.
+- Compaction takes a per-account, per-bullet advisory transaction lock, locks
+  the canonical bullet, and proceeds only when the supplied update set exactly
+  matches the server's current compactable set. A concurrent edit therefore
+  defers compaction instead of being discarded.
+- A successful compaction atomically updates the encrypted canonical snapshot,
+  removes only the covered update rows and their temporary history, and clears
+  their ciphertext from retained idempotency receipts. Legacy update
+  identifiers are never pruned by this protocol, so older clients remain
+  compatible.
+- Compaction is optional for correctness. Offline and unconfirmed updates
+  remain durable through the normal outbox and are still safe to replay after
+  a compacted snapshot because Yjs updates are idempotent.
 
 ## Export And Deletion
 

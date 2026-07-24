@@ -16,6 +16,8 @@ Status recorded on 2026-07-24.
 - [x] Focus mode and reminder deep links
 - [x] Optional Check-In mood/reflection/search/trends/reminder setting
 - [x] Continuous searchable Brain Dump and Yjs merge tests
+- [x] Race-safe encrypted Brain Dump update compaction with exact-set locking,
+  offline-safe retry, legacy-client compatibility, and bounded new delta rows
 - [x] SQLite native persistence and IndexedDB web persistence
 - [x] Encrypted field outbox, idempotent RPC contract, private Broadcast, and
   incremental durable reconciliation integration
