@@ -1620,6 +1620,25 @@ No tests were added, changed, or run for this milestone.
   per-second countdown remains outside live-region announcements.
 - No test files were added or changed for this milestone.
 
+## Owner-Serialized Native Private State
+
+- Android widget timeline persistence was asynchronous and could finish after
+  sign-out or final-deletion cleanup, repopulating secure widget storage and
+  redrawing stale task text.
+- iOS and Android widget publishing now run through a single owner-aware
+  operation queue. Android persists and redraws in order; cleanup invalidates
+  the owner synchronously and queues a content-free timeline after every
+  earlier operation.
+- Native task reminders, Check-In reminders, Focus snoozes, and snoozes created
+  from notification actions now share a second owner-aware queue. Switching
+  owners inserts a cancel-all barrier before new schedules, while privacy
+  cleanup waits for every earlier permission, scheduling, or cancellation
+  operation and then clears scheduled, presented, and response state.
+- A stale owner is checked before each queued operation. If ownership changes
+  during an already-running native call, the queued cleanup barrier follows it
+  and remains authoritative.
+- No test files were added or changed for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

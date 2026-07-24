@@ -261,6 +261,14 @@ Local evidence:
 - normal and Supabase-driven sign-out clear scheduled/displayed native
   notifications and replace iOS/Android widgets with content-free states
   without deleting the returning user's local repositories
+- native widget publishing is serialized and owner-scoped; Android timeline
+  persistence and widget redraw are one ordered operation, and account cleanup
+  is a final content-free barrier that cannot be followed by an in-flight old
+  account write
+- task, Check-In, Focus, and notification-action scheduling share an
+  owner-aware native notification queue; account changes insert a cancel-all
+  barrier, and sign-out/deletion cleanup waits behind every earlier permission,
+  cancellation, or scheduling operation before removing private notifications
 - native privacy cleanup also clears Expo's last notification-response payload,
   preventing a later account from inheriting a previous task/check-in route;
   web active-tab reminder history is owner-scoped and all Organa history keys

@@ -2,34 +2,44 @@ import * as Notifications from "expo-notifications";
 
 import NextReminderWidget from "../../widgets/NextReminderWidget";
 import TodayTasksWidget from "../../widgets/TodayTasksWidget";
+import { clearWidgetPrivateState } from "../features/widgets/widget-private-state";
+import { clearNotificationPrivateState } from "./notification-private-state";
 
 export async function clearPrivatePlatformState() {
   const now = new Date();
   await Promise.allSettled([
-    Promise.resolve().then(() =>
-      TodayTasksWidget.updateTimeline([
-        {
-          date: now,
-          props: { remaining: 0, tasks: [] },
-        },
+    clearWidgetPrivateState().catch(() =>
+      Promise.allSettled([
+        Promise.resolve().then(() =>
+          TodayTasksWidget.updateTimeline([
+            {
+              date: now,
+              props: { remaining: 0, tasks: [] },
+            },
+          ]),
+        ),
+        Promise.resolve().then(() =>
+          NextReminderWidget.updateTimeline([
+            {
+              date: now,
+              props: {
+                deepLink: "organa:///",
+                time: "--:--",
+                title: "No upcoming reminder",
+              },
+            },
+          ]),
+        ),
       ]),
     ),
-    Promise.resolve().then(() =>
-      NextReminderWidget.updateTimeline([
-        {
-          date: now,
-          props: {
-            deepLink: "organa:///",
-            time: "--:--",
-            title: "No upcoming reminder",
-          },
-        },
+    clearNotificationPrivateState().catch(() =>
+      Promise.allSettled([
+        Promise.resolve().then(() =>
+          Notifications.clearLastNotificationResponse(),
+        ),
+        Notifications.cancelAllScheduledNotificationsAsync(),
+        Notifications.dismissAllNotificationsAsync(),
       ]),
     ),
-    Promise.resolve().then(() =>
-      Notifications.clearLastNotificationResponse(),
-    ),
-    Notifications.cancelAllScheduledNotificationsAsync(),
-    Notifications.dismissAllNotificationsAsync(),
   ]);
 }

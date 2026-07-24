@@ -18,6 +18,7 @@ import { useAuth } from "../../auth/auth-context";
 import { createCheckInReminderScheduler } from "../../data/create-check-in-reminder-scheduler";
 import type { CheckInReminderSyncResult } from "../../data/check-in-reminder-scheduler.types";
 import { createSettingsRepository } from "../../data/create-settings-repository";
+import { runNotificationOperation } from "../../data/notification-private-state";
 import { useSync } from "../../sync/sync-context";
 import { useDevices } from "../account/device-context";
 
@@ -48,12 +49,16 @@ function initializeReminderScheduler() {
 
 async function syncCheckInReminder(
   settings: UserSettings,
+  ownerId: string,
   requestPermission: boolean,
   report: (message: string) => void,
 ) {
   try {
-    await initializeReminderScheduler();
-    const result = await reminderScheduler.sync(settings, requestPermission);
+    const result = await runNotificationOperation(ownerId, async () => {
+      await initializeReminderScheduler();
+      return reminderScheduler.sync(settings, requestPermission);
+    });
+    if (!result) return;
     if (!settings.checkInReminder.enabled) return;
     const notice = checkInReminderNoticeFor(result);
     if (notice) report(notice);
@@ -100,6 +105,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
         if (devices.reminderAuthorizationReady) {
           void syncCheckInReminder(
             reminderSettings(stored, devices.remindersAllowed),
+            namespace,
             false,
             setCheckInReminderNotice,
           );
@@ -111,18 +117,20 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [repository]);
+  }, [namespace, repository]);
 
   useEffect(() => {
     if (!devices.reminderAuthorizationReady) return;
     void syncCheckInReminder(
       reminderSettings(settings, devices.remindersAllowed),
+      namespace,
       false,
       setCheckInReminderNotice,
     );
   }, [
     devices.reminderAuthorizationReady,
     devices.remindersAllowed,
+    namespace,
   ]);
 
   useEffect(
@@ -136,6 +144,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
         if (devices.reminderAuthorizationReady) {
           void syncCheckInReminder(
             reminderSettings(next, devices.remindersAllowed),
+            namespace,
             false,
             setCheckInReminderNotice,
           );
@@ -144,6 +153,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     [
       devices.reminderAuthorizationReady,
       devices.remindersAllowed,
+      namespace,
       repository,
     ],
   );
@@ -157,6 +167,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     if (devices.reminderAuthorizationReady) {
       void syncCheckInReminder(
         reminderSettings(next, devices.remindersAllowed),
+        namespace,
         Boolean(input.checkInReminder?.enabled) && devices.remindersAllowed,
         setCheckInReminderNotice,
       );
@@ -180,6 +191,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     if (devices.reminderAuthorizationReady) {
       await syncCheckInReminder(
         reminderSettings(next, devices.remindersAllowed),
+        namespace,
         next.checkInReminder.enabled && devices.remindersAllowed,
         setCheckInReminderNotice,
       );

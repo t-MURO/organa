@@ -303,6 +303,14 @@ snooze event must match the active owner, and its displayed task title and
 presets are rebuilt from that owner's current task rather than trusted from
 the captured timeout payload.
 
+Native task, Check-In, Focus, and notification-action scheduling operations
+share an owner-aware serialized queue. Changing owner inserts a cancel-all
+barrier before next-account schedules, and privacy cleanup runs after every
+earlier in-flight native operation. Native widget timeline writes use the same
+pattern: Android secure timeline persistence and widget redraw are serialized,
+and iOS/Android content-free cleanup cannot be undone by a delayed old-account
+update.
+
 Content-key rotation after device compromise is not implemented in this MVP.
 Treat that as a production threat-model decision, not as a guaranteed remote
 wipe.

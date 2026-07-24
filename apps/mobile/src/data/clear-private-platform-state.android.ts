@@ -5,15 +5,25 @@ import {
   contentFreeAndroidWidgetSnapshot,
 } from "../features/widgets/android-widget-snapshot.android";
 import { updateAndroidWidgets } from "../features/widgets/android-widget-update.android";
+import { clearWidgetPrivateState } from "../features/widgets/widget-private-state";
+import { clearNotificationPrivateState } from "./notification-private-state";
 
 export async function clearPrivatePlatformState() {
-  await clearAndroidWidgetTimeline().catch(() => undefined);
   await Promise.allSettled([
-    updateAndroidWidgets(contentFreeAndroidWidgetSnapshot()),
-    Promise.resolve().then(() =>
-      Notifications.clearLastNotificationResponse(),
+    clearWidgetPrivateState().catch(() =>
+      Promise.allSettled([
+        clearAndroidWidgetTimeline(),
+        updateAndroidWidgets(contentFreeAndroidWidgetSnapshot()),
+      ]),
     ),
-    Notifications.cancelAllScheduledNotificationsAsync(),
-    Notifications.dismissAllNotificationsAsync(),
+    clearNotificationPrivateState().catch(() =>
+      Promise.allSettled([
+        Promise.resolve().then(() =>
+          Notifications.clearLastNotificationResponse(),
+        ),
+        Notifications.cancelAllScheduledNotificationsAsync(),
+        Notifications.dismissAllNotificationsAsync(),
+      ]),
+    ),
   ]);
 }

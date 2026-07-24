@@ -1,26 +1,32 @@
 import { useEffect } from "react";
 
+import { useAuth } from "../../auth/auth-context";
 import { useTasks } from "../tasks/task-context";
-import {
-  resolveAndroidWidgetSnapshot,
-  saveAndroidWidgetTimeline,
-  toAndroidWidgetTimeline,
-} from "./android-widget-snapshot.android";
-import { updateAndroidWidgets } from "./android-widget-update.android";
 import { buildWidgetTimeline } from "./widget-snapshot";
+import {
+  activateWidgetOwner,
+  publishWidgetTimeline,
+} from "./widget-private-state";
 
 export function WidgetCoordinator() {
+  const auth = useAuth();
   const { loading, tasks } = useTasks();
+  const ownerId = auth.localPreview ? "local-preview" : auth.user?.id;
+
+  useEffect(
+    () => (ownerId ? activateWidgetOwner(ownerId) : undefined),
+    [ownerId],
+  );
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !ownerId) return;
     const now = new Date();
-    const timeline = toAndroidWidgetTimeline(buildWidgetTimeline(tasks, now));
-    const snapshot = resolveAndroidWidgetSnapshot(timeline, now);
-    void saveAndroidWidgetTimeline(timeline)
-      .catch(() => undefined)
-      .then(() => updateAndroidWidgets(snapshot));
-  }, [loading, tasks]);
+    void publishWidgetTimeline(
+      ownerId,
+      buildWidgetTimeline(tasks, now),
+      now,
+    ).catch(() => undefined);
+  }, [loading, ownerId, tasks]);
 
   return null;
 }

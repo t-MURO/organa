@@ -1,50 +1,32 @@
 import { useEffect } from "react";
 
-import NextReminderWidget from "../../../widgets/NextReminderWidget";
-import TodayTasksWidget from "../../../widgets/TodayTasksWidget";
+import { useAuth } from "../../auth/auth-context";
 import { useTasks } from "../tasks/task-context";
 import { buildWidgetTimeline } from "./widget-snapshot";
+import {
+  activateWidgetOwner,
+  publishWidgetTimeline,
+} from "./widget-private-state";
 
 export function WidgetCoordinator() {
+  const auth = useAuth();
   const { loading, tasks } = useTasks();
+  const ownerId = auth.localPreview ? "local-preview" : auth.user?.id;
+
+  useEffect(
+    () => (ownerId ? activateWidgetOwner(ownerId) : undefined),
+    [ownerId],
+  );
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || !ownerId) return;
     const now = new Date();
-    const timeline = buildWidgetTimeline(tasks, now);
-    TodayTasksWidget.updateTimeline(
-      timeline.today.map((entry) => ({
-        date: entry.date,
-        props: {
-          remaining: entry.value.remaining,
-          tasks: entry.value.tasks,
-        },
-      })),
-    );
-    NextReminderWidget.updateTimeline(
-      timeline.nextReminder.map((entry) => ({
-        date: entry.date,
-        props: nextReminderProps(entry.value),
-      })),
-    );
-  }, [loading, tasks]);
+    void publishWidgetTimeline(
+      ownerId,
+      buildWidgetTimeline(tasks, now),
+      now,
+    ).catch(() => undefined);
+  }, [loading, ownerId, tasks]);
 
   return null;
-}
-
-function nextReminderProps(
-  next: ReturnType<typeof buildWidgetTimeline>["nextReminder"][number]["value"],
-) {
-  return {
-    deepLink: next
-      ? `organa:///focus?taskId=${encodeURIComponent(next.taskId)}`
-      : "organa:///",
-    time: next
-      ? next.time.toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "--:--",
-    title: next?.title ?? "No upcoming reminder",
-  };
 }

@@ -10,6 +10,7 @@ import {
 
 import { useAuth } from "../../auth/auth-context";
 import { supabase } from "../../auth/supabase";
+import { activateNotificationOwner } from "../../data/notification-private-state";
 import { useSecurity } from "../../security/security-context";
 import { eraseLocalAccount } from "./erase-local-account";
 import { reminderAuthorizationCache } from "./reminder-authorization-cache";
@@ -60,6 +61,17 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     string | null
   >(null);
   const localErasureHandled = useRef(false);
+  const notificationOwnerId = auth.localPreview
+    ? "local-preview"
+    : auth.user?.id;
+
+  useEffect(
+    () =>
+      notificationOwnerId
+        ? activateNotificationOwner(notificationOwnerId)
+        : undefined,
+    [notificationOwnerId],
+  );
 
   async function refresh() {
     if (auth.localPreview || !auth.user || !supabase) {

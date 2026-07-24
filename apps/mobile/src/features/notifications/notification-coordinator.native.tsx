@@ -2,18 +2,22 @@ import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 
+import { useAuth } from "../../auth/auth-context";
 import {
   gentleReminderChannelId,
   resolveNativeNotificationResponse,
   type NativeNotificationData,
 } from "../../data/native-notification-plan";
+import { runNotificationOperation } from "../../data/notification-private-state";
 import { useDevices } from "../account/device-context";
 import { useTasks } from "../tasks/task-context";
 
 export function NotificationCoordinator() {
+  const auth = useAuth();
   const router = useRouter();
   const devices = useDevices();
   const { loading: tasksLoading, tasks } = useTasks();
+  const ownerId = auth.localPreview ? "local-preview" : auth.user?.id;
 
   useEffect(() => {
     function handle(response: Notifications.NotificationResponse) {
@@ -33,6 +37,7 @@ export function NotificationCoordinator() {
         router.push({ pathname: "/focus", params: { taskId: action.taskId } });
       }
       if (action.type === "snooze") {
+        if (!ownerId) return true;
         if (!devices.reminderAuthorizationReady) return false;
         if (!devices.remindersAllowed) return true;
         const taskId =
@@ -67,16 +72,18 @@ export function NotificationCoordinator() {
           },
           subtitle: subtask ? task.title : undefined,
         };
-        void Notifications.scheduleNotificationAsync({
-          content,
-          trigger: {
-            channelId: gentleReminderChannelId,
-            seconds: action.seconds,
-            type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          },
-        })
-          .then(() => {
-            if (!taskId) return;
+        void runNotificationOperation(ownerId, () =>
+          Notifications.scheduleNotificationAsync({
+            content,
+            trigger: {
+              channelId: gentleReminderChannelId,
+              seconds: action.seconds,
+              type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            },
+          }),
+        )
+          .then((scheduled) => {
+            if (!scheduled || !taskId) return;
             router.push({
               pathname: "/focus",
               params: {
@@ -107,6 +114,7 @@ export function NotificationCoordinator() {
   }, [
     devices.reminderAuthorizationReady,
     devices.remindersAllowed,
+    ownerId,
     router,
     tasks,
     tasksLoading,

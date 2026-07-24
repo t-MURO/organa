@@ -23,6 +23,7 @@ import {
 import { useAuth } from "../../auth/auth-context";
 import { createNotificationScheduler } from "../../data/create-notification-scheduler";
 import { createTaskRepository } from "../../data/create-task-repository";
+import { runNotificationOperation } from "../../data/notification-private-state";
 import type { NotificationSyncResult } from "../../data/notification-scheduler.types";
 import { useSync } from "../../sync/sync-context";
 import { useDevices } from "../account/device-context";
@@ -69,6 +70,7 @@ function initializeNotifications() {
 
 function syncNotifications(
   task: Task,
+  ownerId: string,
   requestPermission = false,
   enabled = true,
   authorizationReady = true,
@@ -76,13 +78,15 @@ function syncNotifications(
 ) {
   if (!authorizationReady) return;
   if (!enabled) {
-    cancelNotifications(task.id, report);
+    cancelNotifications(task.id, ownerId, report);
     return;
   }
-  void initializeNotifications()
-    .then(() => notificationScheduler.syncTask(task, requestPermission))
+  void runNotificationOperation(ownerId, async () => {
+    await initializeNotifications();
+    return notificationScheduler.syncTask(task, requestPermission);
+  })
     .then((result) => {
-      if (!hasEnabledReminder(task)) return;
+      if (!result || !hasEnabledReminder(task)) return;
       const notice = reminderNoticeFor(result);
       if (notice) report?.(notice);
     })
@@ -97,10 +101,13 @@ function syncNotifications(
 
 function cancelNotifications(
   taskId: string,
+  ownerId: string,
   report?: (message: string) => void,
 ) {
-  void initializeNotifications()
-    .then(() => notificationScheduler.cancelTask(taskId))
+  void runNotificationOperation(ownerId, async () => {
+    await initializeNotifications();
+    await notificationScheduler.cancelTask(taskId);
+  })
     .catch(() =>
       report?.(
         "Organa could not update this device's scheduled reminders. Check system notification settings before relying on them.",
@@ -237,6 +244,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
         tasks.forEach((task) =>
           syncNotifications(
             task,
+            namespace,
             false,
             authorization.allowed,
             authorization.ready,
@@ -252,13 +260,14 @@ export function TaskProvider({ children }: PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [auth.localPreview, repository]);
+  }, [auth.localPreview, namespace, repository]);
 
   useEffect(() => {
     if (!devices.reminderAuthorizationReady) return;
     state.tasks.forEach((task) =>
       syncNotifications(
         task,
+        namespace,
         false,
         devices.remindersAllowed,
         true,
@@ -268,6 +277,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
   }, [
     devices.reminderAuthorizationReady,
     devices.remindersAllowed,
+    namespace,
   ]);
 
   useEffect(
@@ -275,7 +285,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       sync.subscribe<Task>("task", (change) =>
         reconcileRemoteTaskChange(change, {
           cancelNotifications: (id) =>
-            cancelNotifications(id, setReminderNotice),
+            cancelNotifications(id, namespace, setReminderNotice),
           remove: async (id) => {
             await repository.remove(id);
             dispatch({ type: "removed", id });
@@ -283,6 +293,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
           syncNotifications: (task) =>
             syncNotifications(
               task,
+              namespace,
               false,
               devices.remindersAllowed,
               devices.reminderAuthorizationReady,
@@ -297,6 +308,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     [
       devices.reminderAuthorizationReady,
       devices.remindersAllowed,
+      namespace,
       repository,
     ],
   );
@@ -307,6 +319,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     void sync.commitUpsert("task", task.id, task);
     syncNotifications(
       task,
+      namespace,
       true,
       devices.remindersAllowed,
       devices.reminderAuthorizationReady,
@@ -322,6 +335,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     void sync.commitUpsert("task", updated.id, updated, task);
     syncNotifications(
       updated,
+      namespace,
       true,
       devices.remindersAllowed,
       devices.reminderAuthorizationReady,
@@ -333,7 +347,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
   function removeTask(id: string) {
     dispatch({ type: "removed", id });
     void sync.commitDelete("task", id);
-    cancelNotifications(id, setReminderNotice);
+    cancelNotifications(id, namespace, setReminderNotice);
   }
 
   async function restoreTasks(tasks: Task[]) {
@@ -353,6 +367,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       dispatch({ type: "upserted", task: value });
       syncNotifications(
         value,
+        namespace,
         false,
         devices.remindersAllowed,
         devices.reminderAuthorizationReady,
@@ -381,6 +396,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       dispatch({ type: "upserted", task: reopened });
       syncNotifications(
         reopened,
+        namespace,
         false,
         devices.remindersAllowed,
         devices.reminderAuthorizationReady,
@@ -388,7 +404,11 @@ export function TaskProvider({ children }: PropsWithChildren) {
       );
       if (generatedOccurrence) {
         dispatch({ type: "removed", id: generatedOccurrence.id });
-        cancelNotifications(generatedOccurrence.id, setReminderNotice);
+        cancelNotifications(
+          generatedOccurrence.id,
+          namespace,
+          setReminderNotice,
+        );
       }
       void sync.commit([
         {
@@ -418,6 +438,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     dispatch({ type: "upserted", task: result.completedTask });
     syncNotifications(
       result.completedTask,
+      namespace,
       false,
       devices.remindersAllowed,
       devices.reminderAuthorizationReady,
@@ -429,6 +450,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       dispatch({ type: "upserted", task: result.nextTask });
       syncNotifications(
         result.nextTask,
+        namespace,
         false,
         devices.remindersAllowed,
         devices.reminderAuthorizationReady,
@@ -464,6 +486,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     void sync.commitUpsert("task", nextTask.id, nextTask, task);
     syncNotifications(
       nextTask,
+      namespace,
       false,
       devices.remindersAllowed,
       devices.reminderAuthorizationReady,
