@@ -107,7 +107,9 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
   const confirmedUpdateIds = useRef(new Map<string, Set<string>>());
   const compactingBullets = useRef(new Set<string>());
   const namespaceRef = useRef(namespace);
+  const syncRef = useRef(sync);
   namespaceRef.current = namespace;
+  syncRef.current = sync;
   stateRef.current = state;
 
   useEffect(() => {
@@ -200,7 +202,7 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       stateRef.current.bullets.forEach(maybeCompact);
     }, 60_000);
     return () => clearInterval(interval);
-  }, [sync]);
+  }, []);
 
   function addBullet(text = "", afterId?: string) {
     const bullet = initializeCrdtBullet(
@@ -262,8 +264,7 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
   }
 
   function maybeCompact(bullet: BrainDumpBullet) {
-    const compactionNamespace = namespace;
-    if (namespaceRef.current !== compactionNamespace) return;
+    const compactionNamespace = namespaceRef.current;
     const ids = confirmedUpdateIds.current.get(bullet.id);
     if (
       !ids ||
@@ -275,7 +276,7 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
 
     const includedIds = [...ids].sort();
     compactingBullets.current.add(bullet.id);
-    void sync
+    void syncRef.current
       .compactBrainDumpUpdates(bullet.id, bullet, includedIds)
       .then((compacted) => {
         if (!compacted || namespaceRef.current !== compactionNamespace) return;

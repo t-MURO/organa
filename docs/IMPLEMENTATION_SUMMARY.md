@@ -1036,6 +1036,9 @@ offline-first merge behavior:
 - Failure, loss of connectivity, an account switch, or a racing edit leaves
   the deltas intact. The client retries opportunistically, while later offline
   outbox delivery remains safe through Yjs's idempotent update application.
+- The retry timer reads the latest sync client and account namespace through
+  stable refs, so frequent sync-status context updates cannot continually
+  restart the 60-second interval or prevent a deferred compaction from running.
 - The migration applied to the existing local Supabase stack and
   `supabase db lint --local --level warning` reported no schema errors.
 - Uncached strict TypeScript, the production web/PWA build with all 18 artifact
