@@ -3,10 +3,12 @@
 Status recorded on 2026-07-24.
 
 This is the structured pause checkpoint requested after the implementation
-work. The committed implementation is complete through `b12bc7a`, including
-the Web Push and reminder-template milestones documented below. The
-requirement-by-requirement completion audit is recorded in
-`docs/REQUIREMENTS_TRACEABILITY.md`.
+work. The committed implementation is complete through `b12bc7a`; the
+requirement-by-requirement audit and documentation checkpoint is committed in
+`9fe7c0e`. This file includes the Web Push and reminder-template milestones
+documented below, while `docs/REQUIREMENTS_TRACEABILITY.md` maps every
+controlled-beta acceptance criterion to direct evidence and its remaining
+gate.
 
 ## Current Checkpoint
 
@@ -20,6 +22,15 @@ Committed and verified milestones:
 - Recurrence, grace-day, inbox, and undated-task semantics
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
+- A 20-item controlled-beta traceability matrix that separates locally
+  verified behavior from connected-provider, physical-device, and external
+  review gates
+
+Latest checkpoint commits:
+
+- `9fe7c0e` documents requirement traceability and the remaining launch gates.
+- `b12bc7a` fixes reminder-bearing template instantiation.
+- `9bd7d24` delivers privacy-minimized standards-based Web Push.
 
 Latest committed implementation milestones:
 
