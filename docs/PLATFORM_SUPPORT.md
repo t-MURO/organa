@@ -95,6 +95,11 @@ For every native beta build:
 For every web beta release, follow all checks in `docs/BROWSER_SUPPORT.md` and
 record the exact browser versions.
 
+Artifact creation and evidence capture follow
+`docs/RELEASE_RUNBOOK.md`. The checked-in EAS profiles separate installable
+physical-device previews from auto-incremented store artifacts and bind each
+profile to its matching EAS environment.
+
 ## Review Policy
 
 Re-evaluate this matrix before upgrading Expo SDK, React Native, Android API

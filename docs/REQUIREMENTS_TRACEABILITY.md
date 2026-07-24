@@ -70,6 +70,10 @@ Status meanings:
 - `pnpm build:web`: 18 production artifact checks and 22 precache URLs pass
 - `pnpm build:native`: iOS and Android Hermes exports pass
 - `pnpm audit --prod`: no known production vulnerabilities
+- `apps/mobile/eas.json` defines clean-commit preview/store profiles with
+  explicit EAS environments, remote build-number management, and draft
+  Android internal-track submission; `docs/RELEASE_RUNBOOK.md` defines the
+  credential, artifact, physical-check, and evidence handoff
 
 ## Completion Boundary
 

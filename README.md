@@ -23,7 +23,7 @@ iOS, Android, responsive web, and installable PWA from one Expo codebase.
 - Recovery key onboarding, trusted reminder devices, local app lock, export,
   and one-hour account deletion
 - Native local notifications plus Web Push and active-tab web fallback
-- iOS widgets for today's tasks and the next reminder
+- iOS and Android widgets for today's tasks and the next reminder
 - Light, dark, and system themes, reduced motion, optional sounds, and haptics
 - Static PWA export with an app manifest and Workbox offline shell
 
@@ -101,6 +101,8 @@ See [supabase/README.md](./supabase/README.md) for production setup,
 compatibility contract, and [docs/ACCEPTANCE.md](./docs/ACCEPTANCE.md) for the
 controlled-beta checklist. The requirement-by-requirement evidence map is in
 [docs/REQUIREMENTS_TRACEABILITY.md](./docs/REQUIREMENTS_TRACEABILITY.md).
+Artifact profiles, signing handoff, physical checks, and store submission are
+defined in [docs/RELEASE_RUNBOOK.md](./docs/RELEASE_RUNBOOK.md).
 
 ## Security
 

@@ -143,6 +143,14 @@ Local evidence:
 - source configuration pins iOS 16.4 and Android API 24/36/36
   minimum/compile/target values, matching the documented Expo SDK 57 support
   contract
+- EAS configuration now separates internal preview artifacts from
+  auto-incremented store builds, requires a clean commit, binds each profile to
+  its matching environment, and submits Android to the internal track as a
+  draft; project linking, credentials, and real artifacts remain release gates
+- the EAS profile JSON and resolved public Expo configuration validate locally;
+  strict TypeScript, the production PWA export, both Hermes exports, and the
+  production dependency audit pass; no tests were added, changed, or run for
+  the release-packaging milestone
 - `pnpm verify:platform` passes 19 checks for source and generated target
   values, sensitive Android manifest boundaries, the browser policy, and both
   mobile widget implementations

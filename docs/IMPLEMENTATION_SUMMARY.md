@@ -29,6 +29,7 @@ Committed and verified milestones:
 - Native-only completion haptics with non-disruptive feedback failure handling
 - Fail-closed native app-lock startup and foreground transitions
 - Explicit controlled-beta OS and browser support boundaries
+- Reproducible internal-preview and store-release packaging boundaries
 - Deterministic local performance checks against a 2,000-task dataset
 - Fail-closed encrypted-backup domain validation
 - Byte-for-byte encrypted-row preservation across database upgrades
@@ -797,6 +798,34 @@ choices users can actually reach:
   alert/live-region semantics for assistive technology.
 - Strict TypeScript, the production web/PWA build, and both native Hermes
   exports pass. No tests were added, changed, or run for this milestone.
+
+## Native Release Packaging Milestone
+
+This milestone prepares the implemented app for controlled-beta artifact
+creation without pretending that credentials or store approval already exist:
+
+- `apps/mobile/eas.json` defines separate internal `preview` and store
+  `production` profiles.
+- Build profiles use matching EAS environments so preview and production
+  public backend configuration cannot be selected implicitly.
+- Preview creates an Android APK and internally distributed iOS artifact for
+  physical-device acceptance work.
+- Production uses remote auto-incremented build numbers and store
+  distribution.
+- EAS refuses dirty-worktree builds, tying each candidate to committed source.
+- Android submission targets the Play internal track as a draft so publishing
+  remains a deliberate console action.
+- `docs/RELEASE_RUNBOOK.md` records project linking, environment separation,
+  signing, widget identifiers, source gates, physical checks, store submission,
+  immutable web export, and per-candidate evidence.
+- Local profile parsing and Expo public-config resolution pass, including the
+  native package IDs, widget extension, App Group, and supported OS targets.
+- Strict TypeScript, the production PWA export, both native Hermes exports, and
+  the production dependency audit pass. No tests were added, changed, or run
+  for this milestone.
+- Expo project linking, signing credentials, real artifacts, privacy
+  declarations, security/legal approval, and store submission remain external
+  gates.
 
 ## Task Semantics Milestone
 
