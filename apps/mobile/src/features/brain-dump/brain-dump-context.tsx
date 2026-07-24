@@ -106,6 +106,7 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
   );
   const confirmedUpdateIds = useRef(new Map<string, Set<string>>());
   const compactingBullets = useRef(new Set<string>());
+  const deletedBulletIds = useRef(new Set<string>());
   const namespaceRef = useRef(namespace);
   const syncRef = useRef(sync);
   namespaceRef.current = namespace;
@@ -117,6 +118,7 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
     pendingUpdates.current.clear();
     confirmedUpdateIds.current.clear();
     compactingBullets.current.clear();
+    deletedBulletIds.current.clear();
 
     async function load() {
       await repository.initialize();
@@ -143,12 +145,14 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
         if (change.operation === "delete") {
           dispatch({ type: "removed", id: change.recordId });
           void repository.remove(change.recordId);
+          deletedBulletIds.current.add(change.recordId);
           pendingUpdates.current.delete(change.recordId);
           confirmedUpdateIds.current.delete(change.recordId);
           compactingBullets.current.delete(change.recordId);
           return;
         }
         if (!change.value) return;
+        if (deletedBulletIds.current.has(change.recordId)) return;
         const local = stateRef.current.bullets.find(
           (bullet) => bullet.id === change.recordId,
         );
@@ -175,6 +179,7 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
             return;
           }
           if (!change.value) return;
+          if (deletedBulletIds.current.has(change.value.bulletId)) return;
           rememberConfirmedUpdate(change.value);
           const local = stateRef.current.bullets.find(
             (bullet) => bullet.id === change.value?.bulletId,
@@ -241,9 +246,11 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
   }
 
   function removeBullet(id: string) {
+    deletedBulletIds.current.add(id);
     dispatch({ type: "removed", id });
     void repository.remove(id);
     void sync.queueDelete("brain_dump_bullet", id);
+    pendingUpdates.current.delete(id);
     confirmedUpdateIds.current.delete(id);
     compactingBullets.current.delete(id);
   }

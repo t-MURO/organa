@@ -21,6 +21,9 @@ The criterion-by-criterion status and evidence boundary is recorded in
 - [x] Continuous searchable Brain Dump and Yjs merge tests
 - [x] Race-safe encrypted Brain Dump update compaction with exact-set locking,
   offline-safe retry, legacy-client compatibility, and bounded new delta rows
+- [x] Atomic cleanup of current structured Brain Dump deltas and history on
+  bullet deletion, with stale server writes rejected and in-flight client
+  updates ignored after the tombstone
 - [x] SQLite native persistence and IndexedDB web persistence
 - [x] Encrypted field outbox, idempotent RPC contract, private Broadcast, and
   incremental durable reconciliation integration
@@ -98,7 +101,7 @@ Local evidence:
   completed placement plus searchability
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
-- all five migrations apply from scratch to local Supabase/PostgreSQL and
+- all seven migrations apply from scratch to local Supabase/PostgreSQL and
   `db lint --local --level warning` reports no schema errors or warnings
 - `pnpm verify:migrations` passes 6 upgrade checks after seeding the original
   schema with synthetic account keys, devices, encrypted records, encrypted

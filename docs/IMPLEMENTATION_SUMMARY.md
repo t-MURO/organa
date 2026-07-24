@@ -4,7 +4,7 @@ Status recorded on 2026-07-24.
 
 This is the structured pause checkpoint requested after the implementation
 work. The locally verified implementation is complete through the Brain Dump
-compaction milestone described below.
+deletion-cleanup milestone described below.
 `docs/REQUIREMENTS_TRACEABILITY.md` maps every controlled-beta acceptance
 criterion to direct evidence and its remaining gate.
 
@@ -25,6 +25,8 @@ Committed and verified milestones:
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
 - Race-safe encrypted Yjs update compaction for Brain Dump
+- Atomic cleanup and stale-update rejection for deleted structured Brain Dump
+  bullets
 - Native OAuth callback recovery across browser completion, resume, and cold
   start
 - Native-only completion haptics with non-disruptive feedback failure handling
@@ -382,7 +384,7 @@ Verification evidence:
 - A configured production PWA export passed 16 artifact checks and precached
   22 URLs, including the Push handler.
 - Both iOS and Android Hermes exports passed from the same source state.
-- All five migrations applied from an empty database and database lint
+- All seven migrations applied from an empty database and database lint
   reported no findings.
 - The local authenticated database verifier passed 54 checks.
 - The live account-deletion verifier passed 13 checks, including cascading
@@ -592,7 +594,7 @@ Latest verified repository checks:
   - 43 domain tests
   - 6 cryptography tests
   - 102 application integration tests
-- All five migrations apply cleanly from scratch to local
+- All seven migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - The isolated migration-upgrade verifier passes 6 checks and preserves all
   seeded encrypted/account rows byte-for-byte.
@@ -1289,6 +1291,29 @@ No tests were added, changed, or run for this milestone.
   performance checks, the 19 platform checks, Web Push protocol verification,
   and the production web/PWA build with all 18 artifact checks pass.
 - iOS and Android Hermes exports also pass after the fix.
+
+## Brain Dump Deletion Cleanup
+
+- Removing a bullet now records its tombstone immediately in the client,
+  clears pending compaction/update tracking, and ignores a late in-flight
+  update for that bullet.
+- Current structured Brain Dump update writes and bullet deletion use the same
+  per-account, per-bullet PostgreSQL advisory transaction lock.
+- Applying a structured bullet tombstone atomically removes its identifiable
+  encrypted delta rows and temporary history and clears duplicate ciphertext
+  from retained mutation receipts.
+- A later structured delta is rejected when its canonical bullet is missing or
+  deleted. If an update wins the lock first, deletion removes it; if deletion
+  wins first, the stale update is rejected.
+- Legacy opaque delta identifiers remain compatible but cannot be associated
+  with a parent bullet by the server, so this deletion cleanup guarantee is
+  intentionally limited to current structured identifiers.
+- A rollback-only local PostgreSQL drill proved delta/history removal, receipt
+  ciphertext stripping, and stale-update rejection. All 151 existing tests,
+  uncached strict TypeScript, all 6 migration-preservation checks, 54 database
+  checks, 13 account-deletion checks, 15 Web Push checks, database lint, the
+  production web/PWA build, and both native Hermes exports pass.
+- No test files were added or changed for this milestone.
 
 ## Remaining Acceptance Gates
 

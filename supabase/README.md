@@ -94,6 +94,9 @@ The migration:
 - atomically compacts new bullet-scoped Brain Dump deltas into an encrypted
   canonical snapshot only when the client's exact server-confirmed update set
   is still current; legacy deltas remain compatible
+- serializes current structured Brain Dump deletion with update writes,
+  purges identifiable deltas and history, strips retained receipt ciphertext,
+  and rejects later structured updates for a missing or deleted bullet
 - authorizes only the signed-in user's private Realtime topics
 - broadcasts opaque record identifiers rather than plaintext content
 - stores browser Push capabilities and content-free schedule metadata behind

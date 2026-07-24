@@ -305,6 +305,13 @@ wipe.
   their ciphertext from retained idempotency receipts. Legacy update
   identifiers are never pruned by this protocol, so older clients remain
   compatible.
+- Deleting a current structured Brain Dump bullet takes the same advisory lock
+  as its updates, then atomically removes its identifiable delta rows and
+  history and clears their ciphertext from retained idempotency receipts.
+  Later structured updates are rejected when the canonical bullet is missing
+  or deleted, and clients ignore an in-flight update after observing the
+  tombstone. Legacy opaque update identifiers cannot be associated with a
+  parent bullet by the server and are not included in this cleanup guarantee.
 - Compaction is optional for correctness. Offline and unconfirmed updates
   remain durable through the normal outbox and are still safe to replay after
   a compacted snapshot because Yjs updates are idempotent.
@@ -320,6 +327,9 @@ wipe.
 - The scheduled Edge Function deletes the Auth user, causing account rows to
   cascade, including browser Push subscriptions and schedules. The app removes
   its local database and content key when deletion is due.
+- A current structured Brain Dump bullet tombstone atomically purges its
+  separately encrypted server-side deltas and temporary history and strips
+  duplicate ciphertext from mutation receipts.
 - Local deletion clears every known SQLite/IndexedDB store before attempting
   database-file removal, so an open database handle cannot silently preserve
   readable records. The per-device proof secret is removed at the same time.
