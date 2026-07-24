@@ -2,6 +2,9 @@
 
 Status recorded on 2026-07-24.
 
+The criterion-by-criterion status and evidence boundary is recorded in
+`docs/MVP_TRACEABILITY.md`.
+
 ## Implemented And Locally Verified
 
 - [x] Task creation, editing, scheduling, recurrence, completion, Undo, search,
