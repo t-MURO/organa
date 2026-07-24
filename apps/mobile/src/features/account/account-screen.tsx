@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -11,6 +10,7 @@ import {
 } from "react-native";
 
 import { useAuth } from "../../auth/auth-context";
+import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
 import { createBackupFileReader } from "../../data/create-backup-file-reader";
 import { createExportFileWriter } from "../../data/create-export-file-writer";

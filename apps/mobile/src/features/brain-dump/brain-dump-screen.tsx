@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,6 +14,7 @@ import {
   View,
 } from "react-native";
 
+import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
 import { useBrainDump } from "./brain-dump-context";

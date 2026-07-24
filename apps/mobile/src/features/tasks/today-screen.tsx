@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +19,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 
+import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";

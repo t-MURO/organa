@@ -3,8 +3,8 @@
 Status recorded on 2026-07-24.
 
 This is the structured pause checkpoint requested after the implementation
-work. The implementation is complete through the task-type and
-subtask-reminder consistency milestone described below.
+work. The implementation is complete through the accessibility interaction
+contract milestone described below.
 `docs/REQUIREMENTS_TRACEABILITY.md` maps every controlled-beta acceptance
 criterion to direct evidence and its remaining gate.
 
@@ -112,6 +112,22 @@ Latest verified task-type work:
   cycle confirms One-off persistence without recurrence.
 - The complete suite passes 130 tests: 43 domain, 6 cryptography, and 81
   application tests.
+
+## Accessibility Interaction Contract Milestone
+
+- Routes every application pressable through one native accessibility boundary
+  with a shared 14-point hit expansion.
+- Enforces the WCAG 2.2 AA 24-by-24 CSS-pixel target minimum for web controls.
+- Expands coarse-pointer web interaction areas to at least 44 by 44 CSS pixels
+  while preserving compact visual controls.
+- Keeps system text scaling uncapped and removes single-line truncation from
+  mobile navigation so core labels can wrap.
+- Adds regression tests that reject raw application pressables, underspecified
+  target CSS, text-scaling opt-outs, and core-label truncation.
+- A live DOM measurement across Today, Check-In, Brain Dump, Templates, and
+  Account finds no visible interactive target below 24 by 24 CSS pixels.
+- VoiceOver, TalkBack, largest-text-size, and physical touch-target checks
+  remain explicit release-device gates.
 
 Latest committed implementation milestones:
 
@@ -375,10 +391,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 130 automated tests pass:
+- 133 automated tests pass:
   - 43 domain tests
   - 6 cryptography tests
-  - 81 application integration tests
+  - 84 application integration tests
 - All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.

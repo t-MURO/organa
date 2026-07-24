@@ -54,9 +54,29 @@ const registerServiceWorker = `
 `;
 
 const accessibilityCss = `
+  :where(button, a[href], [role="button"], [role="checkbox"], [role="radio"], [role="switch"]) {
+    min-block-size: 24px !important;
+    min-inline-size: 24px !important;
+  }
   :focus-visible {
     outline: 3px solid #327061 !important;
     outline-offset: 3px !important;
+  }
+  @media (pointer: coarse) {
+    :where(button, a[href], [role="button"], [role="checkbox"], [role="radio"], [role="switch"]) {
+      position: relative;
+    }
+    :where(button, a[href], [role="button"], [role="checkbox"], [role="radio"], [role="switch"])::after {
+      content: "";
+      height: max(100%, 44px);
+      left: 50%;
+      min-height: 44px;
+      min-width: 44px;
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: max(100%, 44px);
+    }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

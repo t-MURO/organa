@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import {
-  Pressable,
   StyleSheet,
   Text,
   useColorScheme,
   View,
 } from "react-native";
 
+import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { darkTheme, lightTheme } from "../../theme";
 
 export function PwaUpdateCoordinator() {

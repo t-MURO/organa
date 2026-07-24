@@ -11,7 +11,6 @@ import {
 import { useEffect, useState } from "react";
 import {
   Modal,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +19,7 @@ import {
   View,
 } from "react-native";
 
+import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import { notificationCapability } from "../../data/create-notification-scheduler";

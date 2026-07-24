@@ -2,13 +2,13 @@ import { formatLocalDate } from "@organa/domain";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
-  Pressable,
   StyleSheet,
   Text,
   useColorScheme,
   View,
 } from "react-native";
 
+import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { darkTheme, lightTheme } from "../../theme";
 import { useDevices } from "../account/device-context";
 import { useCheckIns } from "../check-in/check-in-context";

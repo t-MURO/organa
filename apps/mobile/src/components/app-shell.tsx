@@ -3,7 +3,6 @@ import { StatusBar } from "expo-status-bar";
 import { createContext, useContext } from "react";
 import {
   Platform,
-  Pressable,
   StyleSheet,
   Text,
   useColorScheme,
@@ -12,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AccessiblePressable as Pressable } from "../accessibility/accessible-pressable";
 import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
 import { useSync } from "../sync/sync-context";
 import { useSettings } from "../features/settings/settings-context";
@@ -257,7 +257,6 @@ function MobileNavigation({
               {item.shortLabel}
             </Text>
             <Text
-              numberOfLines={1}
               style={[
                 styles.mobileNavLabel,
                 active ? styles.mobileNavLabelActive : undefined,
@@ -469,6 +468,7 @@ function createStyles(theme: OrganaTheme, isWide: boolean) {
       color: theme.textMuted,
       fontFamily: "Manrope_600SemiBold",
       fontSize: 10,
+      textAlign: "center",
     },
     mobileNavLabelActive: {
       color: theme.text,

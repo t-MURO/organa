@@ -1,7 +1,6 @@
 import { getTaskTimingState, type Task } from "@organa/domain";
 import { useState } from "react";
 import {
-  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -9,6 +8,7 @@ import {
   View,
 } from "react-native";
 
+import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
 import {

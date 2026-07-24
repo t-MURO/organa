@@ -6,13 +6,13 @@ import {
 } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
   useColorScheme,
   View,
 } from "react-native";
 
+import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { darkTheme, lightTheme } from "../../theme";
 import { useAccountLifecycle } from "./account-lifecycle-context";
 

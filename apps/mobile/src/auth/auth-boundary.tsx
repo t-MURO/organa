@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,6 +13,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AccessiblePressable as Pressable } from "../accessibility/accessible-pressable";
 import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
 import { useAuth } from "./auth-context";
 

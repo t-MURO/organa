@@ -31,13 +31,15 @@ Status recorded on 2026-07-24.
   generic service-worker notifications, and an active-tab fallback
 - [x] Keyboard roles/labels, visible focus, semantic state, reduced motion, and
   AA light/dark theme token contrast
+- [x] Shared native hit areas, WCAG-sized web controls, coarse-pointer
+  expansion, and uncapped system text scaling
 - [x] Source-pinned iOS 16.4+ and Android 7+/API 36 build targets plus a
   documented browser and platform capability matrix
 
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 130 automated tests pass: 43 domain, 6 cryptography, and 81 application tests
+- 133 automated tests pass: 43 domain, 6 cryptography, and 84 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
@@ -125,6 +127,9 @@ Local evidence:
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks
+- browser target-size audit found no visible control below 24 by 24 CSS pixels
+  across Today, Check-In, Brain Dump, Templates, and Account; coarse-pointer
+  web targets expand to 44 by 44 and native pressables share a 14-point hit area
 - browser backup drill rejected an invalid file, restored a real AES-GCM
   backup through the file chooser, and verified the imported task and settings
   persisted after reload

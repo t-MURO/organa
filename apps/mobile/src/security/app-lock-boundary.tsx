@@ -1,13 +1,13 @@
 import { type PropsWithChildren, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
   useColorScheme,
   View,
 } from "react-native";
 
+import { AccessiblePressable as Pressable } from "../accessibility/accessible-pressable";
 import { darkTheme, lightTheme } from "../theme";
 import { useAppLock } from "./app-lock-context";
 

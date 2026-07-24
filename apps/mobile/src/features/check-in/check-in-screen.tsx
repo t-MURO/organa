@@ -8,7 +8,6 @@ import {
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,6 +16,7 @@ import {
   View,
 } from "react-native";
 
+import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
 import { checkInReminderCapability } from "../../data/create-check-in-reminder-scheduler";
 import type { OrganaTheme } from "../../theme";
