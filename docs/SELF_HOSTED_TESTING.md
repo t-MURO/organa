@@ -7,9 +7,10 @@ server for connected testing. It does not make a home server a production
 service and does not replace the physical-device, independent security, legal,
 privacy, signing, or store gates in `docs/ACCEPTANCE.md`.
 
-Use the current official Supabase self-hosting files rather than copying a
-Docker Compose stack into this repository. Record the exact Supabase source
-revision and image versions used for every test cycle.
+Use the current
+[official Supabase self-hosting files](https://supabase.com/docs/guides/self-hosting/docker)
+rather than copying a Docker Compose stack into this repository. Record the
+exact Supabase source revision and image versions used for every test cycle.
 
 ## 1. Server And Network Boundary
 
@@ -72,29 +73,48 @@ mkdir -p "$HOME/organa-supabase"
 cp -a supabase/docker/. "$HOME/organa-supabase/"
 cd "$HOME/organa-supabase"
 git -C ../supabase rev-parse HEAD
-[ -f .env ] || cp .env.example .env
-chmod 600 .env
-sh utils/generate-keys.sh --update-env
-sh utils/add-new-auth-keys.sh --update-env
-for key in JWT_SECRET SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY JWT_KEYS JWT_JWKS; do
-  grep -q "^${key}=." .env || { echo "Missing ${key}" >&2; exit 1; }
-done
-docker compose config --quiet
 ```
 
-If `add-new-auth-keys.sh` reports that `.env` is missing, stop and verify the
-current directory before rerunning either key script:
+From the development machine, copy Organa's initializer and preflight into the
+fresh stack:
+
+```sh
+scp supabase/self-hosted/initialize-official-supabase.sh \
+  SERVER:~/organa-supabase/
+scp supabase/self-hosted/validate-self-hosted.sh \
+  SERVER:~/organa-supabase/
+```
+
+Then initialize the fresh stack on the server:
+
+```sh
+cd "$HOME/organa-supabase"
+sh initialize-official-supabase.sh --fresh
+```
+
+The initializer creates the mode-600 `.env` before invoking either upstream
+key generator, runs both generators in explicit update mode, and finishes with
+Organa's non-secret-leaking key preflight. It refuses to run if any `.env`
+path already exists so an existing instance cannot be rotated accidentally.
+
+If `add-new-auth-keys.sh` was run directly and reports that `.env` is missing,
+stop and verify the current directory before rerunning either key script. Use
+this manual recovery only for a fresh copied stack that has never started:
 
 ```sh
 pwd
-ls -la .env.example docker-compose.yml utils/generate-keys.sh
-[ -f .env ] || cp .env.example .env
+ls -la .env.example docker-compose.yml run.sh \
+  utils/generate-keys.sh utils/add-new-auth-keys.sh \
+  validate-self-hosted.sh
+[ ! -e .env ] || { echo ".env already exists; stop" >&2; exit 1; }
+cp .env.example .env
 chmod 600 .env
 sh utils/generate-keys.sh --update-env
 sh utils/add-new-auth-keys.sh --update-env
+sh validate-self-hosted.sh keys
 ```
 
-All three paths in the `ls` command must exist. If they do not, return to
+All six paths in the `ls` command must exist. If they do not, return to
 `$HOME/organa-supabase` or the directory where the official Docker files were
 copied. The scripts print generated credentials while writing them; do not
 copy their output into chat, logs, screenshots, or shell-history notes, and do
@@ -265,8 +285,6 @@ scp -r supabase/functions/finalize-account-deletions \
 scp -r supabase/functions/dispatch-web-push \
   SERVER:~/organa-supabase/volumes/functions/
 scp supabase/self-hosted/.env.functions.example \
-  SERVER:~/organa-supabase/
-scp supabase/self-hosted/validate-self-hosted.sh \
   SERVER:~/organa-supabase/
 scp supabase/self-hosted/run-organa-schedulers.sh \
   SERVER:~/organa-supabase/

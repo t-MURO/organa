@@ -1063,6 +1063,14 @@ silently creating an authentication client:
   actually loads the untracked public client environment.
 - Initializes the copied self-hosted `.env` before key generation and includes
   a non-secret-leaking recovery path for missing-environment errors.
+- Adds an explicit fresh-stack initializer that refuses any pre-existing
+  `.env`, creates it with private permissions before invoking upstream tools,
+  runs both key generators in update mode, and requires the Organa key
+  preflight to pass without printing credential values.
+- POSIX shell syntax, patch hygiene, strict TypeScript, all 19 platform
+  configuration checks, the production web/PWA build, and both native Hermes
+  exports pass after the initializer change. No tests were added, changed, or
+  run for this milestone.
 - Fails fast on missing Git, Docker/Compose, OpenSSL, jq, or Docker-daemon
   access before the manual setup touches generated secrets.
 - Runs both upstream key generators with their explicit `--update-env` mode,

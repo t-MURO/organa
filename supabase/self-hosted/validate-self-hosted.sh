@@ -258,6 +258,8 @@ for file in \
     fail "$file is missing; run this from the Supabase project directory"
 done
 
+[ -e .env ] ||
+  fail ".env is missing; use initialize-official-supabase.sh --fresh only for a fresh stack"
 require_private_file .env
 
 for key in \
