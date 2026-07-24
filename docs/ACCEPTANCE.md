@@ -92,6 +92,13 @@ Local evidence:
 - deletion state and trusted-device lists are hidden unless their fetched
   owner matches the active account; revocation/final-deletion cleanup attempts
   every private store and sign-out, then retries only failed operations once
+- cached account-deletion state can preserve read-only mode offline but cannot
+  trigger local erasure; a strict authenticated status RPC uses server time for
+  the cancellation deadline and local cleanup starts only after the server
+  proves the deadline is irreversibly closed or the Auth user has been removed
+- destructive revocation/deletion cleanup verifies the currently persisted
+  Supabase session still belongs to its expected owner before any account or
+  device-global store is touched; delayed account-A work cannot clear account B
 - native and web device identities share strict persisted-state parsing, and a
   successful server read that proves the current identity missing, untrusted,
   or revoked triggers private local erasure; an unreachable server preserves
@@ -111,7 +118,7 @@ Local evidence:
   completed placement plus searchability
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
-- all seven migrations apply from scratch to local Supabase/PostgreSQL and
+- all eight migrations apply from scratch to local Supabase/PostgreSQL and
   `db lint --local --level warning` reports no schema errors or warnings
 - `pnpm verify:migrations` passes 6 upgrade checks after seeding the original
   schema with synthetic account keys, devices, encrypted records, encrypted
@@ -135,6 +142,9 @@ Local evidence:
   authorization, POST-only execution, the one-hour deadline, due processing,
   and cascading removal of the Auth user, sessions, device keys, and encrypted
   records, including Web Push subscriptions and schedules
+- a rollback-only authenticated database drill verifies the deletion-status RPC
+  returns `none`, `pending` with server-derived `due=false`, `pending` with
+  `due=true`, and `deleted` after Auth cascade; anonymous execution is denied
 - the same command passes 15 live Web Push Edge Function checks covering
   scheduler authorization, POST-only execution, one-shot completion, and
   daily Check-In advancement in the selected local time zone

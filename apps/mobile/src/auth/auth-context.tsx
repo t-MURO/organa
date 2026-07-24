@@ -31,6 +31,7 @@ interface AuthContextValue {
   user: User | null;
   callbackError: string;
   clearCallbackError(): void;
+  isCurrentUser(userId: string): Promise<boolean>;
   startLocalPreview(): void;
   signInWithOAuth(provider: OAuthProvider): Promise<void>;
   sendEmailCode(email: string): Promise<void>;
@@ -182,6 +183,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (result.error) throw result.error;
   }
 
+  async function isCurrentUser(userId: string) {
+    if (!supabase) return false;
+    const result = await supabase.auth.getSession();
+    if (result.error) throw result.error;
+    return result.data.session?.user.id === userId;
+  }
+
   async function signOut() {
     setLocalPreview(false);
     setCallbackError("");
@@ -202,6 +210,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         clearCallbackError: () => setCallbackError(""),
         configurationIssue: supabaseConfigurationIssue,
         configured: isSupabaseConfigured,
+        isCurrentUser,
         loading,
         localPreview,
         session,

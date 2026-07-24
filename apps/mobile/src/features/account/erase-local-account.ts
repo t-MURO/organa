@@ -5,9 +5,12 @@ import { accountDeletionCache } from "./account-deletion-cache";
 
 export async function eraseLocalAccount(
   userId: string,
+  isActiveOwner: () => Promise<boolean>,
   signOut: () => Promise<void>,
   removeReminderAuthorization: () => Promise<void>,
 ) {
+  if (!(await isActiveOwner())) return;
+
   const operations = [
     () => accountDeletionCache.remove(userId),
     () => contentKeyVault.remove(userId),

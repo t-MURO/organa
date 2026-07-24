@@ -386,7 +386,7 @@ Verification evidence:
 - A configured production PWA export passed 16 artifact checks and precached
   22 URLs, including the Push handler.
 - Both iOS and Android Hermes exports passed from the same source state.
-- All seven migrations applied from an empty database and database lint
+- All eight migrations applied from an empty database and database lint
   reported no findings.
 - The local authenticated database verifier passed 75 checks.
 - The live account-deletion verifier passed 13 checks, including cascading
@@ -596,7 +596,7 @@ Latest verified repository checks:
   - 43 domain tests
   - 6 cryptography tests
   - 102 application integration tests
-- All seven migrations apply cleanly from scratch to local
+- All eight migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - The isolated migration-upgrade verifier passes 6 checks and preserves all
   seeded encrypted/account rows byte-for-byte.
@@ -1453,6 +1453,40 @@ No tests were added, changed, or run for this milestone.
   consumed before its parse error, a mode-644 URL remained after rejection,
   and both a symlink and its target remained after the symlink rejection. All
   temporary inputs were removed afterward.
+
+## Authoritative Account-Deletion Completion
+
+- The previous boundary treated an expired locally cached deletion deadline as
+  sufficient authority to erase the device. If another trusted device had
+  cancelled while this client was offline, reopening after the old deadline
+  could remove recoverable local data and sign the user out incorrectly.
+- Cached deletion state now has one safe purpose: it keeps the account
+  read-only until the backend can be reached. An expired unconfirmed cache
+  presents a clear reconnect/check-status action and never starts erasure.
+- The new authenticated, argument-free `get_account_deletion_status` RPC uses
+  database time for the deadline, distinguishes no request from an active
+  request, and reports `deleted` only when the JWT subject is absent from
+  `auth.users`. It accepts no account identifier and anonymous execution is
+  revoked.
+- Client responses are parsed fail-closed. Local database, key-vault,
+  device-identity, reminder-authorization, platform-notification, widget, and
+  sign-out cleanup begins only when the server reports the deadline
+  irreversibly due or the Auth user already deleted. This avoids racing a
+  server-driven sign-out while duplicate cleanup attempts remain coalesced per
+  account.
+- The shared destructive cleanup path also verifies that Supabase's persisted
+  session still belongs to the expected account before launching any
+  account-scoped or device-global operation. A delayed deletion/revocation
+  response from account A cannot clear account B's identity, reminders,
+  widgets, or session.
+- The eighth migration applied to the existing disposable local stack.
+  A rollback-only authenticated SQL drill proved `none`, not-due, due, and
+  deleted states plus anonymous denial. The existing six-check migration
+  preservation verifier passed with every seeded row unchanged, and Supabase
+  warning-level schema lint returned no findings.
+- Strict TypeScript, the production web/PWA export with 18 artifact checks,
+  and both native Hermes exports pass. No test files were added or changed for
+  this milestone.
 
 ## Remaining Acceptance Gates
 

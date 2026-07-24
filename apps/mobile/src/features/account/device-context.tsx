@@ -283,6 +283,7 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     const userId = auth.user.id;
     void eraseLocalAccount(
       userId,
+      () => auth.isCurrentUser(userId),
       auth.signOut,
       () => reminderAuthorizationCache.remove(userId),
     ).catch(() => {

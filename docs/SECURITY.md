@@ -115,6 +115,15 @@ their fetched owner matches the active account. Delayed responses from a
 previous session therefore cannot place another account into deletion mode or
 display its device metadata.
 
+The deletion cache is deliberately non-authoritative. It can restore read-only
+mode and the cancellation deadline while offline, but its deadline never
+triggers local erasure. The authenticated, argument-free deletion-status RPC
+can inspect only the JWT subject: it uses database time to report whether the
+window is irreversibly closed and reports completed server deletion only after
+that subject no longer exists in `auth.users`. A cancellation on another device
+therefore clears stale cached state on reconnect instead of destroying
+recoverable local data.
+
 Reminder authorization:
 
 - Native stores the last server-confirmed per-user reminder authorization as a
@@ -262,7 +271,10 @@ Unauthorized-device cleanup and final deletion attempt every local erasure
 operation independently, retry only failed operations once, and close the
 in-memory authentication session before fallible platform cleanup can finish.
 A failure in one store cannot prevent the remaining stores or sign-out from
-being attempted.
+being attempted. Before that batch starts, the app verifies that Supabase's
+currently persisted session still belongs to the cleanup's expected owner.
+Delayed work from an unmounted account therefore cannot remove a later
+account's device identity, notifications, widgets, or session.
 
 Offline reminder authorization can only represent the last server-confirmed
 state. A device that remains offline cannot learn that it was revoked; the
@@ -339,7 +351,9 @@ wipe.
 - The one-hour deletion period is read-only and cancellable.
 - The scheduled Edge Function deletes the Auth user, causing account rows to
   cascade, including browser Push subscriptions and schedules. The app removes
-  its local database and content key when deletion is due.
+  its local database and content key only after the authenticated status RPC
+  confirms that the server deadline is irreversibly closed or that the Auth
+  user is already gone.
 - A current structured Brain Dump bullet tombstone atomically purges its
   separately encrypted server-side deltas and temporary history and strips
   duplicate ciphertext from mutation receipts.

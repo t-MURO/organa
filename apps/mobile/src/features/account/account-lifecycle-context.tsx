@@ -3,6 +3,7 @@ import {
   type PropsWithChildren,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { AppState, Platform } from "react-native";
@@ -15,9 +16,20 @@ import { eraseLocalAccount } from "./erase-local-account";
 import { reminderAuthorizationCache } from "./reminder-authorization-cache";
 
 interface DeletionRequest {
+  due: boolean | null;
   executeAfter: string;
   requestedAt: string;
 }
+
+type RemoteDeletionStatus =
+  | { state: "deleted" }
+  | { state: "none" }
+  | {
+      due: boolean;
+      executeAfter: string;
+      requestedAt: string;
+      state: "pending";
+    };
 
 interface ScopedDeletionRequest {
   request: DeletionRequest | null;
@@ -27,7 +39,6 @@ interface ScopedDeletionRequest {
 interface AccountLifecycleContextValue {
   cancelDeletion(): Promise<void>;
   deletionRequest: DeletionRequest | null;
-  finalizeLocalDeletion(): Promise<void>;
   loading: boolean;
   readOnly: boolean;
   refresh(): Promise<void>;
@@ -45,6 +56,7 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
   const [scopedDeletionRequest, setScopedDeletionRequest] =
     useState<ScopedDeletionRequest | null>(null);
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
+  const erasingUserId = useRef<string | null>(null);
   const deletionRequest =
     userId && scopedDeletionRequest?.userId === userId
       ? scopedDeletionRequest.request
@@ -60,26 +72,33 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
       return;
     }
 
-    const result = await supabase
-      .from("account_deletion_requests")
-      .select("requested_at,execute_after")
-      .eq("user_id", refreshUserId)
-      .is("cancelled_at", null)
-      .is("completed_at", null)
-      .maybeSingle();
+    const result = await supabase.rpc("get_account_deletion_status");
     if (result.error) throw result.error;
-    const nextRequest = result.data
-      ? {
-          executeAfter: result.data.execute_after,
-          requestedAt: result.data.requested_at,
-        }
-      : null;
+    const status = parseRemoteDeletionStatus(result.data);
+    if (
+      status.state === "deleted" ||
+      (status.state === "pending" && status.due)
+    ) {
+      await finalizeLocalDeletion();
+      return;
+    }
+    const nextRequest =
+      status.state === "pending"
+        ? {
+            due: status.due,
+            executeAfter: status.executeAfter,
+            requestedAt: status.requestedAt,
+          }
+        : null;
     setScopedDeletionRequest({
       request: nextRequest,
       userId: refreshUserId,
     });
     if (nextRequest) {
-      await accountDeletionCache.set(refreshUserId, nextRequest);
+      await accountDeletionCache.set(refreshUserId, {
+        executeAfter: nextRequest.executeAfter,
+        requestedAt: nextRequest.requestedAt,
+      });
     } else {
       await accountDeletionCache.remove(refreshUserId);
     }
@@ -103,7 +122,7 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
       const cached = await accountDeletionCache.get(initializeUserId);
       if (!active) return;
       setScopedDeletionRequest({
-        request: cached,
+        request: cached ? { ...cached, due: null } : null,
         userId: initializeUserId,
       });
       setResolvedUserId(initializeUserId);
@@ -160,11 +179,19 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
   async function finalizeLocalDeletion() {
     if (!auth.user) return;
     const userId = auth.user.id;
-    await eraseLocalAccount(
-      userId,
-      auth.signOut,
-      () => reminderAuthorizationCache.remove(userId),
-    );
+    if (erasingUserId.current === userId) return;
+    erasingUserId.current = userId;
+    try {
+      await eraseLocalAccount(
+        userId,
+        () => auth.isCurrentUser(userId),
+        auth.signOut,
+        () => reminderAuthorizationCache.remove(userId),
+      );
+    } catch (error) {
+      erasingUserId.current = null;
+      throw error;
+    }
   }
 
   return (
@@ -172,7 +199,6 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
       value={{
         cancelDeletion,
         deletionRequest,
-        finalizeLocalDeletion,
         loading,
         readOnly: Boolean(deletionRequest),
         refresh,
@@ -192,4 +218,30 @@ export function useAccountLifecycle() {
     );
   }
   return context;
+}
+
+function parseRemoteDeletionStatus(value: unknown): RemoteDeletionStatus {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("The account deletion status is invalid.");
+  }
+  const status = value as Record<string, unknown>;
+  if (status.state === "deleted" || status.state === "none") {
+    return { state: status.state };
+  }
+  if (
+    status.state !== "pending" ||
+    typeof status.due !== "boolean" ||
+    typeof status.executeAfter !== "string" ||
+    !Number.isFinite(new Date(status.executeAfter).getTime()) ||
+    typeof status.requestedAt !== "string" ||
+    !Number.isFinite(new Date(status.requestedAt).getTime())
+  ) {
+    throw new Error("The account deletion status is invalid.");
+  }
+  return {
+    due: status.due,
+    executeAfter: status.executeAfter,
+    requestedAt: status.requestedAt,
+    state: "pending",
+  };
 }

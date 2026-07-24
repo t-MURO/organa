@@ -1,7 +1,6 @@
 import {
   type PropsWithChildren,
   useEffect,
-  useRef,
   useState,
 } from "react";
 import {
@@ -22,32 +21,28 @@ export function AccountLifecycleBoundary({ children }: PropsWithChildren) {
   const styles = createStyles(theme);
   const [now, setNow] = useState(Date.now());
   const [cancelling, setCancelling] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const finalizing = useRef(false);
   const deletionRequest = lifecycle.deletionRequest;
   const executeAt = deletionRequest
     ? new Date(deletionRequest.executeAfter).getTime()
     : Number.POSITIVE_INFINITY;
-  const cancellable = !deletionRequest || now < executeAt;
+  const cancellable = Boolean(
+    deletionRequest &&
+      (deletionRequest.due === false ||
+        (deletionRequest.due === null && now < executeAt)),
+  );
+  const confirmationPending = Boolean(
+    deletionRequest &&
+      deletionRequest.due === null &&
+      now >= executeAt,
+  );
   const seconds = Math.max(0, Math.ceil((executeAt - now) / 1_000));
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (!deletionRequest || cancellable || finalizing.current) return;
-    finalizing.current = true;
-    void lifecycle.finalizeLocalDeletion().catch((nextError) => {
-      finalizing.current = false;
-      setError(
-        nextError instanceof Error
-          ? nextError.message
-          : "Local account data could not be cleared.",
-      );
-    });
-  }, [cancellable, deletionRequest, lifecycle]);
 
   if (lifecycle.loading) {
     return (
@@ -75,17 +70,39 @@ export function AccountLifecycleBoundary({ children }: PropsWithChildren) {
     }
   }
 
+  async function refresh() {
+    setRefreshing(true);
+    setError("");
+    try {
+      await lifecycle.refresh();
+    } catch (nextError) {
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "Deletion status could not be confirmed.",
+      );
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
     <View style={styles.page}>
       <View style={styles.card}>
         <Text style={styles.eyebrow}>ACCOUNT DELETION</Text>
         <Text style={styles.title}>
-          {cancellable ? "Your account is read-only." : "Deletion is due now."}
+          {cancellable
+            ? "Your account is read-only."
+            : confirmationPending
+              ? "Confirming deletion status."
+              : "Deletion is being finalized."}
         </Text>
         <Text style={styles.body}>
           {cancellable
             ? "Nothing can be changed while the cancellation window is open. Your encrypted cloud data and account will be permanently removed when the timer ends."
-            : "The server is finalizing the request. Keep this screen open or return later to confirm that sign-in has ended."}
+            : confirmationPending
+              ? "Reconnect before Organa clears this device. This protects your local data if the request was cancelled from another trusted device."
+              : "The cancellation window is closed. Organa will clear this device only after the server confirms that cloud data and the account are gone."}
         </Text>
         {cancellable ? (
           <>
@@ -106,6 +123,20 @@ export function AccountLifecycleBoundary({ children }: PropsWithChildren) {
               )}
             </Pressable>
           </>
+        ) : confirmationPending ? (
+          <Pressable
+            accessibilityLabel="Check account deletion status"
+            accessibilityRole="button"
+            disabled={refreshing}
+            style={styles.cancelButton}
+            onPress={() => void refresh()}
+          >
+            {refreshing ? (
+              <ActivityIndicator color={theme.surface} />
+            ) : (
+              <Text style={styles.cancelText}>Check status</Text>
+            )}
+          </Pressable>
         ) : null}
         {error ? (
           <Text accessibilityRole="alert" style={styles.error}>
