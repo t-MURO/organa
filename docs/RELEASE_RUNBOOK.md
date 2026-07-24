@@ -75,6 +75,9 @@ callback. Configure Google, Apple, and GitHub secrets only in Supabase and
 their provider consoles. The app rejects non-HTTPS remote endpoints, URL
 credentials, placeholders, and any key that is not an `sb_publishable_` client
 key; do not weaken that runtime boundary to make a build appear configured.
+The Web Push function must also have a reviewed `WEB_PUSH_ALLOWED_HOSTS` list
+containing only the exact or explicit `*.` Push-service hosts observed in
+supported release browsers.
 
 ## Source Gate
 

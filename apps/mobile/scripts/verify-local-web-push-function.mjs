@@ -38,6 +38,7 @@ try {
       `WEB_PUSH_VAPID_PUBLIC_KEY=${vapid.publicKey}`,
       `WEB_PUSH_VAPID_PRIVATE_KEY=${vapid.privateKey}`,
       "WEB_PUSH_VAPID_SUBJECT=mailto:web-push-test@example.test",
+      "WEB_PUSH_ALLOWED_HOSTS=push.example.test",
       "WEB_PUSH_TEST_MODE=local-only",
       "",
     ].join("\n"),

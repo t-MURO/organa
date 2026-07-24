@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { createECDH, timingSafeEqual } from "node:crypto";
+import { isIP } from "node:net";
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
@@ -10,6 +11,9 @@ const schedulerSecret = Deno.env.get("WEB_PUSH_SCHEDULER_SECRET");
 const vapidPublicKey = Deno.env.get("WEB_PUSH_VAPID_PUBLIC_KEY");
 const vapidPrivateKey = Deno.env.get("WEB_PUSH_VAPID_PRIVATE_KEY");
 const vapidSubject = Deno.env.get("WEB_PUSH_VAPID_SUBJECT");
+const allowedPushHostPatterns = parseAllowedPushHostPatterns(
+  Deno.env.get("WEB_PUSH_ALLOWED_HOSTS"),
+);
 const vapidConfigurationValid = validVapidConfiguration(
   vapidPublicKey,
   vapidPrivateKey,
@@ -47,9 +51,9 @@ Deno.serve(async (request) => {
   if (request.method !== "POST") {
     return json({ error: "Method not allowed." }, 405, { allow: "POST" });
   }
-  if (!vapidConfigurationValid) {
+  if (!vapidConfigurationValid || !allowedPushHostPatterns) {
     return json(
-      { error: "Function VAPID secrets are incomplete or invalid." },
+      { error: "Function Web Push configuration is incomplete or invalid." },
       500,
     );
   }
@@ -67,6 +71,7 @@ Deno.serve(async (request) => {
     expiredSubscriptions: 0,
     failed: 0,
     processed: claimed.data.length,
+    rejectedSubscriptions: 0,
     retried: 0,
     testMode: localTestMode,
   };
@@ -77,12 +82,16 @@ Deno.serve(async (request) => {
       await completeReminder(client, reminder);
       totals.delivered += 1;
     } catch (error) {
+      if (error instanceof RejectedPushEndpointError) {
+        const removal = await removeSubscription(client, reminder);
+        if (removal.error) totals.failed += 1;
+        else totals.rejectedSubscriptions += 1;
+        continue;
+      }
+
       const statusCode = pushStatusCode(error);
       if (statusCode === 404 || statusCode === 410) {
-        const removal = await client
-          .from("web_push_subscriptions")
-          .delete()
-          .eq("id", reminder.subscription_id);
+        const removal = await removeSubscription(client, reminder);
         if (removal.error) totals.failed += 1;
         else totals.expiredSubscriptions += 1;
         continue;
@@ -116,6 +125,12 @@ Deno.serve(async (request) => {
 });
 
 async function sendReminder(reminder: ClaimedReminder) {
+  if (
+    !allowedPushHostPatterns ||
+    !pushEndpointAllowed(reminder.endpoint, allowedPushHostPatterns)
+  ) {
+    throw new RejectedPushEndpointError();
+  }
   if (localTestMode) return;
   await webpush.sendNotification(
     {
@@ -141,6 +156,16 @@ async function sendReminder(reminder: ClaimedReminder) {
       },
     },
   );
+}
+
+function removeSubscription(
+  client: ReturnType<typeof createClient>,
+  reminder: ClaimedReminder,
+) {
+  return client
+    .from("web_push_subscriptions")
+    .delete()
+    .eq("id", reminder.subscription_id);
 }
 
 async function completeReminder(
@@ -263,6 +288,77 @@ function pushStatusCode(error: unknown) {
     return error.statusCode;
   }
   return undefined;
+}
+
+class RejectedPushEndpointError extends Error {}
+
+function parseAllowedPushHostPatterns(value: string | undefined) {
+  if (!value || /\s/.test(value)) return null;
+
+  const patterns = value.split(",");
+  if (
+    patterns.length === 0 ||
+    patterns.length > 32 ||
+    new Set(patterns).size !== patterns.length ||
+    patterns.some((pattern) => !validPushHostPattern(pattern))
+  ) {
+    return null;
+  }
+  return patterns;
+}
+
+function validPushHostPattern(pattern: string) {
+  const wildcard = pattern.startsWith("*.");
+  const hostname = wildcard ? pattern.slice(2) : pattern;
+  if (
+    !hostname ||
+    hostname !== hostname.toLowerCase() ||
+    hostname.length > 253 ||
+    isIP(hostname) !== 0 ||
+    (pattern.includes("*") && !wildcard)
+  ) {
+    return false;
+  }
+
+  const labels = hostname.split(".");
+  const looksLikeIpv4 =
+    labels.length === 4 && labels.every((label) => /^[0-9]+$/.test(label));
+  return (
+    labels.length >= 2 &&
+    !looksLikeIpv4 &&
+    labels.every(
+      (label) =>
+        label.length >= 1 &&
+        label.length <= 63 &&
+        /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label),
+    )
+  );
+}
+
+function pushEndpointAllowed(endpoint: string, patterns: string[]) {
+  let url: URL;
+  try {
+    url = new URL(endpoint);
+  } catch {
+    return false;
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.port ||
+    url.hash
+  ) {
+    return false;
+  }
+
+  return patterns.some((pattern) => {
+    if (!pattern.startsWith("*.")) return url.hostname === pattern;
+    const suffix = pattern.slice(1);
+    return (
+      url.hostname.length > suffix.length && url.hostname.endsWith(suffix)
+    );
+  });
 }
 
 function validVapidConfiguration(

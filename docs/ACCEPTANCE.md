@@ -292,6 +292,10 @@ Local evidence:
   claim and retry through a VAPID-validated dispatcher. It has not been run
   against a connected backend, so function/scheduler and browser-delivery rows
   remain unchecked.
+- The dispatcher now fails closed on a missing/malformed trusted Push-host
+  allowlist and removes unlisted subscriptions before network access. Actual
+  release-browser endpoint compatibility remains part of the browser-delivery
+  drill.
 - [ ] Google, Apple, GitHub, and email OTP against configured connected
   providers
 - [ ] Apply and lint the proven migrations against the self-hosted test

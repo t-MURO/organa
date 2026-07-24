@@ -171,8 +171,11 @@ function derives the P-256 public key from the private scalar and requires it
 to match the configured canonical, unpadded Base64URL VAPID public key;
 malformed subjects or keypairs fail the authenticated scheduler request
 instead of entering content-delivery retries. Push requests also have a
-bounded socket timeout. Payloads contain only a safe route and opaque tag and
-are encrypted by the Web Push protocol. The service worker always displays
+bounded socket timeout. A server-configured exact/wildcard hostname allowlist
+rejects IP literals, credentials, non-HTTPS or nonstandard-port URLs,
+fragments, and untrusted Push hosts before network access; rejected
+subscriptions are removed. Payloads contain only a safe route and opaque tag
+and are encrypted by the Web Push protocol. The service worker always displays
 generic copy; task titles, medication data, and Check-In content are never sent
 to the Push service.
 

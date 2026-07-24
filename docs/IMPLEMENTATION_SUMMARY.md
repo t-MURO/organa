@@ -1228,6 +1228,31 @@ at desktop width without a connected backend:
 This walkthrough does not replace connected-backend, physical-device,
 production-build, screen-reader, or independent security evidence.
 
+## Web Push Egress Hardening
+
+The dispatcher now treats a browser subscription endpoint as an outbound
+network capability rather than accepting any syntactically valid HTTPS URL:
+
+- `WEB_PUSH_ALLOWED_HOSTS` is required and accepts at most 32 unique lowercase
+  exact hostnames or explicit `*.` suffix patterns.
+- IP literals, one-label names, malformed/duplicate patterns, URL credentials,
+  HTTP, nonstandard ports, fragments, and unmatched endpoint hosts fail
+  closed.
+- An unlisted subscription is removed before local test mode or the real
+  Web Push transport can contact it, and the scheduler response reports it
+  separately from expired or transiently failing subscriptions.
+- Chrome/Firefox/Safari examples are operator configuration, not hardcoded
+  product assumptions. Release validation must confirm the hostnames from
+  actual supported-browser subscriptions.
+- The self-hosted mode-600 function environment and portable POSIX preflight
+  enforce the same host-pattern grammar. The connected retry drill requires
+  `push.invalid` only temporarily and removes it afterward.
+
+Edge Function TypeScript transpilation, exact allowlist/endpoint protocol
+checks, shell and script syntax, the portable server-preflight contract,
+strict repository TypeScript, and the production web/PWA artifact checks pass.
+No tests were added, changed, or run for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
@@ -1240,8 +1265,11 @@ Connected Supabase project:
   tests against the deployed project.
 - Measure two-client encrypted sync and missed-broadcast recovery.
 - Validate live reminder-device ownership and revocation against the hosted
-  project; local authorization resolution and integration contracts are
-  covered by the automated suite.
+  project with the guarded connected verifier and rendered clients.
+- Configure the VAPID pair, trusted Push-host allowlist, and once-per-minute
+  dispatcher, then pass the guarded connected scheduler drill.
+- Validate permission-granted Web Push delivery, replacement, cancellation,
+  deep links, denial fallback, and sign-out in every supported release browser.
 - Repeat the scheduled deletion finalizer drill against the hosted project.
 - Restore an encrypted export on a separate clean client.
 

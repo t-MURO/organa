@@ -154,6 +154,7 @@ pnpm dlx supabase secrets set \
   WEB_PUSH_VAPID_PUBLIC_KEY=URL_SAFE_PUBLIC_KEY \
   WEB_PUSH_VAPID_PRIVATE_KEY=PRIVATE_KEY \
   WEB_PUSH_VAPID_SUBJECT=mailto:security@example.com \
+  WEB_PUSH_ALLOWED_HOSTS='fcm.googleapis.com,updates.push.services.mozilla.com,*.push.apple.com' \
   WEB_PUSH_SCHEDULER_SECRET=LONG_INDEPENDENT_RANDOM_VALUE
 pnpm dlx supabase functions deploy dispatch-web-push
 ```
@@ -170,7 +171,14 @@ The official [Supabase scheduling
 guide](https://supabase.com/docs/guides/functions/schedule-functions)
 documents invoking Edge Functions with `pg_cron`, `pg_net`, and secrets stored
 in Vault. Monitor non-2xx responses and the returned processed, delivered,
-retried, expired-subscription, and failed counts.
+retried, expired-subscription, rejected-subscription, and failed counts.
+
+`WEB_PUSH_ALLOWED_HOSTS` contains only lowercase exact hostnames or explicit
+`*.` suffix patterns observed from supported release-browser subscriptions.
+The example covers common Chrome, Firefox, and Safari Push services but must be
+confirmed during the release-browser drill. The dispatcher rejects any
+unlisted endpoint before network access; do not add broad or untrusted
+patterns.
 
 `EXPO_PUBLIC_WEB_PUSH_VAPID_PUBLIC_KEY` is intentionally public. The private
 key, scheduler secret, browser endpoint capability, and Push authentication

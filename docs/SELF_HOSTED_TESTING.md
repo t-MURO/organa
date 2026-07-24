@@ -298,8 +298,18 @@ ACCOUNT_DELETION_SCHEDULER_SECRET=unique-random-value
 WEB_PUSH_VAPID_PUBLIC_KEY=generated-public-value
 WEB_PUSH_VAPID_PRIVATE_KEY=generated-private-value
 WEB_PUSH_VAPID_SUBJECT=mailto:admin@example.net
+WEB_PUSH_ALLOWED_HOSTS=fcm.googleapis.com,updates.push.services.mozilla.com,*.push.apple.com
 WEB_PUSH_SCHEDULER_SECRET=different-unique-random-value
 ```
+
+`WEB_PUSH_ALLOWED_HOSTS` is a comma-separated list of lowercase exact
+hostnames or explicit `*.` suffix patterns, with no spaces. Confirm the actual
+hostnames returned by every supported release browser rather than assuming
+the example remains complete. The dispatcher rejects IP literals,
+credentials, non-HTTPS URLs, nonstandard ports, fragments, and any hostname
+outside this list before making a network request. This is an outbound request
+boundary for the self-hosted network; do not add broad suffixes or hosts you do
+not trust.
 
 Enable the checked-in Organa override and validate the merged configuration
 without printing its environment:
@@ -481,6 +491,18 @@ perform the remaining drills below.
 
 After deploying the current Web Push function and observing the configured
 crontab run on consecutive minutes, use the short connected scheduler drill.
+Temporarily append the reserved probe hostname to
+`WEB_PUSH_ALLOWED_HOSTS`, then recreate the function service:
+
+```text
+WEB_PUSH_ALLOWED_HOSTS=fcm.googleapis.com,updates.push.services.mozilla.com,*.push.apple.com,push.invalid
+```
+
+```sh
+sh run.sh recreate functions
+sh validate-self-hosted.sh full
+```
+
 In the private connected configuration, temporarily set:
 
 ```text
@@ -502,6 +524,7 @@ minutes for the real cron path to:
 
 - authorize and invoke `dispatch-web-push`
 - validate that the configured VAPID public/private keys are a matching pair
+- authorize the reserved probe through the configured Push-host allowlist
 - claim the due reminder exactly once
 - construct the encrypted, VAPID-signed Web Push request
 - record the expected transport failure and clear the claim
@@ -512,7 +535,9 @@ or subject is malformed, so retry state cannot falsely count invalid server
 credentials as scheduler evidence. The operator command prints no account ID,
 key, proof, token, endpoint capability, payload, or scheduler secret and
 attempts bounded cleanup on failure or interruption. Set
-`allowWebPushSchedulerDrill` back to `false` after the run.
+`allowWebPushSchedulerDrill` back to `false` after the run. Remove
+`push.invalid` from `WEB_PUSH_ALLOWED_HOSTS`, recreate `functions`, and rerun
+the full preflight before browser delivery validation.
 
 A pass plus the full preflight, installed once-per-minute crontab, and
 consecutive scheduler logs supports the Web Push function/scheduler acceptance

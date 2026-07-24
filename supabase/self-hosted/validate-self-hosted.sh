@@ -179,6 +179,60 @@ require_vapid_key() {
   esac
 }
 
+require_push_host_allowlist() {
+  file="$1"
+  key="$2"
+  value=$(value_from "$file" "$key")
+
+  printf '%s\n' "$value" |
+    awk -F, '
+      BEGIN { valid = 1 }
+      NF < 1 || NF > 32 {
+        valid = 0
+        exit
+      }
+      {
+        for (entry_index = 1; entry_index <= NF; entry_index += 1) {
+          pattern = $entry_index
+          wildcard = substr(pattern, 1, 2) == "*."
+          hostname = wildcard ? substr(pattern, 3) : pattern
+
+          if (pattern == "" || pattern != tolower(pattern)) valid = 0
+          if (pattern ~ /[[:space:]]/) valid = 0
+          if (index(pattern, "*") > 0 && !wildcard) valid = 0
+          if (length(hostname) > 253 || seen[pattern]++) valid = 0
+          if (!valid) {
+            valid = 0
+            exit
+          }
+
+          label_count = split(hostname, labels, ".")
+          if (label_count < 2) {
+            valid = 0
+            exit
+          }
+
+          ipv4 = label_count == 4
+          for (label_index = 1; label_index <= label_count; label_index += 1) {
+            label = labels[label_index]
+            if (length(label) < 1 || length(label) > 63) valid = 0
+            if (label !~ /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/) {
+              valid = 0
+            }
+            if (!valid) exit
+            if (label !~ /^[0-9]+$/) ipv4 = 0
+          }
+          if (!valid || ipv4) {
+            valid = 0
+            exit
+          }
+        }
+      }
+      END { exit valid ? 0 : 1 }
+    ' ||
+    fail "$key must contain unique comma-separated lowercase host patterns"
+}
+
 case "$stage" in
   keys|full) ;;
   *) fail "usage: sh validate-self-hosted.sh [keys|full]" ;;
@@ -318,6 +372,7 @@ for key in \
   WEB_PUSH_VAPID_PUBLIC_KEY \
   WEB_PUSH_VAPID_PRIVATE_KEY \
   WEB_PUSH_VAPID_SUBJECT \
+  WEB_PUSH_ALLOWED_HOSTS \
   WEB_PUSH_SCHEDULER_SECRET; do
   require_generated_value .env.functions .env.functions.example "$key"
 done
@@ -326,6 +381,7 @@ require_hex_secret .env.functions ACCOUNT_DELETION_SCHEDULER_SECRET
 require_hex_secret .env.functions WEB_PUSH_SCHEDULER_SECRET
 require_vapid_key .env.functions WEB_PUSH_VAPID_PUBLIC_KEY 87
 require_vapid_key .env.functions WEB_PUSH_VAPID_PRIVATE_KEY 43
+require_push_host_allowlist .env.functions WEB_PUSH_ALLOWED_HOSTS
 vapid_subject=$(value_from .env.functions WEB_PUSH_VAPID_SUBJECT)
 case "$vapid_subject" in
   mailto:*@*|https://*) ;;

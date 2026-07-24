@@ -270,7 +270,10 @@ async function waitForRetryState(reminderId, fireAtMs) {
   }
 
   throw new Error(
-    "The once-per-minute Web Push scheduler did not produce retry evidence within three minutes.",
+    [
+      "The once-per-minute Web Push scheduler did not produce retry evidence within three minutes.",
+      "Verify cron, VAPID configuration, and that WEB_PUSH_ALLOWED_HOSTS includes push.invalid.",
+    ].join(" "),
   );
 }
 
