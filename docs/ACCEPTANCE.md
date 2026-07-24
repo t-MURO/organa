@@ -135,6 +135,11 @@ Local evidence:
   the claimed code from the approving UI, and kept secondary reminders off
 - a task created on the newly approved browser appeared on the original browser
   through encrypted realtime synchronization without a reload
+- a connected disposable-browser drill enrolled a first device, changed only
+  that server record to untrusted, received the private device-channel update,
+  erased local security state, and returned to sign-in; signing the same
+  account in again reached the New Device recovery boundary rather than
+  reopening cached private content, and the disposable account was removed
 - initial encrypted record pulls page deterministically by record type and ID;
   durable reconciliation drains every record sharing a server timestamp before
   advancing, then overlaps the next pass to recover boundary races

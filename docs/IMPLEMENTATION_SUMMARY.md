@@ -1328,6 +1328,11 @@ No tests were added, changed, or run for this milestone.
   comprehensive local-erasure and sign-out path.
 - A server/network failure does not mark an identity unauthorized, so a
   previously signed-in user retains the required offline-first access.
+- A real connected disposable-browser drill completed first-device recovery
+  enrollment, changed that device to untrusted in local Supabase, received the
+  private device-channel signal, erased local security state, and returned to
+  sign-in. Reauthentication reached the New Device recovery boundary instead
+  of reopening cached content; the disposable account was then removed.
 - All 151 existing tests, uncached strict TypeScript, the 19 platform checks,
   the production web/PWA build with 18 artifact checks, and both native Hermes
   exports pass. No test files were added or changed.
