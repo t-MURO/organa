@@ -41,6 +41,12 @@ The task and Check-In screens always state that web reminders appear only while
 Organa is open. A mobile reminder device should remain enabled when closed-tab
 delivery is required.
 
+Active-tab reminders follow the signed-in browser's trusted-device reminder
+setting. A primary device is enabled by default; a secondary device remains
+quiet unless the user explicitly enables reminders for it. During an offline
+restart, Organa uses the last server-confirmed content-free authorization
+boolean. If no authorization has ever been confirmed, it shows no reminder.
+
 ## Release Checks
 
 For each browser:
@@ -58,7 +64,7 @@ For each browser:
 
 ## Latest Local Evidence
 
-On 2026-07-23, the configured production PWA:
+On 2026-07-24, the configured production PWA:
 
 - scored 100% for Lighthouse accessibility and best practices
 - passed 12 deterministic production artifact checks
@@ -68,3 +74,5 @@ On 2026-07-23, the configured production PWA:
 - retained existing encrypted local task data
 - created and retained a new task plus outbox mutation while fully offline
 - reconciled the queued mutation automatically after Supabase returned
+- built successfully after adding reminder-device ownership enforcement to
+  active-tab task and Check-In reminders

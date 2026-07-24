@@ -14,6 +14,7 @@ import { contentKeyVault } from "../../security/content-key-vault";
 import { removeDeviceIdentity } from "../../security/device-identity";
 import { useSecurity } from "../../security/security-context";
 import { accountDeletionCache } from "./account-deletion-cache";
+import { reminderAuthorizationCache } from "./reminder-authorization-cache";
 
 interface DeletionRequest {
   executeAfter: string;
@@ -145,6 +146,7 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
       accountDeletionCache.remove(userId),
       contentKeyVault.remove(userId),
       deleteLocalAccountData(userId),
+      reminderAuthorizationCache.remove(userId),
       removeDeviceIdentity(),
     ]);
     await auth.signOut();

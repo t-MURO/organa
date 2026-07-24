@@ -50,9 +50,13 @@ export function SettingsProvider({ children }: PropsWithChildren) {
       if (!active) return;
       setSettings(stored);
       setLoading(false);
-      void reminderScheduler.initialize().then(() =>
-        reminderScheduler.sync(reminderSettings(stored, devices.remindersAllowed)),
-      );
+      if (devices.reminderAuthorizationReady) {
+        void reminderScheduler.initialize().then(() =>
+          reminderScheduler.sync(
+            reminderSettings(stored, devices.remindersAllowed),
+          ),
+        );
+      }
     });
     return () => {
       active = false;
@@ -60,10 +64,14 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   }, [repository]);
 
   useEffect(() => {
+    if (!devices.reminderAuthorizationReady) return;
     void reminderScheduler.sync(
       reminderSettings(settings, devices.remindersAllowed),
     );
-  }, [devices.remindersAllowed]);
+  }, [
+    devices.reminderAuthorizationReady,
+    devices.remindersAllowed,
+  ]);
 
   useEffect(
     () =>
@@ -71,11 +79,17 @@ export function SettingsProvider({ children }: PropsWithChildren) {
         if (change.operation === "delete" || !change.value) return;
         setSettings(change.value);
         void repository.upsert(change.value);
-        void reminderScheduler.sync(
-          reminderSettings(change.value, devices.remindersAllowed),
-        );
+        if (devices.reminderAuthorizationReady) {
+          void reminderScheduler.sync(
+            reminderSettings(change.value, devices.remindersAllowed),
+          );
+        }
       }),
-    [devices.remindersAllowed, repository],
+    [
+      devices.reminderAuthorizationReady,
+      devices.remindersAllowed,
+      repository,
+    ],
   );
 
   function update(input: UserSettingsInput) {
@@ -83,10 +97,12 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     setSettings(next);
     void repository.upsert(next);
     void sync.queueUpsert("settings", next.id, next, settings);
-    void reminderScheduler.sync(
-      reminderSettings(next, devices.remindersAllowed),
-      Boolean(input.checkInReminder?.enabled) && devices.remindersAllowed,
-    );
+    if (devices.reminderAuthorizationReady) {
+      void reminderScheduler.sync(
+        reminderSettings(next, devices.remindersAllowed),
+        Boolean(input.checkInReminder?.enabled) && devices.remindersAllowed,
+      );
+    }
     return next;
   }
 
@@ -94,10 +110,12 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     await repository.upsert(next);
     await sync.queueUpsert("settings", next.id, next, settings);
     setSettings(next);
-    await reminderScheduler.sync(
-      reminderSettings(next, devices.remindersAllowed),
-      next.checkInReminder.enabled && devices.remindersAllowed,
-    );
+    if (devices.reminderAuthorizationReady) {
+      await reminderScheduler.sync(
+        reminderSettings(next, devices.remindersAllowed),
+        next.checkInReminder.enabled && devices.remindersAllowed,
+      );
+    }
   }
 
   return (

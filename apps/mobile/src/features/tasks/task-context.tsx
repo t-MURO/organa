@@ -16,6 +16,7 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
 } from "react";
 
 import { useAuth } from "../../auth/auth-context";
@@ -62,7 +63,9 @@ function syncNotifications(
   task: Task,
   requestPermission = false,
   enabled = true,
+  authorizationReady = true,
 ) {
+  if (!authorizationReady) return;
   if (!enabled) {
     cancelNotifications(task.id);
     return;
@@ -170,6 +173,14 @@ export function TaskProvider({ children }: PropsWithChildren) {
     loading: true,
     tasks: [],
   });
+  const reminderAuthorizationRef = useRef({
+    allowed: devices.remindersAllowed,
+    ready: devices.reminderAuthorizationReady,
+  });
+  reminderAuthorizationRef.current = {
+    allowed: devices.remindersAllowed,
+    ready: devices.reminderAuthorizationReady,
+  };
 
   useEffect(() => {
     let active = true;
@@ -188,10 +199,16 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
       if (active) {
         dispatch({ type: "loaded", tasks });
+        const authorization = reminderAuthorizationRef.current;
+        tasks.forEach((task) =>
+          syncNotifications(
+            task,
+            false,
+            authorization.allowed,
+            authorization.ready,
+          ),
+        );
       }
-      tasks.forEach((task) =>
-        syncNotifications(task, false, devices.remindersAllowed),
-      );
     }
 
     void load();
@@ -201,10 +218,14 @@ export function TaskProvider({ children }: PropsWithChildren) {
   }, [auth.localPreview, repository]);
 
   useEffect(() => {
+    if (!devices.reminderAuthorizationReady) return;
     state.tasks.forEach((task) =>
       syncNotifications(task, false, devices.remindersAllowed),
     );
-  }, [devices.remindersAllowed]);
+  }, [
+    devices.reminderAuthorizationReady,
+    devices.remindersAllowed,
+  ]);
 
   useEffect(
     () =>
@@ -216,14 +237,23 @@ export function TaskProvider({ children }: PropsWithChildren) {
             await repository.remove(id);
           },
           syncNotifications: (task) =>
-            syncNotifications(task, false, devices.remindersAllowed),
+            syncNotifications(
+              task,
+              false,
+              devices.remindersAllowed,
+              devices.reminderAuthorizationReady,
+            ),
           upsert: async (task) => {
             dispatch({ type: "upserted", task });
             await repository.upsert(task);
           },
         });
       }),
-    [devices.remindersAllowed, repository],
+    [
+      devices.reminderAuthorizationReady,
+      devices.remindersAllowed,
+      repository,
+    ],
   );
 
   function addTask(input: CreateTaskInput) {
@@ -231,7 +261,12 @@ export function TaskProvider({ children }: PropsWithChildren) {
     dispatch({ type: "upserted", task });
     void repository.upsert(task);
     void sync.queueUpsert("task", task.id, task);
-    syncNotifications(task, true, devices.remindersAllowed);
+    syncNotifications(
+      task,
+      true,
+      devices.remindersAllowed,
+      devices.reminderAuthorizationReady,
+    );
     feedback.created();
     return task;
   }
@@ -241,7 +276,12 @@ export function TaskProvider({ children }: PropsWithChildren) {
     dispatch({ type: "upserted", task: updated });
     void repository.upsert(updated);
     void sync.queueUpsert("task", updated.id, updated, task);
-    syncNotifications(updated, true, devices.remindersAllowed);
+    syncNotifications(
+      updated,
+      true,
+      devices.remindersAllowed,
+      devices.reminderAuthorizationReady,
+    );
     return updated;
   }
 
@@ -263,7 +303,12 @@ export function TaskProvider({ children }: PropsWithChildren) {
     );
     for (const { value } of changes) {
       dispatch({ type: "upserted", task: value });
-      syncNotifications(value, false, devices.remindersAllowed);
+      syncNotifications(
+        value,
+        false,
+        devices.remindersAllowed,
+        devices.reminderAuthorizationReady,
+      );
     }
     return changes.length;
   }
@@ -288,7 +333,12 @@ export function TaskProvider({ children }: PropsWithChildren) {
       dispatch({ type: "upserted", task: reopened });
       void repository.upsert(reopened);
       void sync.queueUpsert("task", reopened.id, reopened, task);
-      syncNotifications(reopened, false, devices.remindersAllowed);
+      syncNotifications(
+        reopened,
+        false,
+        devices.remindersAllowed,
+        devices.reminderAuthorizationReady,
+      );
       if (generatedOccurrence) {
         dispatch({ type: "removed", id: generatedOccurrence.id });
         void repository.remove(generatedOccurrence.id);
@@ -314,6 +364,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       result.completedTask,
       false,
       devices.remindersAllowed,
+      devices.reminderAuthorizationReady,
     );
     feedback.completed();
 
@@ -321,7 +372,12 @@ export function TaskProvider({ children }: PropsWithChildren) {
       dispatch({ type: "upserted", task: result.nextTask });
       void repository.upsert(result.nextTask);
       void sync.queueUpsert("task", result.nextTask.id, result.nextTask);
-      syncNotifications(result.nextTask, false, devices.remindersAllowed);
+      syncNotifications(
+        result.nextTask,
+        false,
+        devices.remindersAllowed,
+        devices.reminderAuthorizationReady,
+      );
     }
   }
 
@@ -332,7 +388,12 @@ export function TaskProvider({ children }: PropsWithChildren) {
     dispatch({ type: "upserted", task: nextTask });
     void repository.upsert(nextTask);
     void sync.queueUpsert("task", nextTask.id, nextTask, task);
-    syncNotifications(nextTask, false, devices.remindersAllowed);
+    syncNotifications(
+      nextTask,
+      false,
+      devices.remindersAllowed,
+      devices.reminderAuthorizationReady,
+    );
   }
 
   return (

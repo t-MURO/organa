@@ -1,6 +1,6 @@
 # Controlled-Beta Acceptance
 
-Status recorded on 2026-07-23.
+Status recorded on 2026-07-24.
 
 ## Implemented And Locally Verified
 
@@ -34,7 +34,7 @@ Status recorded on 2026-07-23.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 91 automated tests pass: 39 domain, 6 cryptography, and 46 application tests
+- 98 automated tests pass: 39 domain, 6 cryptography, and 53 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
@@ -80,6 +80,14 @@ Local evidence:
 - account deletion and device revocation clear scheduled and displayed native
   notifications; iOS also replaces both widget timelines with content-free
   states before local database deletion
+- per-user reminder authorization is restored from a content-free local cache
+  during offline startup; unresolved ownership does not cancel existing native
+  schedules, and fresh server device state always overrides the cache
+- task and Check-In schedulers guard unresolved reminder ownership, web
+  active-tab reminders honor primary/secondary device settings, and revocation
+  or final account deletion removes the authorization cache
+- a task-load race test contract verifies that reconciliation reads the latest
+  authorization after asynchronous repository loading
 - production web export succeeds
 - production web artifact verification passes 12 installability and offline
   cache checks

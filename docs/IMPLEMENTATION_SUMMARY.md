@@ -2,6 +2,47 @@
 
 Status recorded on 2026-07-23.
 
+This is the structured pause checkpoint requested after the implementation
+work. The committed implementation is complete through `ec65a20`. The reminder
+authorization work described below is implemented and fully verified in the
+current working tree but has not yet been committed.
+
+## Current Checkpoint
+
+Committed and verified milestones:
+
+- Controlled-beta product foundation across iOS, Android, web, and PWA
+- Encrypted local-first persistence, realtime synchronization, and recovery
+- Trusted-device approval, revocation, and account-deletion finalization
+- Offline PWA restoration and durable outbox behavior
+- Native reminder payloads, actions, reconciliation, and widget timelines
+- Recurrence, grace-day, inbox, and undated-task semantics
+- Independent date-only deadlines
+- Stable single-runtime Yjs loading for Brain Dump
+
+Implemented but uncommitted at this pause:
+
+- Cached per-user reminder-device authorization for offline startup
+- A fail-closed but non-destructive unresolved authorization state
+- Task and Check-In schedulers that preserve existing native schedules until
+  reminder ownership is known
+- Web active-tab reminders that honor primary/secondary device ownership
+- Authorization-cache cleanup on revocation and final account deletion
+- Seven focused tests covering authorization resolution, web cache behavior,
+  scheduler guards, web ownership, and cleanup contracts
+
+Verification completed for the uncommitted reminder-authorization work:
+
+- Strict TypeScript passes.
+- All 98 automated tests pass: 39 domain, 6 cryptography, and 53 application
+  tests.
+- The configured production web export succeeds.
+- All 12 production web artifact checks pass.
+- `git diff --check` passes.
+
+Both iOS and Android Hermes exports pass with the current uncommitted native
+changes.
+
 ## Product Implemented
 
 Organa is implemented as a shared Expo application for iOS, Android, responsive
@@ -124,10 +165,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 91 automated tests pass:
+- 98 automated tests pass:
   - 39 domain tests
   - 6 cryptography tests
-  - 46 application integration tests
+  - 53 application integration tests
 - All three migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
@@ -228,7 +269,7 @@ This milestone includes:
 - Checked-in local confirmation and returning-user email templates that send
   the six-digit code expected by Organa
 - Web-storage and email-template regression tests; the complete automated suite
-  currently passes 91 tests
+  currently passes 98 tests
 
 Local Supabase has been reset successfully from all three migrations, database
 lint reports no schema errors, and all 43 live backend checks pass.
@@ -329,10 +370,10 @@ Automated coverage added in this milestone includes:
 - Invalid recurrence rejection tests
 - Inbox placement, search, overdue, completed, undated, and grace-window tests
 
-The final implementation passes 91 automated tests: 39 domain, 6 cryptography,
-and 46 application tests. Strict TypeScript, `git diff --check`, the configured
-production PWA build with all 12 artifact checks, and iOS and Android Hermes
-exports also pass.
+The current automated suite passes 98 tests: 39 domain, 6 cryptography, and 53
+application tests. At the task-semantics milestone, Strict TypeScript,
+`git diff --check`, the configured production PWA build with all 12 artifact
+checks, and iOS and Android Hermes exports also passed.
 
 The browser walkthrough already verified:
 
@@ -385,6 +426,50 @@ Expo development server renders:
 - Strict TypeScript, the configured production PWA export, and iOS and Android
   Hermes exports pass with the deferred runtime boundary
 
+## Offline Reminder Authorization Work
+
+This work fixes an offline-startup safety issue discovered during the reminder
+ownership audit:
+
+- Previously, a connected client could briefly have no loaded device list at
+  startup and interpret that unknown state as `remindersAllowed=false`.
+- The native task and Check-In schedulers could then cancel already scheduled
+  local notifications before the server device record loaded.
+- Web active-tab reminders did not check reminder-device ownership, so a
+  secondary device could produce duplicate reminders.
+
+The current working tree implements:
+
+- A per-user reminder-authorization cache using SecureStore on native,
+  `localStorage` on web, and an in-memory fallback for unsupported platforms
+- A pure authorization resolver that distinguishes `allowed`, `disabled`, and
+  unresolved states
+- Fresh server device state as authoritative whenever it is available
+- Cached authorization as the offline fallback for a returning user
+- No scheduling or cancellation while authorization is unresolved, preserving
+  existing native schedules
+- Ownership enforcement for task reminders, the daily Check-In reminder, and
+  web active-tab notices
+- Removal of the cached authorization during device revocation and final
+  account deletion
+- User-ID scoping for cached, remote, and loaded-device state so one account's
+  authorization cannot be reused for another account during a render
+- Race-safe task loading that reads the latest authorization after the
+  asynchronous repository load and ignores obsolete account loads
+
+Focused tests verify:
+
+- Missing cached state remains unresolved instead of becoming disabled
+- Cached enabled and disabled states restore correctly offline
+- Fresh server state overrides stale cached state
+- Web cache storage is inert during server rendering and supports round-trip
+  persistence and removal
+- Task and Check-In scheduling paths guard unresolved authorization
+- Web reminders enforce device authorization
+- Revocation and deletion paths remove cached authorization
+- The configured production web export, all 12 web artifact checks, and both
+  native Hermes exports pass from the same source state
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
@@ -396,7 +481,9 @@ Connected Supabase project:
 - Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
   tests against the deployed project.
 - Measure two-client encrypted sync and missed-broadcast recovery.
-- Validate live reminder-device ownership and revocation.
+- Validate live reminder-device ownership and revocation against the hosted
+  project; local authorization resolution and integration contracts are
+  covered by the automated suite.
 - Repeat the scheduled deletion finalizer drill against the hosted project.
 - Restore an encrypted export on a separate clean client.
 

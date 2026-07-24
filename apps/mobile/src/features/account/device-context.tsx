@@ -14,6 +14,8 @@ import { deleteLocalAccountData } from "../../data/delete-local-account-data";
 import { contentKeyVault } from "../../security/content-key-vault";
 import { removeDeviceIdentity } from "../../security/device-identity";
 import { useSecurity } from "../../security/security-context";
+import { reminderAuthorizationCache } from "./reminder-authorization-cache";
+import { resolveReminderAuthorization } from "./reminder-authorization";
 
 export interface TrustedDevice {
   approvalExpiresAt?: string;
@@ -32,6 +34,7 @@ interface DeviceContextValue {
   currentDeviceId: string | null;
   devices: TrustedDevice[];
   loading: boolean;
+  reminderAuthorizationReady: boolean;
   remindersAllowed: boolean;
   approve(deviceId: string): Promise<string>;
   configureReminders(
@@ -50,12 +53,22 @@ export function DeviceProvider({ children }: PropsWithChildren) {
   const security = useSecurity();
   const [devices, setDevices] = useState<TrustedDevice[]>([]);
   const [loading, setLoading] = useState(!auth.localPreview);
+  const [devicesUserId, setDevicesUserId] = useState<string | null>(null);
+  const [cachedAuthorization, setCachedAuthorization] = useState<{
+    allowed: boolean | null;
+    userId: string;
+  } | null>(null);
+  const [remoteResolvedUserId, setRemoteResolvedUserId] = useState<
+    string | null
+  >(null);
   const revocationHandled = useRef(false);
 
   async function refresh() {
     if (auth.localPreview || !auth.user || !supabase) {
       setDevices([]);
+      setDevicesUserId(null);
       setLoading(false);
+      setRemoteResolvedUserId(null);
       return;
     }
     const [result, approvals] = await Promise.all([
@@ -98,8 +111,36 @@ export function DeviceProvider({ children }: PropsWithChildren) {
         };
       }),
     );
+    setDevicesUserId(auth.user.id);
+    setRemoteResolvedUserId(auth.user.id);
     setLoading(false);
   }
+
+  useEffect(() => {
+    setRemoteResolvedUserId(null);
+    setCachedAuthorization(null);
+
+    if (auth.localPreview) return;
+    if (!auth.user || !security.device) {
+      return;
+    }
+
+    let active = true;
+    const userId = auth.user.id;
+    void reminderAuthorizationCache
+      .get(userId)
+      .then((allowed) => {
+        if (!active) return;
+        setCachedAuthorization({ allowed, userId });
+      })
+      .catch(() => {
+        if (!active) return;
+        setCachedAuthorization({ allowed: null, userId });
+      });
+    return () => {
+      active = false;
+    };
+  }, [auth.localPreview, auth.user?.id, security.device?.id]);
 
   useEffect(() => {
     setLoading(!auth.localPreview);
@@ -190,7 +231,43 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     await refresh();
   }
 
-  const current = devices.find((item) => item.id === security.device?.id);
+  const userId = auth.user?.id;
+  const current =
+    userId && devicesUserId === userId
+      ? devices.find((item) => item.id === security.device?.id)
+      : undefined;
+  const remoteResolved =
+    Boolean(userId) && remoteResolvedUserId === userId;
+  const cacheLoaded =
+    Boolean(userId) && cachedAuthorization?.userId === userId;
+  const cachedAllowed = cacheLoaded
+    ? (cachedAuthorization?.allowed ?? null)
+    : null;
+  const reminderAuthorization = resolveReminderAuthorization({
+    cacheLoaded,
+    cachedAllowed,
+    currentDevice: current,
+    localPreview: auth.localPreview,
+    remoteResolved,
+  });
+
+  useEffect(() => {
+    if (auth.localPreview || !auth.user || !remoteResolved) return;
+    const allowed = Boolean(
+      current &&
+        !current.revokedAt &&
+        (current.primaryReminder || current.notificationsEnabled),
+    );
+    setCachedAuthorization({ allowed, userId: auth.user.id });
+    void reminderAuthorizationCache.set(auth.user.id, allowed);
+  }, [
+    auth.localPreview,
+    auth.user?.id,
+    current?.notificationsEnabled,
+    current?.primaryReminder,
+    current?.revokedAt,
+    remoteResolved,
+  ]);
 
   useEffect(() => {
     if (!auth.user || !current?.revokedAt || revocationHandled.current) return;
@@ -199,6 +276,7 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     void Promise.all([
       contentKeyVault.remove(userId),
       deleteLocalAccountData(userId),
+      reminderAuthorizationCache.remove(userId),
       removeDeviceIdentity(),
     ])
       .then(() => auth.signOut())
@@ -211,14 +289,6 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     revocationHandled.current = false;
   }, [auth.user?.id]);
 
-  const remindersAllowed =
-    auth.localPreview ||
-    Boolean(
-      current &&
-        !current.revokedAt &&
-        (current.primaryReminder || current.notificationsEnabled),
-    );
-
   return (
     <DeviceContext.Provider
       value={{
@@ -227,9 +297,10 @@ export function DeviceProvider({ children }: PropsWithChildren) {
         currentDeviceId: security.device?.id ?? null,
         devices,
         loading,
+        reminderAuthorizationReady: reminderAuthorization.ready,
         refresh,
         rejectApproval,
-        remindersAllowed,
+        remindersAllowed: reminderAuthorization.allowed,
         revoke,
       }}
     >

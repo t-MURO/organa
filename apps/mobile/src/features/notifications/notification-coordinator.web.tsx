@@ -9,10 +9,11 @@ import {
   View,
 } from "react-native";
 
+import { darkTheme, lightTheme } from "../../theme";
+import { useDevices } from "../account/device-context";
 import { useCheckIns } from "../check-in/check-in-context";
 import { useSettings } from "../settings/settings-context";
 import { useTasks } from "../tasks/task-context";
-import { darkTheme, lightTheme } from "../../theme";
 import {
   findTaskReminder,
   type InAppReminder,
@@ -22,6 +23,7 @@ export function NotificationCoordinator() {
   const router = useRouter();
   const { tasks } = useTasks();
   const { entries } = useCheckIns();
+  const devices = useDevices();
   const { settings } = useSettings();
   const systemScheme = useColorScheme();
   const effectiveMode =
@@ -38,6 +40,10 @@ export function NotificationCoordinator() {
   }, [notice]);
 
   useEffect(() => {
+    if (!devices.reminderAuthorizationReady || !devices.remindersAllowed) {
+      return;
+    }
+
     function scan() {
       if (noticeRef.current) return;
       const now = new Date();
@@ -58,7 +64,29 @@ export function NotificationCoordinator() {
     scan();
     const interval = setInterval(scan, 15_000);
     return () => clearInterval(interval);
-  }, [entries, settings.checkInReminder, tasks]);
+  }, [
+    devices.reminderAuthorizationReady,
+    devices.remindersAllowed,
+    entries,
+    settings.checkInReminder,
+    tasks,
+  ]);
+
+  useEffect(() => {
+    if (
+      devices.reminderAuthorizationReady &&
+      devices.remindersAllowed
+    ) {
+      return;
+    }
+    snoozeTimers.current.forEach(clearTimeout);
+    snoozeTimers.current = [];
+    noticeRef.current = undefined;
+    setNotice(undefined);
+  }, [
+    devices.reminderAuthorizationReady,
+    devices.remindersAllowed,
+  ]);
 
   useEffect(
     () => () => {

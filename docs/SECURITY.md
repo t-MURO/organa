@@ -54,6 +54,20 @@ Web:
   JavaScript. XSS while Organa is unlocked can access decrypted application
   state.
 
+Reminder authorization:
+
+- Native stores the last server-confirmed per-user reminder authorization as a
+  boolean in Expo SecureStore. Web stores the same content-free boolean in
+  `localStorage`.
+- The cache contains no task, Check-In, medication, schedule, or reminder
+  content and is not an authentication credential.
+- Fresh trusted-device state from Supabase is authoritative and replaces the
+  cache. Until either cached or server state is available, reminder
+  authorization remains unresolved: schedulers neither create nor cancel
+  notifications.
+- The authorization cache is removed when device revocation is observed and
+  during final local account deletion.
+
 Local task, Check-In, template, and Brain Dump repositories contain plaintext
 needed for offline use. They rely on device encryption, OS account security,
 and optional app lock. End-to-end encryption protects synchronized cloud
@@ -122,6 +136,11 @@ out, and encrypted writes from the revoked device ID are rejected. Revoking
 also expires refresh tokens for other sessions. Existing access-token JWTs
 remain valid until expiry, and revocation is not retroactive against data
 already copied from a device.
+
+Offline reminder authorization can only represent the last server-confirmed
+state. A device that remains offline cannot learn that it was revoked; the
+reconnect path makes the fresh server state authoritative and performs private
+local cleanup.
 
 Content-key rotation after device compromise is not implemented in this MVP.
 Treat that as a production threat-model decision, not as a guaranteed remote
