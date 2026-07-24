@@ -48,6 +48,9 @@ Status recorded on 2026-07-24.
 - [x] Browser auth sessions and device proof secrets migrate from plaintext
   local storage into record-bound AES-GCM IndexedDB entries with
   non-extractable wrapping keys where supported
+- [x] Client backend setup rejects remote HTTP, URL credentials/placeholders,
+  and non-publishable or secret-style Supabase keys without reflecting values
+  in the setup UI
 
 Local evidence:
 

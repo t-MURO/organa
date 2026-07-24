@@ -32,6 +32,7 @@ Committed and verified milestones:
 - Explicit controlled-beta OS and browser support boundaries
 - Reproducible internal-preview and store-release packaging boundaries
 - Protected browser session/device-proof persistence and a store-facing data map
+- Fail-closed public Supabase endpoint and publishable-key validation
 - Deterministic local performance checks against a 2,000-task dataset
 - Fail-closed encrypted-backup domain validation
 - Byte-for-byte encrypted-row preservation across database upgrades
@@ -1016,6 +1017,25 @@ switching:
 - `pnpm verify:supabase` passes 37 authenticated database checks, including two
   real primary switches across trusted devices, plus 12 live deletion-function
   checks.
+
+## Backend Configuration Boundary Milestone
+
+This milestone prevents malformed or sensitive backend configuration from
+silently creating an authentication client:
+
+- Both public values are required; a non-empty pair is no longer treated as
+  sufficient configuration.
+- Remote endpoints must use HTTPS. Loopback HTTP remains supported for the
+  local Docker-backed Supabase workflow.
+- Embedded URL credentials, query/hash additions, the checked-in placeholder,
+  and keys outside the `sb_publishable_` format are rejected.
+- The setup screen explains the rejected category without echoing either
+  supplied value, and secret/service-role keys are explicitly unsupported.
+- The release runbook records this as a boundary that must not be weakened
+  when connecting preview or production environments.
+- Uncached strict TypeScript, the production web/PWA build with all 18 artifact
+  checks, iOS and Android Hermes exports, and the production dependency audit
+  pass. No tests were added, changed, or run for this milestone.
 
 ## Brain Dump Compaction Milestone
 

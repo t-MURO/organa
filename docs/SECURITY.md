@@ -175,6 +175,13 @@ Supabase must not receive task titles, details, medication text, reminder text,
 templates, Check-In content, mood values, Brain Dump text, or the plaintext
 content key.
 
+Client backend configuration fails closed unless both public values are
+present, the endpoint uses HTTPS (or loopback HTTP for local development), and
+the key has the `sb_publishable_` form. URL credentials, query/hash additions,
+example placeholders, secret keys, service-role keys, and arbitrary non-empty
+strings do not create a Supabase client. Setup feedback never echoes a supplied
+URL or key.
+
 Field names and record types are operational metadata. They should not contain
 user-entered content.
 

@@ -125,7 +125,7 @@ function SignInScreen() {
               <Text style={styles.cardText}>
                 {auth.configured
                   ? "Choose a sign-in method. Organa does not require a password."
-                  : "Add the two Supabase values from .env.example before creating an account."}
+                  : auth.configurationIssue}
               </Text>
 
               {auth.configured ? (

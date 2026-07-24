@@ -12,13 +12,18 @@ import { AppState, Platform } from "react-native";
 
 import { clearPrivatePlatformState } from "../data/clear-private-platform-state";
 import { createOAuthCallbackCoordinator } from "./oauth-callback";
-import { isSupabaseConfigured, supabase } from "./supabase";
+import {
+  isSupabaseConfigured,
+  supabase,
+  supabaseConfigurationIssue,
+} from "./supabase";
 
 WebBrowser.maybeCompleteAuthSession();
 
 type OAuthProvider = Extract<Provider, "google" | "apple" | "github">;
 
 interface AuthContextValue {
+  configurationIssue: string;
   configured: boolean;
   loading: boolean;
   localPreview: boolean;
@@ -195,6 +200,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       value={{
         callbackError,
         clearCallbackError: () => setCallbackError(""),
+        configurationIssue: supabaseConfigurationIssue,
         configured: isSupabaseConfigured,
         loading,
         localPreview,
