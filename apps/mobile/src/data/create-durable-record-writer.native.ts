@@ -115,6 +115,12 @@ async function deleteLocalRecord(
       recordId,
     );
   }
+  if (recordType === "check_in") {
+    await transaction.runAsync(
+      "DELETE FROM check_ins WHERE id = ?",
+      recordId,
+    );
+  }
 }
 
 async function upsertLocalRecord(
@@ -170,6 +176,11 @@ async function upsertLocalRecord(
   }
   if (recordType === "check_in") {
     const entry = value as CheckInEntry;
+    await transaction.runAsync(
+      "DELETE FROM check_ins WHERE entry_date = ? AND id <> ?",
+      entry.date,
+      entry.id,
+    );
     await transaction.runAsync(
       `INSERT INTO check_ins (id, entry_date, payload, updated_at)
        VALUES (?, ?, ?, ?)

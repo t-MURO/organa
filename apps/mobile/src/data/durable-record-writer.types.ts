@@ -43,7 +43,7 @@ export function assertDurableRecordWrites(
     }
     if (
       local.operation === "delete" &&
-      (local.recordType === "check_in" || local.recordType === "settings")
+      local.recordType === "settings"
     ) {
       throw new Error(
         `Local ${local.recordType} deletion is not supported.`,

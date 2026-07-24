@@ -59,9 +59,10 @@ The criterion-by-criterion status and evidence boundary is recorded in
   resume, and cold start with one-time PKCE exchange deduplication
 - [x] Account-scoped content-key readiness and runtime validation for native
   and web key-vault records
-- [x] New and restored Check-In rows derive deterministic opaque record IDs
-  from the account content key with HKDF/HMAC-SHA-256; calendar dates remain
-  inside encrypted fields while same-day multi-device writes still converge
+- [x] New, restored, and legacy local Check-In rows use deterministic opaque
+  record IDs derived from the account content key with
+  HKDF/HMAC-SHA-256; calendar dates remain inside encrypted fields while
+  same-day multi-device writes still converge
 - [x] Browser auth sessions and device proof secrets migrate from plaintext
   local storage into record-bound AES-GCM IndexedDB entries with
   non-extractable wrapping keys where supported
@@ -128,12 +129,16 @@ Local evidence:
   completed placement plus searchability
 - static security-contract tests prevent direct account-key writes and
   proofless privileged RPC signatures
-- all eight migrations apply from scratch to local Supabase/PostgreSQL and
+- all nine migrations apply from scratch to local Supabase/PostgreSQL and
   `db lint --local --level warning` reports no schema errors or warnings
 - `pnpm verify:migrations` passes 6 upgrade checks after seeding the original
   schema with synthetic account keys, devices, encrypted records, encrypted
   history, outbox mutations, and deletion state; every seeded row remains
   byte-for-byte unchanged after all later migrations
+- rollback-only local PostgreSQL drills prove that active date-bearing
+  Check-In IDs are rejected, opaque IDs are accepted, and deleting a legacy
+  ID through the authenticated mutation RPC purges its active row, history,
+  and mutation metadata while still returning the applied version
 - `pnpm verify:supabase` includes those 6 migration checks and passes 75
   authenticated database checks covering
   cross-account RLS, direct-write denial, invalid proofs, encrypted
@@ -375,6 +380,8 @@ Local evidence:
   claiming success, preserves edits made during an in-flight save as unsaved,
   and reports a pressure-free retry message when derivation or persistence
   fails
+- Check-In realtime delivery waits for account-scoped local hydration, so a
+  remote row cannot be overwritten in memory by a later stale startup load
 - task and template editors clear/hide recurrence when One-off is selected;
   enabling per-step reminder configuration materializes inherited timings so
   visible chips and the saved schedule agree

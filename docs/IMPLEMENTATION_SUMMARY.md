@@ -386,7 +386,7 @@ Verification evidence:
 - A configured production PWA export passed 16 artifact checks and precached
   22 URLs, including the Push handler.
 - Both iOS and Android Hermes exports passed from the same source state.
-- All eight migrations applied from an empty database and database lint
+- All nine migrations applied from an empty database and database lint
   reported no findings.
 - The local authenticated database verifier passed 75 checks.
 - The live account-deletion verifier passed 13 checks, including cascading
@@ -596,7 +596,7 @@ Latest verified repository checks:
   - 43 domain tests
   - 6 cryptography tests
   - 102 application integration tests
-- All eight migrations apply cleanly from scratch to local
+- All nine migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - The isolated migration-upgrade verifier passes 6 checks and preserves all
   seeded encrypted/account rows byte-for-byte.
@@ -1692,9 +1692,19 @@ No tests were added, changed, or run for this milestone.
   custom MAC/KDF. Temporary raw and derived key byte arrays are zeroed after
   derivation.
 - New entries on different trusted devices derive the same ID for the same
-  date. Encrypted-backup restore also normalizes Check-In IDs through the
-  current account key, while an existing local entry for that date keeps its
-  current ID to avoid duplicate daily entries.
+  date. Startup, save, and encrypted-backup restore also normalize legacy
+  Check-In IDs through the current account key.
+- IndexedDB and SQLite replace a same-date legacy key atomically with the
+  opaque key and its encrypted outbox writes. Reducer and remote-delivery
+  paths replace by date as well as ID, so reordered delete/upsert broadcasts
+  cannot leave duplicate daily entries.
+- Realtime Check-In delivery waits for local account hydration before touching
+  storage or reducer state, preventing a remote row from being visually
+  overwritten by the later completion of a stale startup read.
+- The ninth database migration rejects active `check_in` rows whose IDs do
+  not match the versioned opaque format. Legacy IDs remain accepted only as
+  deletion tombstones, which immediately purge the matching encrypted row,
+  history, and applied-mutation metadata.
 - Check-In save waits for the durable local/outbox commit before showing
   success. Edits made while that commit is in flight remain visibly unsaved,
   and failures leave the entered words in place with a gentle retry message.
@@ -1708,6 +1718,10 @@ No tests were added, changed, or run for this milestone.
   of the changed lockfile remains a release gate: the npm audit endpoint was
   unavailable inside the sandbox, and external dependency-graph egress was
   not authorized.
+- All nine migrations pass the six-check isolated-schema preservation
+  verifier. Two rollback-only local PostgreSQL drills additionally proved
+  active legacy rejection, opaque-ID acceptance, complete legacy metadata
+  purge, and successful applied-version return through the real mutation RPC.
 
 ## Remaining Acceptance Gates
 

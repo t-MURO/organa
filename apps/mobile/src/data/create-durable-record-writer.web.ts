@@ -50,6 +50,9 @@ export function createDurableRecordWriter(
               .objectStore("brainDumpBullets")
               .delete(local.recordId);
           }
+          if (local.recordType === "check_in") {
+            await transaction.objectStore("checkIns").delete(local.recordId);
+          }
         } else {
           if (local.recordType === "task") {
             await transaction
@@ -67,9 +70,13 @@ export function createDurableRecordWriter(
               .put(local.value as BrainDumpBullet);
           }
           if (local.recordType === "check_in") {
-            await transaction
-              .objectStore("checkIns")
-              .put(local.value as CheckInEntry);
+            const entry = local.value as CheckInEntry;
+            const store = transaction.objectStore("checkIns");
+            const previousId = await store.index("by-date").getKey(entry.date);
+            if (previousId && previousId !== entry.id) {
+              await store.delete(previousId);
+            }
+            await store.put(entry);
           }
           if (local.recordType === "settings") {
             await transaction

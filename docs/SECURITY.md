@@ -209,11 +209,15 @@ URL or key.
 Field names and record types are operational metadata. They should not contain
 user-entered content.
 
-Check-In dates are also excluded from record identifiers. New and restored
-Check-In rows derive a versioned deterministic ID from the account content key
-using HKDF-SHA-256 for key separation and HMAC-SHA-256 over the date. This
-preserves one-record-per-day convergence across trusted devices while leaving
-only an opaque, account-unlinkable identifier visible to Supabase.
+Check-In dates are also excluded from record identifiers. New, restored, and
+locally stored legacy Check-In rows derive a versioned deterministic ID from
+the account content key using HKDF-SHA-256 for key separation and
+HMAC-SHA-256 over the date. This preserves one-record-per-day convergence
+across trusted devices while leaving only an opaque, account-unlinkable
+identifier visible to Supabase. The database rejects active Check-In rows
+outside that format. It accepts a legacy date-bearing ID only as a deletion
+tombstone and immediately purges the matching active, history, and applied
+mutation rows.
 
 ## Authorization
 

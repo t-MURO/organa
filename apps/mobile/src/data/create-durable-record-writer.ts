@@ -50,6 +50,9 @@ export function createDurableRecordWriter(
           if (local.recordType === "brain_dump_bullet") {
             await brainDump.remove(local.recordId);
           }
+          if (local.recordType === "check_in") {
+            await checkIns.remove(local.recordId);
+          }
         } else {
           if (local.recordType === "task") {
             await tasks.upsert(local.value as Task);

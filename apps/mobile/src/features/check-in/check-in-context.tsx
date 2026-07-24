@@ -12,13 +12,16 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
 } from "react";
 
 import { useAuth } from "../../auth/auth-context";
 import { createCheckInRepository } from "../../data/create-check-in-repository";
 import { useSecurity } from "../../security/security-context";
-import { useSync } from "../../sync/sync-context";
-import { selectRestoreChanges } from "../account/restore-merge";
+import {
+  type SyncCommitChange,
+  useSync,
+} from "../../sync/sync-context";
 
 interface CheckInState {
   loading: boolean;
@@ -27,6 +30,7 @@ interface CheckInState {
 
 type CheckInAction =
   | { type: "loaded"; entries: CheckInEntry[] }
+  | { type: "removed"; id: string }
   | { type: "upserted"; entry: CheckInEntry };
 
 interface CheckInContextValue extends CheckInState {
@@ -49,20 +53,23 @@ function checkInReducer(
         entries: sortCheckInEntries(action.entries),
       };
     case "upserted": {
-      const exists = state.entries.some(
-        (entry) => entry.id === action.entry.id,
-      );
-      const entries = exists
-        ? state.entries.map((entry) =>
-            entry.id === action.entry.id ? action.entry : entry,
-          )
-        : [...state.entries, action.entry];
-
       return {
         ...state,
-        entries: sortCheckInEntries(entries),
+        entries: sortCheckInEntries([
+          ...state.entries.filter(
+            (entry) =>
+              entry.id !== action.entry.id &&
+              entry.date !== action.entry.date,
+          ),
+          action.entry,
+        ]),
       };
     }
+    case "removed":
+      return {
+        ...state,
+        entries: state.entries.filter((entry) => entry.id !== action.id),
+      };
   }
 }
 
@@ -79,20 +86,37 @@ export function CheckInProvider({ children }: PropsWithChildren) {
     loading: true,
     entries: [],
   });
+  const hydration = useRef<Promise<void>>(Promise.resolve());
 
   useEffect(() => {
     let active = true;
 
     async function load() {
       await repository.initialize();
-      const entries = await repository.list();
+      const storedEntries = await repository.list();
+      const normalizedEntries = await Promise.all(
+        storedEntries.map(normalizeEntryId),
+      );
+      const migrationChanges = storedEntries.flatMap((entry, index) =>
+        entry.id === normalizedEntries[index]?.id
+          ? []
+          : replacementChanges(entry, normalizedEntries[index]!),
+      );
+      const migrated =
+        migrationChanges.length === 0 ||
+        (await sync.commit(migrationChanges));
 
       if (active) {
-        dispatch({ type: "loaded", entries });
+        dispatch({
+          type: "loaded",
+          entries: migrated ? normalizedEntries : storedEntries,
+        });
       }
     }
 
-    void load().catch(() => {
+    const loading = load();
+    hydration.current = loading.catch(() => undefined);
+    void loading.catch(() => {
       if (active) sync.reportLocalReadFailure();
     });
     return () => {
@@ -103,7 +127,16 @@ export function CheckInProvider({ children }: PropsWithChildren) {
   useEffect(
     () =>
       sync.subscribe<CheckInEntry>("check_in", async (change) => {
-        if (change.operation === "delete" || !change.value) return;
+        await hydration.current;
+        if (change.operation === "delete") {
+          await repository.remove(change.recordId);
+          dispatch({ type: "removed", id: change.recordId });
+          return;
+        }
+        if (!change.value) return;
+        if (change.value.id !== change.recordId) {
+          throw new Error("The synchronized Check-In ID is invalid.");
+        }
         await repository.upsert(change.value);
         dispatch({ type: "upserted", entry: change.value });
       }),
@@ -112,19 +145,12 @@ export function CheckInProvider({ children }: PropsWithChildren) {
 
   async function saveEntry(input: CheckInInput) {
     const existing = state.entries.find((entry) => entry.date === input.date);
+    const id = await security.deriveRecordId("check_in", input.date);
     const entry = existing
-      ? updateCheckInEntry(existing, input)
-      : createCheckInEntry(
-          input,
-          await security.deriveRecordId("check_in", input.date),
-        );
+      ? { ...updateCheckInEntry(existing, input), id }
+      : createCheckInEntry(input, id);
 
-    const committed = await sync.commitUpsert(
-      "check_in",
-      entry.id,
-      entry,
-      existing,
-    );
+    const committed = await sync.commit(replacementChanges(existing, entry));
     if (!committed) {
       throw new Error("This Check-In could not be saved safely.");
     }
@@ -134,31 +160,82 @@ export function CheckInProvider({ children }: PropsWithChildren) {
 
   async function restoreEntries(entries: CheckInEntry[]) {
     const current = await repository.list();
-    const normalized = await Promise.all(
-      entries.map(async (entry) => ({
-        ...entry,
-        id:
-          current.find((candidate) => candidate.date === entry.date)?.id ??
-          (await security.deriveRecordId("check_in", entry.date)),
-      })),
+    const currentByDate = new Map(
+      current.map((entry) => [entry.date, entry]),
     );
-    const changes = selectRestoreChanges(current, normalized);
-    const committed = await sync.commit(
-      changes.map(({ previous, value }) => ({
-        operation: "upsert",
-        previousValue: previous,
-        recordId: value.id,
-        recordType: "check_in",
-        value,
-      })),
-    );
+    const incomingByDate = new Map<string, CheckInEntry>();
+    for (const entry of entries) {
+      const previous = incomingByDate.get(entry.date);
+      if (!previous || entry.updatedAt > previous.updatedAt) {
+        incomingByDate.set(entry.date, entry);
+      }
+    }
+
+    const changes: SyncCommitChange[] = [];
+    const mergedEntries: CheckInEntry[] = [];
+    let restoredCount = 0;
+    const dates = new Set([...currentByDate.keys(), ...incomingByDate.keys()]);
+    for (const date of dates) {
+      const previous = currentByDate.get(date);
+      const incoming = incomingByDate.get(date);
+      const incomingWins =
+        Boolean(incoming) &&
+        (!previous || incoming!.updatedAt > previous.updatedAt);
+      const selected = incomingWins ? incoming! : previous;
+      if (!selected) continue;
+
+      const value = await normalizeEntryId(selected);
+      if (!previous || previous.id !== value.id || incomingWins) {
+        changes.push(...replacementChanges(previous, value));
+        mergedEntries.push(value);
+      }
+      if (incomingWins) restoredCount += 1;
+    }
+
+    const committed =
+      changes.length === 0 || (await sync.commit(changes));
     if (!committed) {
       throw new Error("The restored Check-In entries could not be saved.");
     }
-    for (const { value } of changes) {
+    for (const value of mergedEntries) {
       dispatch({ type: "upserted", entry: value });
     }
-    return changes.length;
+    return restoredCount;
+  }
+
+  async function normalizeEntryId(entry: CheckInEntry) {
+    const id = await security.deriveRecordId("check_in", entry.date);
+    return id === entry.id ? entry : { ...entry, id };
+  }
+
+  function replacementChanges(
+    previous: CheckInEntry | undefined,
+    value: CheckInEntry,
+  ): SyncCommitChange[] {
+    if (!previous || previous.id === value.id) {
+      return [
+        {
+          operation: "upsert",
+          previousValue: previous,
+          recordId: value.id,
+          recordType: "check_in",
+          value,
+        },
+      ];
+    }
+    return [
+      {
+        operation: "delete",
+        recordId: previous.id,
+        recordType: "check_in",
+      },
+      {
+        operation: "upsert",
+        recordId: value.id,
+        recordType: "check_in",
+        value,
+      },
+    ];
   }
 
   return (
