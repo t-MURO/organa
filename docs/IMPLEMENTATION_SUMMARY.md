@@ -1066,6 +1066,10 @@ silently creating an authentication client:
 - The key, Caddy, function-routing, and Organa override sequence was resolved
   successfully against upstream Supabase revision
   `8e75147f0c2a24202e0d53c75cddc5e3e06c531d` without exposing generated values.
+- Adds a two-stage server preflight that rejects missing tools/files, example
+  or empty keys, public secret-file modes, invalid connected URLs, an inactive
+  Organa override, missing core services, and invalid Compose resolution
+  without printing any credential value.
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.

@@ -221,6 +221,8 @@ scp supabase/self-hosted/docker-compose.organa.yml \
   SERVER:~/organa-supabase/
 scp supabase/self-hosted/.env.functions.example \
   SERVER:~/organa-supabase/
+scp supabase/self-hosted/validate-self-hosted.sh \
+  SERVER:~/organa-supabase/
 ```
 
 Generate the VAPID pair on the development machine. This command prints both
@@ -270,6 +272,20 @@ Confirm the generated Supabase `.env` still has
 check would reject those scheduler credentials before the function can
 validate them. Revisit the global setting before adding any function that
 relies only on a user JWT.
+
+Run the secret-safe full preflight before starting or recreating the stack:
+
+```sh
+sh validate-self-hosted.sh full
+```
+
+The script reports only missing or invalid key names, files, permissions,
+URLs, Compose services, and daemon access. It never prints credential values.
+To recheck only initial key generation, run:
+
+```sh
+sh validate-self-hosted.sh keys
+```
 
 The self-hosted runtime already supplies its internal `SUPABASE_URL` and
 service-role credential. Recreate the function service after changing code or
