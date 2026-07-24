@@ -1575,6 +1575,15 @@ No tests were added, changed, or run for this milestone.
 - Brain Dump snapshots persist their fully merged projection before pending
   update bookkeeping is cleared, and CRDT deltas are marked confirmed only
   after their merged bullet is durable.
+- Initial, realtime, acknowledgement, and reconciliation fetches can finish in
+  a different order than they started. A per-record promise chain now
+  serializes their application and skips any row below the highest server
+  version already observed, so a delayed stale response cannot revert a newer
+  local projection.
+- Durable versions are tracked per subscription rather than globally. Newly
+  mounted subscribers can hydrate the current row, successful listeners are
+  not repeated when a peer listener fails, and any failed listener keeps the
+  overall delivery unsuccessful so reconciliation retries it.
 - No test files were added or changed for this milestone.
 
 ## Remaining Acceptance Gates

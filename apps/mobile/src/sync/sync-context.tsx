@@ -39,6 +39,16 @@ type RemoteRecordListener<T = unknown> = (
   change: RemoteRecordChange<T>,
 ) => void | Promise<void>;
 
+interface RemoteRecordSubscription {
+  deliveredVersions: Map<string, number>;
+  listener: RemoteRecordListener;
+}
+
+interface RemoteDeliveryState {
+  chain: Promise<void>;
+  highestSeenVersion: number;
+}
+
 export type SyncCommitChange =
   | {
       local?: LocalRecordChange;
@@ -134,8 +144,9 @@ export function SyncProvider({ children }: PropsWithChildren) {
     [namespace],
   );
   const subscribers = useRef(
-    new Map<SyncRecordType, Set<RemoteRecordListener>>(),
+    new Map<SyncRecordType, Set<RemoteRecordSubscription>>(),
   );
+  const remoteDeliveries = useRef(new Map<string, RemoteDeliveryState>());
   const flushing = useRef(false);
   const reconciling = useRef(false);
   const reconciliationCursor = useRef(initialSyncCursor);
@@ -180,10 +191,8 @@ export function SyncProvider({ children }: PropsWithChildren) {
         );
         outboxReady.current = true;
         setPending(mutations.length);
-        for (const [recordType, listeners] of subscribers.current) {
-          for (const listener of listeners) {
-            void pullRecordType(recordType, listener);
-          }
+        for (const recordType of subscribers.current.keys()) {
+          void pullRecordType(recordType);
         }
         if (auth.user) {
           void flush();
@@ -587,20 +596,20 @@ export function SyncProvider({ children }: PropsWithChildren) {
   ) {
     const listeners =
       subscribers.current.get(recordType) ??
-      new Set<RemoteRecordListener>();
-    const untypedListener = listener as RemoteRecordListener;
-    listeners.add(untypedListener);
+      new Set<RemoteRecordSubscription>();
+    const subscription: RemoteRecordSubscription = {
+      deliveredVersions: new Map(),
+      listener: listener as RemoteRecordListener,
+    };
+    listeners.add(subscription);
     subscribers.current.set(recordType, listeners);
-    void pullRecordType(recordType, untypedListener);
+    void pullRecordType(recordType);
     return () => {
-      listeners.delete(untypedListener);
+      listeners.delete(subscription);
     };
   }
 
-  async function pullRecordType(
-    recordType: SyncRecordType,
-    listener: RemoteRecordListener,
-  ) {
+  async function pullRecordType(recordType: SyncRecordType) {
     if (
       !outboxReady.current ||
       !auth.user ||
@@ -626,7 +635,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
         if (result.error) throw result.error;
 
         const rows = result.data as EncryptedRecordRow[];
-        for (const row of rows) await deliverRow(row, listener);
+        for (const row of rows) await deliverRow(row);
         if (rows.length < syncPageSize) return;
 
         const nextCursor = rows.at(-1)?.record_id;
@@ -764,18 +773,39 @@ export function SyncProvider({ children }: PropsWithChildren) {
   }
 
   async function receiveRow(row: EncryptedRecordRow) {
-    const listeners = subscribers.current.get(row.record_type);
-    if (!listeners) return;
-    for (const listener of listeners) {
-      await deliverRow(row, listener);
-    }
+    await deliverRow(row);
   }
 
-  async function deliverRow(
+  function deliverRow(row: EncryptedRecordRow) {
+    if (!Number.isSafeInteger(row.version) || row.version < 1) {
+      return Promise.reject(
+        new Error("Encrypted sync returned an invalid record version."),
+      );
+    }
+    const recordKey = pendingRecordKey(row.record_type, row.record_id);
+    const state = remoteDeliveries.current.get(recordKey) ?? {
+      chain: Promise.resolve(),
+      highestSeenVersion: 0,
+    };
+    state.highestSeenVersion = Math.max(
+      state.highestSeenVersion,
+      row.version,
+    );
+    const delivery = state.chain.then(() =>
+      deliverRowInOrder(row, recordKey, state),
+    );
+    state.chain = delivery.catch(() => undefined);
+    remoteDeliveries.current.set(recordKey, state);
+    return delivery;
+  }
+
+  async function deliverRowInOrder(
     row: EncryptedRecordRow,
-    listener: RemoteRecordListener,
+    recordKey: string,
+    state: RemoteDeliveryState,
   ) {
     await commitChain.current;
+    if (row.version < state.highestSeenVersion) return;
     if (
       hasPendingMutation(
         pendingMutationIdsByRecord.current,
@@ -785,27 +815,47 @@ export function SyncProvider({ children }: PropsWithChildren) {
     ) {
       return;
     }
-    if (row.deleted || !row.ciphertext) {
-      await listener({
-        operation: "delete",
-        recordId: row.record_id,
-        recordType: row.record_type,
-      });
-      return;
+    const subscriptions = subscribers.current.get(row.record_type);
+    if (!subscriptions) return;
+    const pendingSubscriptions = [...subscriptions].filter(
+      (subscription) =>
+        (subscription.deliveredVersions.get(recordKey) ?? 0) < row.version,
+    );
+    if (pendingSubscriptions.length === 0) return;
+
+    const change: RemoteRecordChange =
+      row.deleted || !row.ciphertext
+        ? {
+            operation: "delete",
+            recordId: row.record_id,
+            recordType: row.record_type,
+          }
+        : {
+            operation: "upsert",
+            recordId: row.record_id,
+            recordType: row.record_type,
+            value: isLegacyEnvelope(row.ciphertext)
+              ? await security.decryptRecord(
+                  row.ciphertext,
+                  row.record_type,
+                  row.record_id,
+                )
+              : await decryptFields(row, security.decryptRecord),
+          };
+
+    let deliveryError: unknown;
+    for (const subscription of pendingSubscriptions) {
+      if (!subscribers.current.get(row.record_type)?.has(subscription)) {
+        continue;
+      }
+      try {
+        await subscription.listener(change);
+        subscription.deliveredVersions.set(recordKey, row.version);
+      } catch (error) {
+        deliveryError ??= error;
+      }
     }
-    const value = isLegacyEnvelope(row.ciphertext)
-      ? await security.decryptRecord(
-          row.ciphertext,
-          row.record_type,
-          row.record_id,
-        )
-      : await decryptFields(row, security.decryptRecord);
-    await listener({
-      operation: "upsert",
-      recordId: row.record_id,
-      recordType: row.record_type,
-      value,
-    });
+    if (deliveryError) throw deliveryError;
   }
 
   return (

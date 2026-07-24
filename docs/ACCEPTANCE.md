@@ -187,6 +187,10 @@ Local evidence:
   acknowledge delivery only after their repository operation succeeds;
   reconciliation does not advance its cursor past a failed local write, and
   the failure remains visible through sync health for a later retry
+- concurrent initial, realtime, acknowledgement, and reconciliation pulls are
+  serialized per record; the highest observed server version wins even when an
+  older request finishes later, while each active subscriber independently
+  records successful durable delivery
 - a temporary real-browser IndexedDB drill passed 9 checks: successful task
   and outbox persistence, forced mid-batch unique-index rollback with no
   partial Check-In or mutation, atomic recurring pairs, and pre-write owner

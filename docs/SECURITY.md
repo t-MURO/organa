@@ -336,6 +336,12 @@ wipe.
   succeeds. Reconciliation advances its in-memory cursor after all listeners
   finish, so a storage failure remains a visible read-side error and the row
   is eligible for retry instead of being silently skipped.
+- Initial pulls, realtime repulls, acknowledgement repulls, and reconciliation
+  can overlap. Delivery is serialized per record and rejects a row below the
+  highest server version already observed, preventing a delayed stale response
+  from overwriting a newer durable projection. Subscriber acknowledgements are
+  tracked separately, so a newly mounted listener can still hydrate the current
+  version and a failed listener remains eligible for retry.
 - Previous encrypted versions are retained for seven days.
 - Mutation IDs make outbox retries idempotent.
 - Yjs updates make Brain Dump edits commutative and conflict-free.
