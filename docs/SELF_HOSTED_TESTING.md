@@ -74,8 +74,12 @@ cd "$HOME/organa-supabase"
 git -C ../supabase rev-parse HEAD
 [ -f .env ] || cp .env.example .env
 chmod 600 .env
-sh utils/generate-keys.sh
-sh utils/add-new-auth-keys.sh
+sh utils/generate-keys.sh --update-env
+sh utils/add-new-auth-keys.sh --update-env
+for key in JWT_SECRET SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY JWT_KEYS JWT_JWKS; do
+  grep -q "^${key}=." .env || { echo "Missing ${key}" >&2; exit 1; }
+done
+docker compose config --quiet
 ```
 
 If `add-new-auth-keys.sh` reports that `.env` is missing, stop and verify the
@@ -86,13 +90,15 @@ pwd
 ls -la .env.example docker-compose.yml utils/generate-keys.sh
 [ -f .env ] || cp .env.example .env
 chmod 600 .env
-sh utils/generate-keys.sh
-sh utils/add-new-auth-keys.sh
+sh utils/generate-keys.sh --update-env
+sh utils/add-new-auth-keys.sh --update-env
 ```
 
 All three paths in the `ls` command must exist. If they do not, return to
 `$HOME/organa-supabase` or the directory where the official Docker files were
-copied. Do not print or share the generated `.env`.
+copied. The scripts print generated credentials while writing them; do not
+copy their output into chat, logs, screenshots, or shell-history notes, and do
+not print or share the generated `.env`.
 
 Record the printed Git revision outside the server's secret files. Review the
 generated `.env`; never run the example passwords or keys. The second script
@@ -211,10 +217,32 @@ scp -r supabase/functions/finalize-account-deletions \
   SERVER:~/organa-supabase/volumes/functions/
 scp -r supabase/functions/dispatch-web-push \
   SERVER:~/organa-supabase/volumes/functions/
+scp supabase/self-hosted/docker-compose.organa.yml \
+  SERVER:~/organa-supabase/
+scp supabase/self-hosted/.env.functions.example \
+  SERVER:~/organa-supabase/
 ```
 
-Create a server-only `.env.functions`, add it to the self-hosted stack's
-`functions` service as an `env_file`, and set:
+Generate the VAPID pair on the development machine. This command prints both
+keys, so do not paste its output into chat or logs:
+
+```sh
+pnpm --filter @organa/app exec web-push generate-vapid-keys
+```
+
+On the server, create the private function environment and two independent
+scheduler secrets:
+
+```sh
+cd "$HOME/organa-supabase"
+[ -f .env.functions ] || cp .env.functions.example .env.functions
+chmod 600 .env.functions
+openssl rand -hex 32
+openssl rand -hex 32
+```
+
+Put one generated value in each scheduler variable, then add the VAPID pair
+and an administrator contact subject:
 
 ```text
 ACCOUNT_DELETION_SCHEDULER_SECRET=unique-random-value
@@ -224,12 +252,24 @@ WEB_PUSH_VAPID_SUBJECT=mailto:admin@example.net
 WEB_PUSH_SCHEDULER_SECRET=different-unique-random-value
 ```
 
-Set `FUNCTIONS_VERIFY_JWT=false` in the self-hosted function-service
-configuration. Both Organa functions reject every request except `POST` with
-their own independent scheduler bearer secret. A platform JWT check would
-reject those scheduler credentials before the function can validate them.
-Revisit the global setting before adding any function that relies only on a
-user JWT.
+Enable the checked-in Organa override and validate the merged configuration
+without printing its environment:
+
+```sh
+sh run.sh config add organa
+grep -q '^FUNCTIONS_VERIFY_JWT=false$' .env || {
+  echo "FUNCTIONS_VERIFY_JWT must be false" >&2
+  exit 1
+}
+docker compose config --quiet
+```
+
+Confirm the generated Supabase `.env` still has
+`FUNCTIONS_VERIFY_JWT=false`. Both Organa functions reject every request except
+`POST` with their own independent scheduler bearer secret. A platform JWT
+check would reject those scheduler credentials before the function can
+validate them. Revisit the global setting before adding any function that
+relies only on a user JWT.
 
 The self-hosted runtime already supplies its internal `SUPABASE_URL` and
 service-role credential. Recreate the function service after changing code or

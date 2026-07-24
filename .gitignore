@@ -16,5 +16,6 @@ apps/mobile/ios/
 .env
 .env.local
 .env.*.local
+.env.functions
 supabase/.branches/
 supabase/.temp/

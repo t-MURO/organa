@@ -1057,6 +1057,15 @@ silently creating an authentication client:
   a non-secret-leaking recovery path for missing-environment errors.
 - Fails fast on missing Git, Docker/Compose, OpenSSL, jq, or Docker-daemon
   access before the manual setup touches generated secrets.
+- Runs both upstream key generators with their explicit `--update-env` mode,
+  verifies required values without printing them, and validates the resolved
+  Compose model before startup.
+- Provides a secret-free Organa Compose override and function-environment
+  template, exact transfer/setup commands, independent scheduler-secret
+  generation, and the repository-pinned VAPID generator.
+- The key, Caddy, function-routing, and Organa override sequence was resolved
+  successfully against upstream Supabase revision
+  `8e75147f0c2a24202e0d53c75cddc5e3e06c531d` without exposing generated values.
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.
