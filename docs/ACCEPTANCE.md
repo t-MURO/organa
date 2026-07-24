@@ -18,6 +18,7 @@ Status recorded on 2026-07-24.
 - [x] SQLite native persistence and IndexedDB web persistence
 - [x] Encrypted field outbox, idempotent RPC contract, private Broadcast, and
   incremental durable reconciliation integration
+- [x] Explicitly paginated encrypted pulls and visible read-side sync health
 - [x] Recovery-key confirmation and recovery-code restore flow
 - [x] Short-lived encrypted new-device approval by an existing trusted device,
   including explicit approve/reject and one-time target-bound key handoff
@@ -115,6 +116,15 @@ Local evidence:
   the claimed code from the approving UI, and kept secondary reminders off
 - a task created on the newly approved browser appeared on the original browser
   through encrypted realtime synchronization without a reload
+- initial encrypted record pulls page deterministically by record type and ID;
+  durable reconciliation drains every record sharing a server timestamp before
+  advancing, then overlaps the next pass to recover boundary races
+- pull, decryption, and durable reconciliation failures remain separate from
+  outbox state and force a route-wide accessible "Sync needs attention" notice;
+  compact layouts also expose offline and pending status
+- strict TypeScript, production web/PWA artifact verification, and iOS/Android
+  Hermes exports pass after the sync pagination and health changes; no test
+  files were changed
 - Expo Doctor passes 19/20 checks after native project generation; the only
   remaining check is host tooling because CocoaPods/full Xcode are not
   installed on this machine

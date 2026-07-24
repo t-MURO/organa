@@ -19,6 +19,7 @@ Committed and verified milestones:
 - Native reminder payloads, actions, reconciliation, and widget timelines
 - Dual-platform Today Tasks and Next Reminder mobile widgets
 - Non-silent reminder delivery status across native and web
+- Paginated durable sync with visible read-side health
 - Recurrence, grace-day, inbox, and undated-task semantics
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
@@ -282,6 +283,25 @@ Reminder-reliability milestone:
   Android widget support instead of the superseded iOS-only decision.
 - Strict TypeScript, the production web/PWA build, and iOS/Android Hermes
   exports pass. No tests were added, changed, or run for this milestone.
+
+## Durable Sync Health Milestone
+
+- Separates outbox delivery health from encrypted read/reconciliation health,
+  preventing a successful outbox flush from hiding a failed pull or decrypt.
+- Makes pull, decryption, and durable reconciliation failures produce the
+  route-wide "Sync needs attention" accessibility alert while local changes
+  remain available and automatic retries continue.
+- Shows offline, syncing, and pending-change state on compact mobile layouts as
+  text plus a polite live region, not only in the wide-screen sidebar.
+- Pages initial server hydration in deterministic 250-record batches per
+  record type and record ID instead of relying on the Supabase response cap.
+- Reconciliation processes older rows, fully drains the latest timestamp group
+  per supported record type, advances only after that group succeeds, and
+  overlaps the next pass by one millisecond to avoid timestamp-boundary loss.
+- The account-keyed security boundary remounts the complete sync and private
+  data-provider subtree, so obsolete account subscribers are not reused.
+- Strict TypeScript, production web/PWA artifact verification, and iOS/Android
+  Hermes exports pass. No tests were added, changed, or run for this milestone.
 
 Verification completed for the reminder-authorization work:
 

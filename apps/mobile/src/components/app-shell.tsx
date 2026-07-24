@@ -93,6 +93,18 @@ export function AppShell() {
             </Pressable>
           </View>
         ) : null}
+        {sync.status === "error" ? (
+          <View
+            accessibilityLiveRegion="polite"
+            accessibilityRole="alert"
+            style={styles.syncNotice}
+          >
+            <Text style={styles.syncNoticeText}>
+              Encrypted sync needs attention. Your changes remain safe on this
+              device while Organa retries.
+            </Text>
+          </View>
+        ) : null}
         {pathname === "/focus" ? (
           <View style={styles.focusShell}>
             <Slot />
@@ -110,6 +122,8 @@ export function AppShell() {
             ) : (
               <MobileHeader
                 styles={styles}
+                syncLabel={formatSyncLabel(sync.status, sync.pending)}
+                syncStatus={sync.status}
                 themeMode={themeMode}
                 onCycleTheme={cycleTheme}
               />
@@ -237,24 +251,42 @@ function formatSyncLabel(status: string, pending: number) {
 
 function MobileHeader({
   styles,
+  syncLabel,
+  syncStatus,
   themeMode,
   onCycleTheme,
 }: {
   styles: ReturnType<typeof createStyles>;
+  syncLabel: string;
+  syncStatus: string;
   themeMode: string;
   onCycleTheme(): void;
 }) {
+  const showSync = syncStatus !== "synced" && syncStatus !== "local";
   return (
     <View style={styles.mobileHeader}>
       <BrandMark />
-      <Pressable
-        accessibilityLabel={`Theme is ${themeMode}. Change theme.`}
-        accessibilityRole="button"
-        style={styles.mobileThemeButton}
-        onPress={onCycleTheme}
-      >
-        <Text style={styles.mobileThemeText}>Aa</Text>
-      </Pressable>
+      <View style={styles.mobileHeaderActions}>
+        {showSync ? (
+          <View
+            accessibilityLiveRegion="polite"
+            style={styles.mobileSyncPill}
+          >
+            <View style={styles.mobileSyncDot} />
+            <Text numberOfLines={1} style={styles.mobileSyncText}>
+              {syncLabel}
+            </Text>
+          </View>
+        ) : null}
+        <Pressable
+          accessibilityLabel={`Theme is ${themeMode}. Change theme.`}
+          accessibilityRole="button"
+          style={styles.mobileThemeButton}
+          onPress={onCycleTheme}
+        >
+          <Text style={styles.mobileThemeText}>Aa</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -379,6 +411,20 @@ function createStyles(theme: OrganaTheme, isWide: boolean) {
       fontFamily: "Manrope_700Bold",
       fontSize: 12,
     },
+    syncNotice: {
+      backgroundColor: theme.mustSoft,
+      borderBottomColor: theme.must,
+      borderBottomWidth: 1,
+      paddingHorizontal: isWide ? 28 : 16,
+      paddingVertical: 10,
+    },
+    syncNoticeText: {
+      color: theme.text,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 13,
+      lineHeight: 19,
+      textAlign: "center",
+    },
     shell: {
       backgroundColor: theme.background,
       flex: 1,
@@ -485,6 +531,38 @@ function createStyles(theme: OrganaTheme, isWide: boolean) {
       justifyContent: "space-between",
       paddingHorizontal: 20,
       paddingVertical: Platform.OS === "web" ? 16 : 12,
+    },
+    mobileHeaderActions: {
+      alignItems: "center",
+      flexDirection: "row",
+      flexShrink: 1,
+      gap: 8,
+      justifyContent: "flex-end",
+    },
+    mobileSyncPill: {
+      alignItems: "center",
+      backgroundColor: theme.surface,
+      borderColor: theme.border,
+      borderRadius: 999,
+      borderWidth: 1,
+      flexDirection: "row",
+      flexShrink: 1,
+      gap: 6,
+      maxWidth: 190,
+      paddingHorizontal: 9,
+      paddingVertical: 6,
+    },
+    mobileSyncDot: {
+      backgroundColor: theme.should,
+      borderRadius: 4,
+      height: 7,
+      width: 7,
+    },
+    mobileSyncText: {
+      color: theme.textMuted,
+      flexShrink: 1,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 10,
     },
     mobileThemeButton: {
       alignItems: "center",

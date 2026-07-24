@@ -73,6 +73,8 @@ const syncRecordTypes = new Set<SyncRecordType>([
   "template",
   "settings",
 ]);
+const syncPageSize = 250;
+const initialSyncCursor = "1970-01-01T00:00:00.000Z";
 
 export function SyncProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
@@ -87,11 +89,12 @@ export function SyncProvider({ children }: PropsWithChildren) {
   );
   const flushing = useRef(false);
   const reconciling = useRef(false);
-  const reconciliationCursor = useRef("1970-01-01T00:00:00.000Z");
+  const reconciliationCursor = useRef(initialSyncCursor);
   const [pending, setPending] = useState(0);
-  const [status, setStatus] =
+  const [outboxStatus, setOutboxStatus] =
     useState<SyncContextValue["status"]>("local");
-  const [error, setError] = useState("");
+  const [outboxError, setOutboxError] = useState("");
+  const [readError, setReadError] = useState("");
   const [lastSyncedAt, setLastSyncedAt] = useState<string>();
 
   useEffect(() => {
@@ -119,7 +122,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
     const userId = auth.user.id;
     let active = true;
     let channel: ReturnType<typeof client.channel> | undefined;
-    reconciliationCursor.current = "1970-01-01T00:00:00.000Z";
+    reconciliationCursor.current = initialSyncCursor;
 
     void client.realtime.setAuth().then(() => {
       if (!active) return;
@@ -226,8 +229,8 @@ export function SyncProvider({ children }: PropsWithChildren) {
   async function flush() {
     if (flushing.current || !auth.user || !supabase || !security.device) return;
     flushing.current = true;
-    setStatus("syncing");
-    setError("");
+    setOutboxStatus("syncing");
+    setOutboxError("");
     try {
       const mutations = await repository.list();
       for (const mutation of mutations) {
@@ -255,10 +258,10 @@ export function SyncProvider({ children }: PropsWithChildren) {
       const remaining = await repository.list();
       setPending(remaining.length);
       setLastSyncedAt(new Date().toISOString());
-      setStatus(remaining.length === 0 ? "synced" : "offline");
+      setOutboxStatus(remaining.length === 0 ? "synced" : "offline");
     } catch (nextError) {
-      setStatus("offline");
-      setError(
+      setOutboxStatus("offline");
+      setOutboxError(
         nextError instanceof Error
           ? nextError.message
           : "Encrypted changes are waiting to sync.",
@@ -292,38 +295,54 @@ export function SyncProvider({ children }: PropsWithChildren) {
     listener: (change: RemoteRecordChange) => void,
   ) {
     if (!auth.user || !supabase || !security.contentKey) return;
-    const result = await supabase
-      .from("encrypted_records")
-      .select(
-        "record_type,record_id,ciphertext,deleted,version,updated_by",
-      )
-      .eq("user_id", auth.user.id)
-      .eq("record_type", recordType);
-    if (result.error) {
-      setError(result.error.message);
-      return;
-    }
-    for (const row of result.data as EncryptedRecordRow[]) {
-      await deliverRow(row, listener);
+    try {
+      let recordCursor = "";
+      while (true) {
+        let query = supabase
+          .from("encrypted_records")
+          .select(
+            "record_type,record_id,ciphertext,deleted,version,updated_by",
+          )
+          .eq("user_id", auth.user.id)
+          .eq("record_type", recordType)
+          .order("record_id", { ascending: true })
+          .limit(syncPageSize);
+        if (recordCursor) query = query.gt("record_id", recordCursor);
+        const result = await query;
+        if (result.error) throw result.error;
+
+        const rows = result.data as EncryptedRecordRow[];
+        for (const row of rows) await deliverRow(row, listener);
+        if (rows.length < syncPageSize) return;
+
+        const nextCursor = rows.at(-1)?.record_id;
+        if (!nextCursor || nextCursor <= recordCursor) {
+          throw new Error("Initial encrypted sync did not make progress.");
+        }
+        recordCursor = nextCursor;
+      }
+    } catch (nextError) {
+      setReadError(syncReadErrorMessage(nextError));
     }
   }
 
   async function pullRecord(recordType: SyncRecordType, recordId: string) {
     if (!auth.user || !supabase || !security.contentKey) return;
-    const result = await supabase
-      .from("encrypted_records")
-      .select(
-        "record_type,record_id,ciphertext,deleted,version,updated_by",
-      )
-      .eq("user_id", auth.user.id)
-      .eq("record_type", recordType)
-      .eq("record_id", recordId)
-      .maybeSingle();
-    if (result.error) {
-      setError(result.error.message);
-      return;
+    try {
+      const result = await supabase
+        .from("encrypted_records")
+        .select(
+          "record_type,record_id,ciphertext,deleted,version,updated_by",
+        )
+        .eq("user_id", auth.user.id)
+        .eq("record_type", recordType)
+        .eq("record_id", recordId)
+        .maybeSingle();
+      if (result.error) throw result.error;
+      if (result.data) await receiveRow(result.data as EncryptedRecordRow);
+    } catch (nextError) {
+      setReadError(syncReadErrorMessage(nextError));
     }
-    if (result.data) await receiveRow(result.data as EncryptedRecordRow);
   }
 
   async function reconcile() {
@@ -338,37 +357,87 @@ export function SyncProvider({ children }: PropsWithChildren) {
 
     reconciling.current = true;
     try {
-      const result = await supabase
-        .from("encrypted_records")
-        .select(
-          "record_type,record_id,ciphertext,deleted,version,updated_by,updated_at",
-        )
-        .eq("user_id", auth.user.id)
-        .gte("updated_at", reconciliationCursor.current)
-        .order("updated_at", { ascending: true });
-      if (result.error) {
-        setError(result.error.message);
-        return;
-      }
+      let cursor = overlapSyncCursor(reconciliationCursor.current);
+      while (true) {
+        const result = await supabase
+          .from("encrypted_records")
+          .select(
+            "record_type,record_id,ciphertext,deleted,version,updated_by,updated_at",
+          )
+          .eq("user_id", auth.user.id)
+          .gt("updated_at", cursor)
+          .order("updated_at", { ascending: true })
+          .order("record_type", { ascending: true })
+          .order("record_id", { ascending: true })
+          .limit(syncPageSize);
+        if (result.error) throw result.error;
 
-      for (const row of result.data as EncryptedRecordRow[]) {
-        if (!isSyncRecordType(row.record_type)) continue;
-        await receiveRow(row);
-        if (
-          row.updated_at &&
-          row.updated_at > reconciliationCursor.current
-        ) {
-          reconciliationCursor.current = row.updated_at;
+        const rows = result.data as EncryptedRecordRow[];
+        if (rows.length === 0) break;
+        const timestamp = rows.at(-1)?.updated_at;
+        if (!timestamp || timestamp <= cursor) {
+          throw new Error("Durable encrypted sync did not make progress.");
         }
+
+        if (rows.length < syncPageSize) {
+          for (const row of rows) {
+            if (isSyncRecordType(row.record_type)) await receiveRow(row);
+          }
+          reconciliationCursor.current = timestamp;
+          break;
+        }
+
+        for (const row of rows) {
+          if (
+            row.updated_at === timestamp ||
+            !isSyncRecordType(row.record_type)
+          ) {
+            continue;
+          }
+          await receiveRow(row);
+        }
+        await pullTimestampGroup(timestamp);
+        reconciliationCursor.current = timestamp;
+        cursor = timestamp;
       }
+      setReadError("");
+      setLastSyncedAt(new Date().toISOString());
     } catch (nextError) {
-      setError(
-        nextError instanceof Error
-          ? nextError.message
-          : "Durable sync reconciliation failed.",
-      );
+      setReadError(syncReadErrorMessage(nextError));
     } finally {
       reconciling.current = false;
+    }
+  }
+
+  async function pullTimestampGroup(timestamp: string) {
+    if (!auth.user || !supabase) return;
+    for (const recordType of syncRecordTypes) {
+      let recordCursor = "";
+      while (true) {
+        let query = supabase
+          .from("encrypted_records")
+          .select(
+            "record_type,record_id,ciphertext,deleted,version,updated_by,updated_at",
+          )
+          .eq("user_id", auth.user.id)
+          .eq("updated_at", timestamp)
+          .eq("record_type", recordType)
+          .order("record_id", { ascending: true })
+          .limit(syncPageSize);
+        if (recordCursor) query = query.gt("record_id", recordCursor);
+        const result = await query;
+        if (result.error) throw result.error;
+
+        const rows = result.data as EncryptedRecordRow[];
+        for (const row of rows) await receiveRow(row);
+        if (rows.length < syncPageSize) break;
+
+        const nextCursor = rows.at(-1)?.record_id;
+        if (!nextCursor || nextCursor <= recordCursor) {
+          throw new Error("Timestamp reconciliation did not make progress.");
+        }
+        recordCursor = nextCursor;
+      }
     }
   }
 
@@ -410,19 +479,35 @@ export function SyncProvider({ children }: PropsWithChildren) {
   return (
     <SyncContext.Provider
       value={{
-        error,
+        error: readError || outboxError,
         flush,
         lastSyncedAt,
         pending,
         queueDelete,
         queueUpsert,
-        status: auth.localPreview ? "local" : status,
+        status: auth.localPreview
+          ? "local"
+          : readError
+            ? "error"
+            : outboxStatus,
         subscribe,
       }}
     >
       {children}
     </SyncContext.Provider>
   );
+}
+
+function overlapSyncCursor(cursor: string) {
+  const timestamp = new Date(cursor).getTime();
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return initialSyncCursor;
+  return new Date(timestamp - 1).toISOString();
+}
+
+function syncReadErrorMessage(error: unknown) {
+  return error instanceof Error
+    ? error.message
+    : "Encrypted changes could not be refreshed.";
 }
 
 interface EncryptedFieldValue {

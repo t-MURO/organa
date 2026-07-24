@@ -44,6 +44,9 @@ not a final-release polish pass.
 - iOS widgets use native SwiftUI text semantics. Android Today and Next
   Reminder widgets provide whole-widget accessibility labels, scalable text,
   and explicit Home or Focus deep-link actions in light and dark modes.
+- Read-side encrypted-sync failures use a route-wide accessibility alert with
+  plain recovery copy. Compact layouts expose offline and pending sync status
+  through a polite live region rather than color alone.
 
 ## Automated Evidence
 
