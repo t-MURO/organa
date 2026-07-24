@@ -3,8 +3,8 @@
 Status recorded on 2026-07-24.
 
 This is the structured pause checkpoint requested after the implementation
-work. The implementation is complete through the accessibility interaction
-contract milestone described below.
+work. The implementation is complete through the PWA update reliability
+milestone described below.
 `docs/REQUIREMENTS_TRACEABILITY.md` maps every controlled-beta acceptance
 criterion to direct evidence and its remaining gate.
 
@@ -128,6 +128,23 @@ Latest verified task-type work:
   Account finds no visible interactive target below 24 by 24 CSS pixels.
 - VoiceOver, TalkBack, largest-text-size, and physical touch-target checks
   remain explicit release-device gates.
+
+## PWA Update Reliability Milestone
+
+- Extracts waiting-worker discovery, prompt state, and activation into a
+  testable update lifecycle.
+- Keeps the update prompt pressure-free: users may dismiss it and restart only
+  when convenient.
+- Sends `SKIP_WAITING` only to a confirmed waiting replacement worker.
+- Reloads exactly once after controller handoff and uses a five-second fallback
+  when the browser never emits `controllerchange`.
+- Reloads safely rather than leaving an unhandled or permanently restarting UI
+  when registration lookup or worker messaging fails.
+- Five lifecycle tests cover availability, dismissal, restart, handoff,
+  timeout, and failure behavior.
+- The production verifier now checks both the shell announcement and generated
+  Workbox activation protocol, bringing the artifact total to 18 checks.
+- A real two-version install/update drill remains a release-browser gate.
 
 Latest committed implementation milestones:
 
@@ -391,10 +408,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 133 automated tests pass:
+- 138 automated tests pass:
   - 43 domain tests
   - 6 cryptography tests
-  - 84 application integration tests
+  - 89 application integration tests
 - All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
@@ -412,8 +429,8 @@ Latest verified repository checks:
 - iOS Hermes export succeeds.
 - Android Hermes export succeeds.
 - Production web export succeeds.
-- Production web artifact verification passes 16 installability, offline
-  cache, and Web Push checks.
+- Production web artifact verification passes 18 installability, offline,
+  controlled-update, and Web Push checks.
 - Eight static web routes are generated.
 - Workbox precaches 22 URLs, including the render-critical Manrope fonts,
   optional interaction sounds, and Push handler.

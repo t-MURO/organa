@@ -39,7 +39,7 @@ Status recorded on 2026-07-24.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 133 automated tests pass: 43 domain, 6 cryptography, and 84 application tests
+- 138 automated tests pass: 43 domain, 6 cryptography, and 89 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
@@ -117,10 +117,13 @@ Local evidence:
 - a task-load race test contract verifies that reconciliation reads the latest
   authorization after asynchronous repository loading
 - production web export succeeds
-- production web artifact verification passes 16 installability, offline
-  cache, and Push-handler checks
+- production web artifact verification passes 18 installability, offline,
+  controlled-update, and Push-handler checks
 - Workbox precaches 22 URLs, including every font weight loaded before render,
   both optional interaction sounds, and the Push handler
+- PWA update tests cover waiting-worker discovery, dismiss/restart state,
+  one-shot controller handoff, a five-second fallback, and failed
+  registration/message paths
 - production Lighthouse scores 100% for accessibility and 100% for best
   practices on the configured sign-in screen
 - production dependency audit reports no known vulnerabilities

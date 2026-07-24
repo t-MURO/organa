@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import {
   StyleSheet,
   Text,
@@ -8,23 +8,36 @@ import {
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { darkTheme, lightTheme } from "../../theme";
+import {
+  activateWaitingPwaUpdate,
+  hasWaitingPwaUpdate,
+  initialPwaUpdatePromptState,
+  reducePwaUpdatePrompt,
+} from "./pwa-update-model";
 
 export function PwaUpdateCoordinator() {
   const theme = useColorScheme() === "dark" ? darkTheme : lightTheme;
   const styles = createStyles(theme);
-  const [ready, setReady] = useState(false);
-  const [restarting, setRestarting] = useState(false);
+  const [{ ready, restarting }, dispatch] = useReducer(
+    reducePwaUpdatePrompt,
+    initialPwaUpdatePromptState,
+  );
 
   useEffect(() => {
     function show() {
-      setReady(true);
+      dispatch({ type: "available" });
     }
 
     window.addEventListener("organa:update-ready", show);
     void navigator.serviceWorker
       ?.getRegistration()
       .then((registration) => {
-        if (registration?.waiting && navigator.serviceWorker.controller) {
+        if (
+          hasWaitingPwaUpdate(
+            registration,
+            navigator.serviceWorker.controller,
+          )
+        ) {
           show();
         }
       })
@@ -33,19 +46,13 @@ export function PwaUpdateCoordinator() {
   }, []);
 
   async function restart() {
-    setRestarting(true);
-    const registration = await navigator.serviceWorker.getRegistration();
-    if (!registration?.waiting) {
-      window.location.reload();
-      return;
-    }
-    let reloaded = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (reloaded) return;
-      reloaded = true;
-      window.location.reload();
+    dispatch({ type: "restart" });
+    await activateWaitingPwaUpdate(navigator.serviceWorker, {
+      cancelTimer: (handle) => window.clearTimeout(handle as number),
+      reload: () => window.location.reload(),
+      scheduleTimer: (callback, delayMs) =>
+        window.setTimeout(callback, delayMs),
     });
-    registration.waiting.postMessage({ type: "SKIP_WAITING" });
   }
 
   if (!ready) return null;
@@ -62,6 +69,8 @@ export function PwaUpdateCoordinator() {
         </View>
         <Pressable
           accessibilityRole="button"
+          accessibilityState={{ disabled: restarting }}
+          aria-disabled={restarting}
           disabled={restarting}
           style={styles.button}
           onPress={() => void restart()}
@@ -73,8 +82,11 @@ export function PwaUpdateCoordinator() {
         <Pressable
           accessibilityLabel="Dismiss update prompt"
           accessibilityRole="button"
+          accessibilityState={{ disabled: restarting }}
+          aria-disabled={restarting}
+          disabled={restarting}
           style={styles.dismiss}
-          onPress={() => setReady(false)}
+          onPress={() => dispatch({ type: "dismiss" })}
         >
           <Text style={styles.dismissText}>Later</Text>
         </Pressable>

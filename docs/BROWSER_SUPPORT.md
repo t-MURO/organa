@@ -81,13 +81,16 @@ For each browser:
 12. Deny permission and confirm the visible active-tab fallback remains.
 13. Sign out and confirm displayed notifications close, the Push subscription
     is removed, and no further system reminder is delivered.
+14. Install a newer build over an active older build, dismiss the first update
+    prompt, reopen it after the next update-ready signal, then restart and
+    confirm exactly one reload into the new worker.
 
 ## Latest Local Evidence
 
 On 2026-07-24, the configured production PWA:
 
 - scored 100% for Lighthouse accessibility and best practices
-- passed 16 deterministic production artifact checks
+- passed 18 deterministic production artifact checks
 - precached the static routes, JavaScript, manifest, install icons, four
   render-critical Manrope weights, optional interaction sounds, and the Web
   Push handler across 22 URLs
@@ -102,3 +105,7 @@ On 2026-07-24, the configured production PWA:
 - showed the system-reminder capability and fallback copy in the in-app
   browser; that browser did not grant notification permission, so
   permission-granted delivery remains a release-browser gate
+- passed update lifecycle tests for waiting-worker discovery, dismissal,
+  restart, one-shot controller handoff, timeout fallback, and
+  registration/message failure
+- generated a worker with the deliberate `SKIP_WAITING` activation protocol

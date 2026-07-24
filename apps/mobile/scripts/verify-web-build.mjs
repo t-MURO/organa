@@ -49,6 +49,17 @@ ok(
   "service worker imports the Web Push handler",
 );
 ok(
+  html.includes("organa:update-ready") &&
+    html.includes("registration.waiting") &&
+    html.includes("navigator.serviceWorker.controller"),
+  "application shell announces only a waiting replacement worker",
+);
+ok(
+  serviceWorker.includes("SKIP_WAITING") &&
+    serviceWorker.includes("skipWaiting()"),
+  "service worker supports deliberate update activation",
+);
+ok(
   pushHandler.includes('addEventListener("push"') &&
     pushHandler.includes("showNotification"),
   "Web Push displays a persistent system notification",
