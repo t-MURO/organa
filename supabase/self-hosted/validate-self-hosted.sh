@@ -49,6 +49,47 @@ require_generated_value() {
   fi
 }
 
+require_exact_value() {
+  file="$1"
+  key="$2"
+  expected="$3"
+  value=$(value_from "$file" "$key")
+  [ "$value" = "$expected" ] ||
+    fail "$key must be $expected in $file"
+}
+
+require_nonplaceholder_value() {
+  file="$1"
+  example_file="$2"
+  key="$3"
+  value=$(value_from "$file" "$key")
+  [ -n "$value" ] || fail "$key is missing or empty in $file"
+
+  if [ -f "$example_file" ]; then
+    example_value=$(value_from "$example_file" "$key")
+    [ "$value" != "$example_value" ] ||
+      fail "$key still uses the example value in $file"
+  fi
+
+  case "$value" in
+    replace-*|replace_*|your-*|your_*|changeme|CHANGE_ME|\
+      *@example.com|*@example.net|*.example.com|*.example.net)
+      fail "$key still uses a placeholder value in $file"
+      ;;
+  esac
+}
+
+require_configured_value() {
+  file="$1"
+  example_file="$2"
+  key="$3"
+  require_nonplaceholder_value "$file" "$example_file" "$key"
+  value=$(value_from "$file" "$key")
+  case "$value" in
+    *[[:space:]]*) fail "$key must not contain whitespace in $file" ;;
+  esac
+}
+
 require_hex_secret() {
   file="$1"
   key="$2"
@@ -129,6 +170,7 @@ supabase_url=$(value_from .env SUPABASE_PUBLIC_URL)
 api_url=$(value_from .env API_EXTERNAL_URL)
 site_url=$(value_from .env SITE_URL)
 redirect_urls=$(value_from .env ADDITIONAL_REDIRECT_URLS)
+oauth_callback="${api_url%/}/callback"
 
 case "$supabase_url" in
   https://*) ;;
@@ -155,6 +197,18 @@ esac
 
 [ "$(value_from .env FUNCTIONS_VERIFY_JWT)" = "false" ] ||
   fail "FUNCTIONS_VERIFY_JWT must be false for the scheduler-authenticated functions"
+require_exact_value .env ENABLE_EMAIL_SIGNUP true
+require_exact_value .env ENABLE_EMAIL_AUTOCONFIRM false
+require_exact_value .env ENABLE_PHONE_SIGNUP false
+for key in \
+  SMTP_ADMIN_EMAIL \
+  SMTP_HOST \
+  SMTP_PORT \
+  SMTP_USER \
+  SMTP_PASS \
+  SMTP_SENDER_NAME; do
+  require_nonplaceholder_value .env .env.example "$key"
+done
 
 compose_files=$(value_from .env COMPOSE_FILE)
 case ":$compose_files:" in
@@ -165,9 +219,26 @@ esac
 for file in \
   docker-compose.organa.yml \
   run-organa-schedulers.sh \
+  volumes/templates/email-code.html \
   volumes/functions/finalize-account-deletions/index.ts \
   volumes/functions/dispatch-web-push/index.ts; do
   [ -f "$file" ] || fail "$file is missing"
+done
+
+require_private_file .env.auth
+for provider in GOOGLE APPLE GITHUB; do
+  require_exact_value \
+    .env.auth \
+    "GOTRUE_EXTERNAL_${provider}_ENABLED" \
+    true
+  require_configured_value \
+    .env.auth \
+    .env.auth.example \
+    "GOTRUE_EXTERNAL_${provider}_CLIENT_ID"
+  require_configured_value \
+    .env.auth \
+    .env.auth.example \
+    "GOTRUE_EXTERNAL_${provider}_SECRET"
 done
 
 require_private_file .env.functions
@@ -193,8 +264,26 @@ esac
 docker compose config --quiet >/dev/null 2>&1 ||
   fail "the merged Docker Compose configuration is invalid"
 
+docker compose config --format json |
+  jq -e --arg callback "$oauth_callback" '
+    .services.auth.environment as $auth
+    | ($auth.GOTRUE_EXTERNAL_GOOGLE_ENABLED == "true")
+      and ($auth.GOTRUE_EXTERNAL_APPLE_ENABLED == "true")
+      and ($auth.GOTRUE_EXTERNAL_GITHUB_ENABLED == "true")
+      and ($auth.GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI == $callback)
+      and ($auth.GOTRUE_EXTERNAL_APPLE_REDIRECT_URI == $callback)
+      and ($auth.GOTRUE_EXTERNAL_GITHUB_REDIRECT_URI == $callback)
+      and ($auth.GOTRUE_MAILER_OTP_EXP == "900")
+      and ($auth.GOTRUE_MAILER_OTP_LENGTH == "6")
+      and ($auth.GOTRUE_MAILER_TEMPLATES_CONFIRMATION
+        == "http://templates-server/email-code.html")
+      and ($auth.GOTRUE_MAILER_TEMPLATES_MAGIC_LINK
+        == "http://templates-server/email-code.html")
+  ' >/dev/null 2>&1 ||
+  fail "the resolved Auth provider or email-code configuration is invalid"
+
 services=$(docker compose config --services)
-for service in auth rest realtime functions db; do
+for service in auth rest realtime functions db templates-server; do
   printf '%s\n' "$services" | grep -q "^${service}$" ||
     fail "the resolved Compose model is missing the $service service"
 done

@@ -1080,6 +1080,20 @@ silently creating an authentication client:
   credential helper that pins Supabase CLI `2.109.1`, exposes only a
   passwordless process argument, uses a private temporary libpq password file,
   separates plan/apply intent, and cleans credentials on completion or signal.
+- Adds a private Auth environment template and Compose wiring for Google,
+  Apple, and GitHub, with provider callbacks derived from the validated public
+  Auth URL instead of copied by hand.
+- Serves the six-digit email-code template through an internal-only Caddy
+  service and applies it to both first-time confirmation and returning-user
+  magic-link flows, with a matching 900-second expiry.
+- Extends the full server preflight to reject placeholder SMTP/provider
+  credentials, unintended phone signup, public Auth secret permissions,
+  missing template files, and drift in resolved provider callbacks or email
+  template settings without printing any secret.
+- Both preflight stages pass against upstream Supabase revision
+  `8e75147f0c2a24202e0d53c75cddc5e3e06c531d`, and the isolated template
+  service starts and serves the checked-in token template. Real SMTP and OAuth
+  flows remain unclaimed until the home server is connected.
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.

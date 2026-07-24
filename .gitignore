@@ -14,6 +14,7 @@ apps/mobile/ios/
 
 # Local environment
 .env
+.env.auth
 .env.local
 .env.*.local
 .env.functions

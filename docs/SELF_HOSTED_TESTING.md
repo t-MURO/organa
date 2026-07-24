@@ -138,6 +138,19 @@ A reachable Auth endpoint normally answers this unauthenticated probe with
 
 ## 3. Configure Email And OAuth
 
+Transfer the Auth override, private-environment template, and email template
+from the development machine before configuring them:
+
+```sh
+scp supabase/self-hosted/docker-compose.organa.yml \
+  SERVER:~/organa-supabase/
+scp supabase/self-hosted/.env.auth.example \
+  SERVER:~/organa-supabase/
+ssh SERVER 'mkdir -p "$HOME/organa-supabase/volumes/templates"'
+scp supabase/templates/email-code.html \
+  SERVER:~/organa-supabase/volumes/templates/
+```
+
 Organa's account requirement needs at least email OTP for the first connected
 drill. Configure a real SMTP relay in the self-hosted `.env`:
 
@@ -148,14 +161,18 @@ SMTP_PORT=465
 SMTP_USER=replace-on-server
 SMTP_PASS=replace-on-server
 SMTP_SENDER_NAME=Organa
+ENABLE_EMAIL_SIGNUP=true
+ENABLE_EMAIL_AUTOCONFIRM=false
+ENABLE_PHONE_SIGNUP=false
 ```
 
 The checked-in `supabase/templates/email-code.html` emits the six-digit
 `{{ .Token }}` expected by the app. Self-hosted Auth reads custom templates
-from a URL, not directly from a mounted HTML file. Serve the template from a
-container available only inside the Compose network and configure both the
-confirmation and magic-link template URLs. Keep the OTP lifetime at 900
-seconds so the email copy remains accurate.
+from a URL, not directly from a mounted HTML file. The Organa Compose override
+serves this template only inside the Compose network and configures both the
+confirmation and magic-link paths, because new and returning addresses can
+take different Auth flows. It also fixes the OTP length at six digits and the
+lifetime at 900 seconds so the app and email copy remain accurate.
 
 Google, Apple, and GitHub are separate provider drills. Each provider must use:
 
@@ -163,10 +180,22 @@ Google, Apple, and GitHub are separate provider drills. Each provider must use:
 https://supabase.example.net/auth/v1/callback
 ```
 
-Enable the matching `GOTRUE_EXTERNAL_*` variables in the Auth service and
-recreate that container. Provider secrets stay in the server `.env`. Apple
-OAuth additionally needs an Apple Developer Services ID and a client secret
-that is rotated before its six-month expiry.
+Register that exact callback in every provider console. Apple OAuth
+additionally needs an Apple Developer Services ID and a client-secret JWT that
+is rotated before its six-month expiry.
+
+Copy the secret-free Auth template and fill every empty client ID and secret
+on the server:
+
+```sh
+[ -f .env.auth ] || cp .env.auth.example .env.auth
+chmod 600 .env.auth
+${EDITOR:-vi} .env.auth
+```
+
+The checked-in Compose override passes the provider variables directly to
+Auth and derives all three callback values from `API_EXTERNAL_URL`; do not
+duplicate the callback or provider secrets in `docker-compose.yml`.
 
 After configuration, inspect the Auth settings endpoint with the publishable
 key and confirm only the intended providers are enabled. Never use a secret or
@@ -227,8 +256,6 @@ scp -r supabase/functions/finalize-account-deletions \
   SERVER:~/organa-supabase/volumes/functions/
 scp -r supabase/functions/dispatch-web-push \
   SERVER:~/organa-supabase/volumes/functions/
-scp supabase/self-hosted/docker-compose.organa.yml \
-  SERVER:~/organa-supabase/
 scp supabase/self-hosted/.env.functions.example \
   SERVER:~/organa-supabase/
 scp supabase/self-hosted/validate-self-hosted.sh \
@@ -292,7 +319,8 @@ sh validate-self-hosted.sh full
 ```
 
 The script reports only missing or invalid key names, files, permissions,
-URLs, Compose services, and daemon access. It never prints credential values.
+URLs, SMTP/provider configuration, Auth callback/template wiring, Compose
+services, and daemon access. It never prints credential values.
 To recheck only initial key generation, run:
 
 ```sh
@@ -304,8 +332,35 @@ service-role credential. Recreate the function service after changing code or
 environment:
 
 ```sh
-sh run.sh recreate functions
+sh run.sh recreate auth templates-server functions
 ```
+
+Verify the public Auth capabilities without placing the publishable key in
+shell history:
+
+```sh
+ORGANA_SUPABASE_URL=$(
+  awk -F= '$1 == "SUPABASE_PUBLIC_URL" { sub(/^[^=]*=/, ""); print; exit }' .env
+)
+ORGANA_PUBLISHABLE_KEY=$(
+  awk -F= '$1 == "SUPABASE_PUBLISHABLE_KEY" { sub(/^[^=]*=/, ""); print; exit }' .env
+)
+curl --fail --silent --show-error \
+  -H "apikey: $ORGANA_PUBLISHABLE_KEY" \
+  "$ORGANA_SUPABASE_URL/auth/v1/settings" |
+  jq -e '
+    .external.email == true
+    and .external.phone == false
+    and .external.google == true
+    and .external.apple == true
+    and .external.github == true
+  ' >/dev/null
+unset ORGANA_SUPABASE_URL ORGANA_PUBLISHABLE_KEY
+```
+
+This check is silent on success and exposes neither the key nor the settings
+payload. Run an actual email-code sign-in before trying the three external
+providers so SMTP and both OTP template paths are exercised first.
 
 Run both scheduler-authenticated functions once. Success is silent; failures
 name only the failed function and never print its bearer value:
