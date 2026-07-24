@@ -250,6 +250,10 @@ Local evidence:
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks
+- a focused Brain Dump browser drill started with one editable bullet, pressed
+  Enter once, observed exactly two editors and a count of two thoughts, and
+  confirmed focus moved to the single new blank bullet; temporary bullets were
+  removed and the browser emitted no warning or error
 - browser target-size audit found no visible control below 24 by 24 CSS pixels
   across Today, Check-In, Brain Dump, Templates, and Account; coarse-pointer
   web targets expand to 44 by 44 and native pressables share a 14-point hit area

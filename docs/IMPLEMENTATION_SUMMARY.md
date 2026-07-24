@@ -1351,6 +1351,10 @@ No tests were added, changed, or run for this milestone.
   only the native `onSubmitEditing` path with `submitBehavior="submit"`, so one
   action creates one next bullet without changing keyboard behavior on the
   other platform.
+- A focused local-preview browser drill began with one editor, pressed Enter
+  once, observed exactly two editors and a count of two thoughts, and confirmed
+  focus moved to the single new blank bullet. Both temporary bullets were
+  removed afterward, and browser logs contained no warning or error.
 - All 151 existing tests, uncached strict TypeScript, the production web/PWA
   build with 18 artifact checks, and both native Hermes exports pass. No test
   files were added or changed.
