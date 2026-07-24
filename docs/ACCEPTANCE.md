@@ -124,6 +124,9 @@ Local evidence:
 - PWA update tests cover waiting-worker discovery, dismiss/restart state,
   one-shot controller handoff, a five-second fallback, and failed
   registration/message paths
+- a real same-origin production PWA drill installed a controlling worker,
+  staged a byte-distinct replacement, verified Later and reprompt behavior,
+  then activated a marked third version with one reload and no stale prompt
 - production Lighthouse scores 100% for accessibility and 100% for best
   practices on the configured sign-in screen
 - production dependency audit reports no known vulnerabilities

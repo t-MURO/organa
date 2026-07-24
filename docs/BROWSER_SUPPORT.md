@@ -109,3 +109,7 @@ On 2026-07-24, the configured production PWA:
   restart, one-shot controller handoff, timeout fallback, and
   registration/message failure
 - generated a worker with the deliberate `SKIP_WAITING` activation protocol
+- completed a real same-origin production update drill: version one installed
+  and controlled the page, version two entered `waiting`, Later dismissed the
+  prompt, reload restored the prompt, and Restart activated a marked
+  replacement worker with exactly one navigation and no remaining prompt

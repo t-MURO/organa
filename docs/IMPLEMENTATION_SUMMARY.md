@@ -29,6 +29,9 @@ Committed and verified milestones:
 
 Latest checkpoint commits:
 
+- `c55b294` hardens deliberate PWA update activation and failure recovery.
+- `241da5c` enforces accessible interaction targets across app surfaces.
+- `9fd4429` keeps One-off tasks and templates non-recurring.
 - `eee913d` rejects invalid decrypted backup domain records before restore.
 - `2c669ce` adds deterministic local task-performance verification.
 - `32bf4e9` pins and verifies the controlled-beta platform boundaries.
@@ -144,7 +147,11 @@ Latest verified task-type work:
   timeout, and failure behavior.
 - The production verifier now checks both the shell announcement and generated
   Workbox activation protocol, bringing the artifact total to 18 checks.
-- A real two-version install/update drill remains a release-browser gate.
+- A real same-origin production drill installs version one, stages version two,
+  verifies dismissal and reprompt, then activates a marked third version with
+  one navigation and no stale prompt.
+- Repeating that install/update drill across every supported release browser
+  and installed mode remains a release gate.
 
 Latest committed implementation milestones:
 
