@@ -301,7 +301,11 @@ snooze timers are also owner-scoped and canceled when that owner leaves the
 notification boundary or private platform state is cleared. A surviving
 snooze event must match the active owner, and its displayed task title and
 presets are rebuilt from that owner's current task rather than trusted from
-the captured timeout payload.
+the captured timeout payload. Browser task and Check-In reminder mutations now
+share an owner-aware queue. Initial and reconnect-triggered Web Push flushes
+are serialized with authenticated subscription removal, so cleanup drains
+earlier writes and later flushes observe an empty pending queue instead of
+recreating old-account delivery state.
 
 Native task, Check-In, Focus, and notification-action scheduling operations
 share an owner-aware serialized queue. Changing owner inserts a cancel-all

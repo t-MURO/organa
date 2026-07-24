@@ -19,7 +19,7 @@ export function createCheckInReminderScheduler(): CheckInReminderScheduler {
     capability: checkInReminderCapability,
     async initialize() {
       initializeWebPushScheduler();
-      void flushPendingSchedules(false).catch(() => undefined);
+      await flushPendingSchedules(false);
     },
     async sync(settings, requestPermission = false) {
       const schedule = buildCheckInWebPushSchedule(settings);

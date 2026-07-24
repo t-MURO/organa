@@ -1639,6 +1639,27 @@ No tests were added, changed, or run for this milestone.
   and remains authoritative.
 - No test files were added or changed for this milestone.
 
+## Owner-Serialized Web Reminder State
+
+- An online-triggered Web Push flush could previously remain in flight while
+  sign-out removed the current subscription. The delayed flush could then
+  recreate an old-account subscription or schedule after cleanup returned.
+- Browser task and Check-In reminder changes now use an owner-aware operation
+  queue. Only the authenticated device boundary may activate an owner; stale
+  feature providers cannot reactivate themselves after cleanup begins.
+- Web Push schedule flushes and authenticated subscription removal share a
+  second serialized chain. Cleanup invalidates local pending schedules
+  immediately, drains earlier flushes, removes the server subscription, and
+  clears local schedule, snooze, and suppression state again.
+- Scheduler initialization now awaits its initial flush rather than launching
+  an untracked background mutation. Online reconnect flushes remain safe
+  because cleanup is ordered after every earlier flush and every later flush
+  sees the cleared local queue.
+- The native operation gate was tightened to the same authoritative-owner
+  rule, preventing a stale provider from reclaiming native reminder ownership
+  after sign-out.
+- No test files were added or changed for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

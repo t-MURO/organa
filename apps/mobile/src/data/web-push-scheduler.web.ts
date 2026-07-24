@@ -52,11 +52,9 @@ export async function syncWebPushSchedule(
 export async function flushPendingSchedules(
   requestPermission: boolean,
 ): Promise<WebPushPermission> {
-  const current = flushChain.then(() =>
+  return enqueueFlush(() =>
     flushPendingSchedulesOnce(requestPermission),
   );
-  flushChain = current.catch(() => undefined);
-  return current;
 }
 
 export function clearPendingWebPushSchedules() {
@@ -69,7 +67,11 @@ export function clearPendingWebPushSchedules() {
   }
 }
 
-export async function removeCurrentWebPushSubscription() {
+export function removeCurrentWebPushSubscription() {
+  return enqueueFlush(removeCurrentWebPushSubscriptionOnce);
+}
+
+async function removeCurrentWebPushSubscriptionOnce() {
   const context = await currentContext();
   if (!context || !supabase) return;
   const result = await supabase.rpc("remove_current_web_push_subscription", {
@@ -77,6 +79,12 @@ export async function removeCurrentWebPushSubscription() {
     p_current_device_proof: context.device.secret,
   });
   if (result.error) throw result.error;
+}
+
+function enqueueFlush<T>(action: () => Promise<T>) {
+  const current = flushChain.then(action, action);
+  flushChain = current.catch(() => undefined);
+  return current;
 }
 
 async function flushPendingSchedulesOnce(

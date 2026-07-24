@@ -269,6 +269,10 @@ Local evidence:
   owner-aware native notification queue; account changes insert a cancel-all
   barrier, and sign-out/deletion cleanup waits behind every earlier permission,
   cancellation, or scheduling operation before removing private notifications
+- browser task and Check-In Web Push writes share the same owner-aware
+  boundary; initial and online-triggered flushes are serialized with
+  authenticated server-subscription removal, so a delayed old-account flush
+  cannot recreate a schedule after sign-out or final-deletion cleanup
 - native privacy cleanup also clears Expo's last notification-response payload,
   preventing a later account from inheriting a previous task/check-in route;
   web active-tab reminder history is owner-scoped and all Organa history keys

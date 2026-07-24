@@ -28,7 +28,7 @@ export function createNotificationScheduler(): NotificationScheduler {
     capability: notificationCapability,
     async initialize() {
       initializeWebPushScheduler();
-      void flushPendingSchedules(false).catch(() => undefined);
+      await flushPendingSchedules(false);
     },
     async syncTask(task, requestPermission = false) {
       const schedule = buildTaskWebPushSchedule(task);

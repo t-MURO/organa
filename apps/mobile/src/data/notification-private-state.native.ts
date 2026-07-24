@@ -14,7 +14,6 @@ export function runNotificationOperation<T>(
   ownerId: string,
   action: () => Promise<T>,
 ) {
-  ensureOwner(ownerId);
   return enqueue(async () => {
     if (activeOwnerId !== ownerId) return undefined;
     const result = await action();
