@@ -122,6 +122,9 @@ user-entered content.
   bypass recovery-key enrollment.
 - Active devices must present their per-device proof secret for encrypted
   mutations, reminder-device changes, revocation, and account deletion.
+- Promoting a new primary reminder device atomically disables reminder delivery
+  on every other active device. A demoted device can receive reminders again
+  only after an explicit secondary-device enable action.
 - Security-definer RPC execution is revoked from `public` and `anon`.
 - Mutation RPCs validate authentication, trusted-device state, record type,
   patch shape, and future clock skew.

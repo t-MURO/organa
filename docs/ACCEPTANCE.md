@@ -45,10 +45,11 @@ Local evidence:
   proofless privileged RPC signatures
 - all three migrations apply from scratch to local Supabase/PostgreSQL and
   `db lint --local --level warning` reports no schema errors or warnings
-- `pnpm verify:supabase` passes 31 authenticated database checks covering
+- `pnpm verify:supabase` passes 37 authenticated database checks covering
   cross-account RLS, direct-write denial, invalid proofs, encrypted
   trusted-device approval and claim, envelope erasure, request rejection,
-  revocation, anonymous denial, and deletion read-only enforcement
+  revocation, anonymous denial, deletion read-only enforcement, and
+  duplicate-safe primary reminder-device switching
 - the same command passes 12 live Edge Function checks covering scheduler
   authorization, POST-only execution, the one-hour deadline, due processing,
   and cascading removal of the Auth user, sessions, device keys, and encrypted
@@ -89,6 +90,8 @@ Local evidence:
 - task and Check-In schedulers guard unresolved reminder ownership, web
   active-tab reminders honor primary/secondary device settings, and revocation
   or final account deletion removes the authorization cache
+- promoting a new primary reminder device atomically makes every other device
+  quiet; a demoted device requires a later explicit secondary-reminder opt-in
 - a task-load race test contract verifies that reconciliation reads the latest
   authorization after asynchronous repository loading
 - production web export succeeds

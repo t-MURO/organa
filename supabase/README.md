@@ -70,6 +70,8 @@ The migration:
   an existing trusted device; the backend never receives the one-time code
 - requires the device proof for encrypted writes, reminder-device changes,
   approval, revocation, and deletion requests
+- atomically quiets the previous primary reminder device when a new primary is
+  selected, requiring explicit opt-in for any later secondary delivery
 - grants clients read access only where required
 - routes encrypted writes and device changes through validated
   security-definer RPCs

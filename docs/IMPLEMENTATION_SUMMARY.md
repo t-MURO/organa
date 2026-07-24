@@ -196,9 +196,9 @@ Latest verified repository checks:
 - All three migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
-- `pnpm verify:supabase` passes 31 authenticated database checks for RLS,
+- `pnpm verify:supabase` passes 37 authenticated database checks for RLS,
   proof-gated approval, claim, rejection, revocation, and deletion read-only
-  behavior.
+  behavior, including primary-device demotion.
 - The same command passes 12 live account-deletion Edge Function checks,
   including scheduler authorization and cascading removal of the Auth user,
   sessions, keys, devices, encrypted records, and deletion request.
@@ -288,7 +288,7 @@ This milestone includes:
 - A pending-device screen that can request approval, poll for status, and
   unlock locally with the one-time code
 - Trusted-device account controls that can approve or reject incoming requests
-- Reproducible local Supabase verification covering 31 authenticated database
+- Reproducible local Supabase verification covering 37 authenticated database
   checks and 12 live account-deletion Edge Function checks
 - A web authentication-storage guard that prevents configured Expo server
   rendering from treating an incomplete `localStorage` placeholder as storage
@@ -297,8 +297,8 @@ This milestone includes:
 - Web-storage and email-template regression tests; the complete automated suite
   currently passes 99 tests
 
-Local Supabase has been reset successfully from all three migrations, database
-lint reports no schema errors, and all 43 live backend checks pass.
+Local Supabase has been reset successfully from all four migrations, database
+lint reports no schema errors, and all 49 live backend checks pass.
 Configured production web export and both native Hermes exports succeed. The
 combined two-device approval UI and encrypted realtime task propagation were
 also exercised in separate browser origins against the local backend.
@@ -495,6 +495,24 @@ Focused tests verify:
 - Revocation and deletion paths remove cached authorization
 - The configured production web export, all 12 web artifact checks, and both
   native Hermes exports pass from the same source state
+
+## Reminder Device Demotion Milestone
+
+This milestone closes a duplicate-reminder edge case in primary-device
+switching:
+
+- Promoting a new primary reminder device atomically clears both
+  `primary_reminder` and `notifications_enabled` on every other active device.
+- The promoted device becomes primary with reminders enabled.
+- A demoted device remains quiet until the user explicitly enables it as a
+  secondary reminder device.
+- The change is a forward migration and does not rewrite previously applied
+  schema history.
+- All four migrations apply cleanly from scratch and database lint reports no
+  findings.
+- `pnpm verify:supabase` passes 37 authenticated database checks, including two
+  real primary switches across trusted devices, plus 12 live deletion-function
+  checks.
 
 ## Remaining Acceptance Gates
 

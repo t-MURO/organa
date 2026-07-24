@@ -229,6 +229,68 @@ async function verifyDeviceApprovalContract() {
   );
 
   noError(
+    await client1.rpc("configure_reminder_device", {
+      p_current_device_id: trustedDeviceId,
+      p_current_device_proof: trustedProof,
+      p_device_id: approvedDeviceId,
+      p_make_primary: true,
+      p_notifications_enabled: true,
+    }),
+    "claimed device promoted to primary reminder",
+  );
+  const promotedDevices = noError(
+    await client1
+      .from("devices")
+      .select("id,primary_reminder,notifications_enabled")
+      .in("id", [trustedDeviceId, approvedDeviceId]),
+    "promoted reminder devices loaded",
+  );
+  const promoted = promotedDevices.find(
+    (device) => device.id === approvedDeviceId,
+  );
+  const demoted = promotedDevices.find(
+    (device) => device.id === trustedDeviceId,
+  );
+  ok(
+    promoted?.primary_reminder &&
+      promoted.notifications_enabled &&
+      !demoted?.primary_reminder &&
+      !demoted?.notifications_enabled,
+    "promoting a primary quietly demotes the previous primary",
+  );
+
+  noError(
+    await client1.rpc("configure_reminder_device", {
+      p_current_device_id: approvedDeviceId,
+      p_current_device_proof: approvedProof,
+      p_device_id: trustedDeviceId,
+      p_make_primary: true,
+      p_notifications_enabled: true,
+    }),
+    "original device restored as primary reminder",
+  );
+  const restoredDevices = noError(
+    await client1
+      .from("devices")
+      .select("id,primary_reminder,notifications_enabled")
+      .in("id", [trustedDeviceId, approvedDeviceId]),
+    "restored reminder devices loaded",
+  );
+  const restored = restoredDevices.find(
+    (device) => device.id === trustedDeviceId,
+  );
+  const quietSecondary = restoredDevices.find(
+    (device) => device.id === approvedDeviceId,
+  );
+  ok(
+    restored?.primary_reminder &&
+      restored.notifications_enabled &&
+      !quietSecondary?.primary_reminder &&
+      !quietSecondary?.notifications_enabled,
+    "demoted secondary stays quiet until explicitly enabled",
+  );
+
+  noError(
     await client1.rpc("request_device_approval", {
       p_device_id: rejectedDeviceId,
       p_device_proof: rejectedProof,
