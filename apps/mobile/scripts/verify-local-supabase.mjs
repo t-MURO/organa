@@ -1,35 +1,88 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { readFileSync, statSync } from "node:fs";
+import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createClient } from "@supabase/supabase-js";
 
 const repositoryRoot = fileURLToPath(new URL("../../..", import.meta.url));
-const localEnvironment = readLocalEnvironment();
-const apiUrl = localEnvironment.API_URL;
-const publishableKey = localEnvironment.PUBLISHABLE_KEY;
-const serviceRoleKey = localEnvironment.SERVICE_ROLE_KEY;
+const verificationEnvironment = readVerificationEnvironment();
+const apiUrl = verificationEnvironment.apiUrl;
+const publishableKey = verificationEnvironment.publishableKey;
+const serviceRoleKey = verificationEnvironment.serviceRoleKey;
+const interruptionController = new AbortController();
 
 if (!apiUrl || !publishableKey || !serviceRoleKey) {
-  throw new Error("The local Supabase environment is unavailable.");
+  throw new Error("The Supabase verification environment is unavailable.");
 }
 
 const admin = createClient(apiUrl, serviceRoleKey, {
   auth: { persistSession: false },
+  global: { fetch: verificationFetch },
+});
+const cleanupAdmin = createClient(apiUrl, serviceRoleKey, {
+  auth: { persistSession: false },
+  global: { fetch: cleanupFetch },
 });
 const clientOptions = {
   auth: { autoRefreshToken: false, persistSession: false },
+  global: { fetch: verificationFetch },
 };
 const users = [];
 const checks = [];
+let interruptedSignal;
+
+for (const signal of ["SIGINT", "SIGTERM"]) {
+  process.once(signal, () => {
+    interruptedSignal ??= signal;
+    interruptionController.abort();
+  });
+}
 
 try {
+  if (verificationEnvironment.connected) {
+    await verifyConnectedAuthSettings();
+  }
   await verifyDeviceApprovalContract();
-  console.log(`Local Supabase verification passed (${checks.length} checks).`);
-} finally {
-  await Promise.all(
-    users.map((user) => admin.auth.admin.deleteUser(user.id)),
+  console.log(
+    `${verificationEnvironment.label} Supabase verification passed (${checks.length} checks).`,
   );
+} finally {
+  await deleteSyntheticUsers();
+}
+
+async function verifyConnectedAuthSettings() {
+  let response;
+  try {
+    response = await verificationFetch(`${apiUrl}/auth/v1/settings`, {
+      headers: { apikey: publishableKey },
+    });
+  } catch {
+    throwIfInterrupted();
+    throw new Error(
+      "Connected Auth settings could not be reached within 20 seconds.",
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      `Connected Auth settings request failed with status ${response.status}.`,
+    );
+  }
+
+  let settings;
+  try {
+    settings = await response.json();
+  } catch {
+    throw new Error("Connected Auth settings did not return valid JSON.");
+  }
+  const external = settings?.external;
+  ok(external && typeof external === "object", "Auth settings are available");
+  ok(external.email === true, "email authentication is enabled");
+  ok(external.phone === false, "phone authentication is disabled");
+  ok(external.google === true, "Google authentication is enabled");
+  ok(external.apple === true, "Apple authentication is enabled");
+  ok(external.github === true, "GitHub authentication is enabled");
 }
 
 async function verifyDeviceApprovalContract() {
@@ -45,6 +98,7 @@ async function verifyDeviceApprovalContract() {
       throw created.error ?? new Error("User creation failed.");
     }
     users.push(created.data.user);
+    throwIfInterrupted();
   }
 
   const client1 = createClient(apiUrl, publishableKey, clientOptions);
@@ -548,11 +602,13 @@ function fakeRecoveryEnvelope(keyId, fill) {
 }
 
 function ok(condition, label) {
+  throwIfInterrupted();
   if (!condition) throw new Error(`FAILED: ${label}`);
   checks.push(label);
 }
 
 function noError(result, label) {
+  throwIfInterrupted();
   if (result.error) {
     throw new Error(`${label}: ${result.error.message}`);
   }
@@ -565,6 +621,64 @@ function expectedError(result, pattern, label) {
     Boolean(result.error && pattern.test(result.error.message)),
     `${label} (${result.error?.message ?? "no error"})`,
   );
+}
+
+async function deleteSyntheticUsers() {
+  const pendingUsers = users.splice(0);
+  const results = await Promise.all(
+    pendingUsers.map((user) => cleanupAdmin.auth.admin.deleteUser(user.id)),
+  );
+  if (results.some((result) => result.error)) {
+    throw new Error(
+      "Synthetic account cleanup failed; inspect Auth users with the approval- prefix.",
+    );
+  }
+}
+
+function throwIfInterrupted() {
+  if (interruptedSignal) {
+    throw new Error(
+      `Supabase verification interrupted by ${interruptedSignal}; cleaning up synthetic accounts.`,
+    );
+  }
+}
+
+function verificationFetch(input, init = {}) {
+  return fetchWithSignals(input, init, interruptionController.signal);
+}
+
+function cleanupFetch(input, init = {}) {
+  return fetchWithSignals(input, init);
+}
+
+function fetchWithSignals(input, init, additionalSignal) {
+  const signals = [AbortSignal.timeout(20_000)];
+  if (init.signal) signals.push(init.signal);
+  if (additionalSignal) signals.push(additionalSignal);
+  return fetch(input, {
+    ...init,
+    signal: AbortSignal.any(signals),
+  });
+}
+
+function readVerificationEnvironment() {
+  const [mode, configPath, ...unexpected] = process.argv.slice(2);
+  if (!mode) {
+    const local = readLocalEnvironment();
+    return {
+      apiUrl: local.API_URL,
+      connected: false,
+      label: "Local",
+      publishableKey: local.PUBLISHABLE_KEY,
+      serviceRoleKey: local.SERVICE_ROLE_KEY,
+    };
+  }
+  if (mode !== "--connected" || unexpected.length > 0) {
+    throw new Error(
+      "Usage: node verify-local-supabase.mjs [--connected [config-path]]",
+    );
+  }
+  return readConnectedEnvironment(configPath);
 }
 
 function readLocalEnvironment() {
@@ -580,4 +694,99 @@ function readLocalEnvironment() {
       .filter(Boolean)
       .map((match) => [match[1], match[2]]),
   );
+}
+
+function readConnectedEnvironment(configPath) {
+  const resolvedPath = resolve(
+    repositoryRoot,
+    configPath ?? ".organa-connected-supabase.json",
+  );
+  let fileStats;
+  let config;
+  try {
+    fileStats = statSync(resolvedPath);
+    config = JSON.parse(readFileSync(resolvedPath, "utf8"));
+  } catch {
+    throw new Error(
+      "The connected Supabase config is missing, unreadable, or invalid JSON.",
+    );
+  }
+  if (!fileStats.isFile()) {
+    throw new Error("The connected Supabase config must be a regular file.");
+  }
+  const mode = fileStats.mode & 0o777;
+  if (mode !== 0o400 && mode !== 0o600) {
+    throw new Error(
+      "The connected Supabase config must have mode 600 or 400.",
+    );
+  }
+  if (
+    config?.purpose !== "organa-controlled-beta-test" ||
+    config?.allowSyntheticAccountCreationAndDeletion !== true
+  ) {
+    throw new Error(
+      "The connected Supabase config must explicitly allow controlled-beta synthetic account creation and deletion.",
+    );
+  }
+
+  const apiUrl = validateConnectedUrl(config.supabaseUrl);
+  requireConnectedKey(
+    config.publishableKey,
+    "sb_publishable_",
+    "publishableKey",
+  );
+  requireConnectedKey(config.secretKey, "sb_secret_", "secretKey");
+  if (config.publishableKey === config.secretKey) {
+    throw new Error("The connected Supabase keys must be distinct.");
+  }
+
+  return {
+    apiUrl,
+    connected: true,
+    label: "Connected",
+    publishableKey: config.publishableKey,
+    serviceRoleKey: config.secretKey,
+  };
+}
+
+function validateConnectedUrl(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("supabaseUrl must be a valid HTTPS URL.");
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    (url.pathname !== "/" && url.pathname !== "")
+  ) {
+    throw new Error(
+      "supabaseUrl must be an HTTPS origin without credentials, query, fragment, or path.",
+    );
+  }
+  if (
+    url.hostname === "example.com" ||
+    url.hostname.endsWith(".example.com") ||
+    url.hostname === "example.net" ||
+    url.hostname.endsWith(".example.net")
+  ) {
+    throw new Error("supabaseUrl still uses an example hostname.");
+  }
+  return url.origin;
+}
+
+function requireConnectedKey(value, prefix, name) {
+  if (
+    typeof value !== "string" ||
+    !value.startsWith(prefix) ||
+    value.length <= prefix.length + 16 ||
+    /\s/.test(value) ||
+    /replace|example/i.test(value)
+  ) {
+    throw new Error(`${name} is missing or is not a valid ${prefix} key.`);
+  }
 }

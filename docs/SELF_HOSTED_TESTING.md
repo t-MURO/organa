@@ -417,6 +417,43 @@ key.
 
 Use unique test accounts and synthetic content:
 
+Before the manual two-client drills, run the guarded backend contract verifier
+from the development machine. It creates two synthetic password-authenticated
+accounts through the administrator API, exercises the same RLS, trusted-device,
+reminder-ownership, Web Push storage, and deletion read-only contract used by
+local verification, and deletes both accounts in a `finally` cleanup.
+
+Create its ignored mode-600 configuration with a local editor:
+
+```sh
+cp .organa-connected-supabase.example.json .organa-connected-supabase.json
+chmod 600 .organa-connected-supabase.json
+${EDITOR:-vi} .organa-connected-supabase.json
+```
+
+Set `supabaseUrl` to the public HTTPS origin without `/auth/v1`. Use
+`SUPABASE_PUBLISHABLE_KEY` for `publishableKey` and `SUPABASE_SECRET_KEY` for
+`secretKey`. Keep the secret key only in this ignored operator file. Change
+`allowSyntheticAccountCreationAndDeletion` to `true` only for the isolated
+controlled-beta test deployment, then run:
+
+```sh
+pnpm verify:connected:supabase
+```
+
+The verifier refuses placeholder/insecure URLs, legacy or swapped key types,
+credential-file modes other than 600/400, and missing destructive-test
+consent. Before creating users it confirms email, Google, Apple, and GitHub are
+enabled and phone Auth is disabled through the public settings endpoint. Its
+output contains check labels and counts only, never keys, sessions, proofs, or
+payloads. Do not interrupt the run; if cleanup reports a failure, inspect and
+remove only synthetic Auth users whose addresses begin with `approval-`.
+
+Passing this command is evidence for the connected Auth configuration and
+backend authorization contract. It does not exercise real provider redirects,
+SMTP delivery, Realtime latency, Edge Function scheduling, browser Push, or
+physical-device behavior; perform the remaining drills below.
+
 1. Sign in by email OTP, then Google, Apple, and GitHub as each provider is
    configured.
 2. Confirm recovery-key setup and approve a second clean browser/device.

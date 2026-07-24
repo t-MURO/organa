@@ -1094,6 +1094,14 @@ silently creating an authentication client:
   `8e75147f0c2a24202e0d53c75cddc5e3e06c531d`, and the isolated template
   service starts and serves the checked-in token template. Real SMTP and OAuth
   flows remain unclaimed until the home server is connected.
+- Adds a guarded connected mode to the 54-check Supabase authorization
+  verifier. It reads a git-ignored mode-600 operator file, accepts only an
+  HTTPS origin plus modern publishable/secret key types, requires explicit
+  synthetic-account deletion consent, checks the four intended Auth methods,
+  and always attempts to remove created accounts.
+- Documents exactly which connected acceptance rows that verifier can support
+  and leaves provider redirects, SMTP, Realtime, functions, Push, and physical
+  behavior explicitly unclaimed until their direct drills run.
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.
