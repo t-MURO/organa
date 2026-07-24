@@ -35,7 +35,7 @@ Status meanings:
 | 15 | End-to-end encrypted content inaccessible to backend | AES-256-GCM field envelopes, wrapped web keys, SecureStore native keys, ciphertext-only database inspection, RLS/RPC tests, and documented metadata boundaries provide local evidence. | Independent cryptographic/application review and hosted abuse testing. |
 | 16 | Light, dark, system, and manual themes | Theme tokens, system preference, manual override, synchronized settings, contrast checks, and browser walkthrough provide local evidence. | Physical system-theme and dynamic-type smoke test. |
 | 17 | Installable offline PWA | Manifest, icons, eight static routes, controlled update activation, Workbox shell, 16 artifact checks, 22 precache URLs, and offline browser drill pass. | Release-browser install and update drill. |
-| 18 | Export and one-hour deletion | Readable JSON/Markdown, encrypted backup/restore validation, read-only boundary, cancellation UI, scheduled finalizer, 13 live function checks, and cascade tests pass locally. | Hosted finalizer and separate clean-device restore drill. |
+| 18 | Export and one-hour deletion | Readable JSON/Markdown, strict encrypted backup validation against task/Check-In domain invariants, read-only boundary, cancellation UI, scheduled finalizer, 13 live function checks, and cascade tests pass locally. | Hosted finalizer and separate clean-device restore drill. |
 | 19 | Accessibility for critical workflows | Semantic roles/states, labels, keyboard focus CSS, reduced-motion handling, AA token contrast, browser keyboard/ARIA walkthrough, and Lighthouse accessibility evidence exist. | VoiceOver, TalkBack, dynamic-type, touch-target, and release-browser walkthroughs. |
 | 20 | Critical/high security findings resolved | Security design, local abuse verifiers, dependency audit, and production gates are documented. | External gate: commission the independent review and resolve every critical/high finding. |
 
@@ -48,7 +48,7 @@ Status meanings:
 - `pnpm verify:performance`: Quick Add, recurring completion, Today planning,
   and search pass a 100 ms median budget against 2,000 local tasks on the
   verification host; release-device timing remains a physical gate
-- `pnpm test`: 116 tests (41 domain, 6 cryptography, 69 application)
+- `pnpm test`: 126 tests (41 domain, 6 cryptography, 79 application)
 - `pnpm typecheck`: all strict TypeScript packages pass
 - `pnpm verify:web-push`: VAPID authorization and encrypted payload pass
 - `pnpm verify:supabase`: 54 database, 13 deletion-function, and 15 Web Push

@@ -146,7 +146,7 @@ function isTask(value: unknown): value is Task {
     isTaskPriority(value.priority) &&
     isArrayOf(value.reminders, isReminder) &&
     isArrayOf(value.subtasks, isSubtask) &&
-    isArrayOf(value.snoozePresets, isNonNegativeInteger) &&
+    isSnoozePresets(value.snoozePresets) &&
     isTimestamp(value.createdAt) &&
     isTimestamp(value.updatedAt) &&
     isOptional(value.completedAt, isTimestamp) &&
@@ -157,7 +157,8 @@ function isTask(value: unknown): value is Task {
 function isTaskInput(value: unknown): value is Record<string, unknown> {
   if (!isRecord(value) || !isNonEmptyString(value.title)) return false;
 
-  return (
+  const kind = value.kind ?? "one_off";
+  const validShape =
     isOptional(value.details, isString) &&
     isOptional(value.kind, isTaskKind) &&
     isOptional(value.priority, isTaskPriority) &&
@@ -169,15 +170,19 @@ function isTaskInput(value: unknown): value is Record<string, unknown> {
     isOptional(value.recurrence, isRecurrence) &&
     isOptional(value.reminders, (item) => isArrayOf(item, isReminder)) &&
     isOptional(value.subtasks, (item) => isArrayOf(item, isSubtask)) &&
-    isOptional(value.snoozePresets, (item) =>
-      isArrayOf(item, isNonNegativeInteger),
-    ) &&
-    isOptional(value.graceDays, isNonNegativeInteger) &&
+    isOptional(value.snoozePresets, isSnoozePresets) &&
+    isOptional(value.graceDays, isGraceDays) &&
     isOptional(value.requireDoseConfirmation, isBoolean) &&
     isOptional(value.subtaskRemindersEnabled, isBoolean) &&
     isOptional(value.seriesId, isNonEmptyString) &&
     isOptional(value.previousOccurrenceId, isNonEmptyString) &&
-    isOptional(value.occurrenceNumber, isPositiveInteger)
+    isOptional(value.occurrenceNumber, isPositiveInteger);
+
+  return (
+    validShape &&
+    (value.graceDays === undefined ||
+      (kind !== "one_off" && value.recurrence !== undefined)) &&
+    (value.requireDoseConfirmation === undefined || kind === "medication")
   );
 }
 
@@ -267,7 +272,7 @@ function isCheckInEntry(value: unknown): value is CheckInEntry {
     Number.isInteger(value.mood) &&
     Number(value.mood) >= 1 &&
     Number(value.mood) <= 5 &&
-    isOptional(value.feeling, isString) &&
+    isOptional(value.feeling, isOneWordString) &&
     isOptional(value.reflection, isString) &&
     isTimestamp(value.createdAt) &&
     isTimestamp(value.updatedAt)
@@ -346,6 +351,26 @@ function isPositiveInteger(value: unknown) {
 
 function isNonNegativeInteger(value: unknown) {
   return Number.isInteger(value) && Number(value) >= 0;
+}
+
+function isGraceDays(value: unknown) {
+  return Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 3;
+}
+
+function isSnoozePresets(value: unknown) {
+  if (!Array.isArray(value) || !value.every(isPositiveInteger)) return false;
+  return value.every(
+    (minutes, index) => index === 0 || minutes > value[index - 1],
+  );
+}
+
+function isOneWordString(value: unknown) {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.trim() === value &&
+    !/\s/.test(value)
+  );
 }
 
 function isTaskKind(value: unknown) {

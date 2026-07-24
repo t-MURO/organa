@@ -37,7 +37,7 @@ Status recorded on 2026-07-24.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 116 automated tests pass: 41 domain, 6 cryptography, and 69 application tests
+- 126 automated tests pass: 41 domain, 6 cryptography, and 79 application tests
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
@@ -127,6 +127,10 @@ Local evidence:
 - browser backup drill rejected an invalid file, restored a real AES-GCM
   backup through the file chooser, and verified the imported task and settings
   persisted after reload
+- encrypted backup validation rejects zero/duplicate/out-of-order snoozes,
+  invalid grace-day placement or limits, non-medication dose confirmation, and
+  empty, padded, or multi-word Check-In feeling labels before any repository
+  write
 - browser subtask-reminder drill verified independent timing choices,
   persistence after reopening, and explicit checked/selected ARIA states
 - template tests prove occurrence-specific dates/series metadata are removed

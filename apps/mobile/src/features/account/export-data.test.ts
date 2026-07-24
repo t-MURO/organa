@@ -123,6 +123,125 @@ describe("encrypted backup restoration", () => {
     ).rejects.toThrow("does not contain valid Organa data");
   });
 
+  it.each([
+    {
+      label: "zero-minute snooze presets",
+      value: {
+        ...createTask(
+          { title: "Invalid snooze" },
+          "invalid-snooze",
+          new Date(data.exportedAt),
+        ),
+        snoozePresets: [0, 10],
+      },
+    },
+    {
+      label: "duplicate snooze presets",
+      value: {
+        ...createTask(
+          { title: "Duplicate snooze" },
+          "duplicate-snooze",
+          new Date(data.exportedAt),
+        ),
+        snoozePresets: [10, 10],
+      },
+    },
+    {
+      label: "out-of-order snooze presets",
+      value: {
+        ...createTask(
+          { title: "Out-of-order snooze" },
+          "unordered-snooze",
+          new Date(data.exportedAt),
+        ),
+        snoozePresets: [30, 10],
+      },
+    },
+    {
+      label: "more than three grace days",
+      value: {
+        ...createTask(
+          {
+            graceDays: 3,
+            kind: "habit",
+            plannedFor: "2026-07-23",
+            recurrence: { frequency: "daily" as const, interval: 1 },
+            title: "Invalid grace",
+          },
+          "invalid-grace",
+          new Date(data.exportedAt),
+        ),
+        graceDays: 4,
+      },
+    },
+    {
+      label: "grace days on a one-off task",
+      value: {
+        ...createTask(
+          { title: "Invalid one-off grace" },
+          "invalid-one-off-grace",
+          new Date(data.exportedAt),
+        ),
+        graceDays: 1,
+      },
+    },
+    {
+      label: "grace days on a non-recurring habit",
+      value: {
+        ...createTask(
+          { kind: "habit", title: "Invalid non-recurring grace" },
+          "invalid-non-recurring-grace",
+          new Date(data.exportedAt),
+        ),
+        graceDays: 1,
+      },
+    },
+    {
+      label: "dose confirmation on a non-medication task",
+      value: {
+        ...createTask(
+          { title: "Invalid dose confirmation" },
+          "invalid-dose",
+          new Date(data.exportedAt),
+        ),
+        requireDoseConfirmation: true,
+      },
+    },
+  ])("rejects restored tasks with $label", async ({ value }) => {
+    const { backup, recoveryCode } = await createBackup({
+      ...data,
+      tasks: [value],
+    });
+
+    await expect(
+      restoreEncryptedBackup(JSON.stringify(backup), recoveryCode),
+    ).rejects.toThrow("does not contain valid Organa data");
+  });
+
+  it.each([
+    { feeling: "a bit tired", label: "multi-word" },
+    { feeling: " tired", label: "padded" },
+    { feeling: "", label: "empty" },
+  ])("rejects restored $label feeling labels", async ({ feeling }) => {
+    const { backup, recoveryCode } = await createBackup({
+      ...data,
+      checkIns: [
+        {
+          createdAt: data.exportedAt,
+          date: "2026-07-23",
+          feeling,
+          id: "check-in-2026-07-23",
+          mood: 3,
+          updatedAt: data.exportedAt,
+        },
+      ],
+    });
+
+    await expect(
+      restoreEncryptedBackup(JSON.stringify(backup), recoveryCode),
+    ).rejects.toThrow("does not contain valid Organa data");
+  });
+
   it("rejects corrupt Brain Dump CRDT state before restoration", async () => {
     const invalidData = {
       ...data,

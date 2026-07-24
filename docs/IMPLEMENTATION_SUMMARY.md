@@ -59,10 +59,23 @@ Latest checkpoint commits:
 - Adds repeatable median timing checks for Quick Add, recurring completion,
   Today planning, and search against a 2,000-task personal dataset.
 - Each measured local operation has the requirements-level 100 ms budget.
-- The full suite passes 116 tests: 41 domain, 6 cryptography, and 69
-  application tests.
+- At this milestone, the full suite passed 116 tests: 41 domain, 6
+  cryptography, and 69 application tests.
 - This verifier covers synchronous local interaction work only; signed
   release-device timing and hosted realtime latency remain separate gates.
+
+## Backup Integrity Milestone
+
+- Aligns encrypted-backup validation with the live task and Check-In domain
+  instead of accepting structurally plausible but invalid records.
+- Rejects zero-minute, duplicate, or out-of-order snooze presets.
+- Rejects grace-day values outside 0–3 and grace days attached to one-off or
+  non-recurring tasks.
+- Rejects dose-confirmation settings on non-medication tasks.
+- Rejects empty, padded, or multi-word Check-In feeling labels.
+- Validation still completes before any local repository write, preserving the
+  fail-closed restore boundary.
+- Eighteen export/restore tests and the full 126-test suite pass.
 
 Latest committed implementation milestones:
 
@@ -326,10 +339,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 116 automated tests pass:
+- 126 automated tests pass:
   - 41 domain tests
   - 6 cryptography tests
-  - 69 application integration tests
+  - 79 application integration tests
 - All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - Local Supabase database lint reports no errors or warnings.
