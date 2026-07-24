@@ -288,6 +288,12 @@ Local evidence:
   on account change, sign-out, revocation, or final deletion; delivery also
   requires the active owner and rebuilds copy from that owner's current task,
   so a restored task ID cannot expose another account's captured title
+- Focus task and break timers use a wall-clock deadline rather than counting
+  JavaScript interval ticks; pause uses the current deadline, and returning
+  from mobile background suspension immediately reconciles the displayed
+  remaining time instead of extending the session silently
+- timer completion adds a pressure-free polite accessibility announcement
+  without making the changing countdown a live region
 - task completion, subtask completion, preset edits, remote reconciliation,
   and reminder-device demotion prevent stale snoozes from being delivered;
   native reconciliation also dismisses matching notifications already shown

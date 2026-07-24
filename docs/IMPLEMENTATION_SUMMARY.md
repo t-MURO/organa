@@ -1604,6 +1604,22 @@ No tests were added, changed, or run for this milestone.
   session.
 - No test files were added or changed for this milestone.
 
+## Background-Safe Focus Timers
+
+- Focus previously decremented remaining time once per JavaScript interval
+  tick. Mobile operating systems suspend those ticks in the background, so a
+  five-minute timer could still show nearly five minutes after the user
+  returned much later.
+- Running task and break timers now store a wall-clock deadline and derive
+  remaining seconds from the current time. The timer reconciles on every tick
+  and immediately whenever the app returns to the foreground.
+- Pausing captures the exact deadline-derived remainder, reset restores the
+  selected task duration, and returning from a break preserves the existing
+  task-timer behavior.
+- Completion uses a polite, pressure-free accessibility announcement while the
+  per-second countdown remains outside live-region announcements.
+- No test files were added or changed for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

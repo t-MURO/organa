@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
+  AppState,
   ScrollView,
   StyleSheet,
   Text,
@@ -37,6 +38,7 @@ export function FocusScreen() {
   const task = tasks.find((item) => item.id === taskId);
   const [timerMinutes, setTimerMinutes] = useState<number>();
   const [secondsRemaining, setSecondsRemaining] = useState(0);
+  const [timerEndsAt, setTimerEndsAt] = useState<number>();
   const [running, setRunning] = useState(false);
   const [mode, setMode] = useState<"task" | "break">("task");
   const [snoozing, setSnoozing] = useState<number>();
@@ -58,35 +60,53 @@ export function FocusScreen() {
   }, [snoozeError, snoozed]);
 
   useEffect(() => {
-    if (!running || secondsRemaining <= 0) return;
-    const interval = setInterval(() => {
-      setSecondsRemaining((current) => {
-        if (current <= 1) {
-          setRunning(false);
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [running, secondsRemaining]);
+    if (!running || !timerEndsAt) return;
+
+    const reconcileTimer = () => {
+      const next = Math.max(
+        0,
+        Math.ceil((timerEndsAt - Date.now()) / 1_000),
+      );
+      setSecondsRemaining(next);
+      if (next === 0) {
+        setRunning(false);
+        setTimerEndsAt(undefined);
+      }
+    };
+
+    reconcileTimer();
+    const interval = setInterval(reconcileTimer, 1_000);
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      (appState) => {
+        if (appState === "active") reconcileTimer();
+      },
+    );
+    return () => {
+      clearInterval(interval);
+      appStateSubscription.remove();
+    };
+  }, [running, timerEndsAt]);
 
   function chooseTimer(minutes: number) {
     setMode("task");
     setTimerMinutes(minutes);
     setSecondsRemaining(minutes * 60);
+    setTimerEndsAt(undefined);
     setRunning(false);
   }
 
   function resetTimer() {
     setMode("task");
     setSecondsRemaining((timerMinutes ?? 0) * 60);
+    setTimerEndsAt(undefined);
     setRunning(false);
   }
 
   function takeBreak() {
     setMode("break");
     setSecondsRemaining(5 * 60);
+    setTimerEndsAt(Date.now() + 5 * 60 * 1_000);
     setRunning(true);
   }
 
@@ -95,12 +115,23 @@ export function FocusScreen() {
   }
 
   function toggleTimer() {
-    if (secondsRemaining === 0 && timerMinutes) {
-      setSecondsRemaining(timerMinutes * 60);
-      setRunning(true);
+    if (running) {
+      const next = timerEndsAt
+        ? Math.max(0, Math.ceil((timerEndsAt - Date.now()) / 1_000))
+        : secondsRemaining;
+      setSecondsRemaining(next);
+      setTimerEndsAt(undefined);
+      setRunning(false);
       return;
     }
-    setRunning((current) => !current);
+    const next =
+      secondsRemaining > 0
+        ? secondsRemaining
+        : (timerMinutes ?? 0) * 60;
+    if (next <= 0) return;
+    setSecondsRemaining(next);
+    setTimerEndsAt(Date.now() + next * 1_000);
+    setRunning(true);
   }
 
   async function snooze(minutes: number) {
@@ -230,6 +261,14 @@ export function FocusScreen() {
                       ? "GENTLY IN PROGRESS"
                       : "READY WHEN YOU ARE"}
               </Text>
+              {timerFinished ? (
+                <Text
+                  accessibilityLiveRegion="polite"
+                  style={styles.timerFinishedAnnouncement}
+                >
+                  Time is up. Continue gently when you are ready.
+                </Text>
+              ) : null}
               <Text
                 accessibilityLabel={`${Math.floor(
                   secondsRemaining / 60,
@@ -561,6 +600,13 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_800ExtraBold",
       fontSize: 8,
       letterSpacing: 1.7,
+    },
+    timerFinishedAnnouncement: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 11,
+      marginTop: 8,
+      textAlign: "center",
     },
     timer: {
       color: theme.text,

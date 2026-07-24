@@ -1,6 +1,6 @@
 # Organa MVP Requirements Traceability
 
-Status recorded on 2026-07-24.
+Status recorded on 2026-07-25.
 
 This matrix audits the 20 controlled-beta acceptance criteria in
 `REQUIREMENTS.md` against current direct evidence. A locally implemented row is
@@ -26,7 +26,7 @@ Status meanings:
 | 6 | Subtasks and optional subtask reminders | Editor, explicit inherited-reminder materialization, domain schedules, completion reconciliation, native payloads, Web Push plans, and browser persistence/ARIA drills provide local evidence. | Physical notification action drill. |
 | 7 | Today, priority/time lanes, week/month calendar | `today-screen.tsx`, `planning-calendar.tsx`, and task planning/domain tests implement these views; browser walkthrough covers switching and task placement. | Release-device responsive smoke test. |
 | 8 | Browse, copy, create, edit, and delete templates | Template domain/context/screen code and tests cover official/private behavior, search, copy-before-edit, deletion, and date-safe instantiation. | Release-device smoke test. |
-| 9 | Focus from a task or reminder | Focus route, native response coordinator, active-tab reminder, Web Push deep link, and widget routes are implemented; payload/route tests pass. | Physical notification/widget and permission-granted Web Push drills. |
+| 9 | Focus from a task or reminder | Focus route, background-safe wall-clock task/break timers, native response coordinator, active-tab reminder, Web Push deep link, and widget routes are implemented; payload/route tests pass. | Physical notification/widget and permission-granted Web Push drills. |
 | 10 | Check-In mood, label, reflection, reminder, search, trends | Domain validation/tests and Check-In UI implement one daily entry, mood 1-5, one-word label, optional reflection, 7/30-day trends, search, and separate reminders. | Physical/system reminder drill. |
 | 11 | Continuous, searchable, offline, safely merged Brain Dump | IndexedDB/SQLite repositories, encrypted Yjs updates, merge tests, single-runtime verification, and browser editing provide local evidence. A two-session backend drill now uses real record-bound AES-GCM fields and separate trusted-device proofs to persist concurrent Yjs edits, recover durable ciphertext, prove order-independent convergence, reject incomplete exact-set compaction, retain one converged snapshot, and safely resolve a delete-versus-update race without residual identifiable deltas/history. Web and native use mutually exclusive Enter-submit handlers; a focused browser drill directly confirmed one Enter creates and focuses exactly one next bullet. | Run the prepared phase against the home server, then complete rendered two-client offline/reconnect, concurrent-compaction, sustained-volume, and physical native keyboard validation; repeat against production. |
 | 12 | Mobile next-reminder and today widgets | iOS extension timelines and Android AppWidget providers implement both views, deep links, light/dark accessible rendering, bounded secure transition caching, periodic refresh, and content-free cleanup; both Hermes exports pass. | Physical iOS and Android rendering, resize, rollover, cleanup, and deep-link interaction. |
