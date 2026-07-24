@@ -1660,6 +1660,24 @@ No tests were added, changed, or run for this milestone.
   after sign-out.
 - No test files were added or changed for this milestone.
 
+## Credential-Safe Account Erasure
+
+- Revocation and final-deletion cleanup previously attempted local database
+  removal, sign-out, content-key deletion, device-proof deletion, and platform
+  cleanup concurrently. On web, device identity or session removal could win
+  the race and prevent authenticated Web Push subscription cleanup.
+- Destructive cleanup now runs in three ordered, independently retrying phases:
+  clear account caches/local data/platform state while credentials are intact;
+  sign out; then remove the content key and device identity.
+- Every operation is still attempted and each failed operation is retried once.
+  A failure in an earlier phase does not suppress later privacy operations, but
+  credential-dependent work always gets both attempts before credentials are
+  removed.
+- Web content-key deletion no longer treats every IndexedDB failure as proof
+  that no durable key exists. When IndexedDB is available, transaction/open
+  failures propagate into the deletion retry and visible cleanup error.
+- No test files were added or changed for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

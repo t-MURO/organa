@@ -52,16 +52,17 @@ export const contentKeyVault: ContentKeyVault = {
   },
   async remove(userId) {
     memoryFallback.delete(userId);
+    if (typeof indexedDB === "undefined") return;
+    const database = await openKeyDatabase();
     try {
-      const database = await openKeyDatabase();
       await requestAsPromise(
-        database.transaction(storeName, "readwrite").objectStore(storeName).delete(
-          userId,
-        ),
+        database
+          .transaction(storeName, "readwrite")
+          .objectStore(storeName)
+          .delete(userId),
       );
+    } finally {
       database.close();
-    } catch {
-      // There is no durable key to remove when IndexedDB is unavailable.
     }
   },
 };

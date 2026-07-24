@@ -11,22 +11,30 @@ export async function eraseLocalAccount(
 ) {
   if (!(await isActiveOwner())) return;
 
-  const operations = [
-    () => accountDeletionCache.remove(userId),
-    () => contentKeyVault.remove(userId),
-    () => deleteLocalAccountData(userId),
-    removeReminderAuthorization,
-    () => removeDeviceIdentity(),
-    signOut,
+  // Platform cleanup needs the authenticated session and device proof; remove
+  // account keys and device credentials only after that boundary has drained.
+  const failed = [
+    ...(await retryPhase([
+      () => accountDeletionCache.remove(userId),
+      () => deleteLocalAccountData(userId),
+      removeReminderAuthorization,
+    ])),
+    ...(await retryPhase([signOut])),
+    ...(await retryPhase([
+      () => contentKeyVault.remove(userId),
+      () => removeDeviceIdentity(),
+    ])),
   ];
-  const failed = await failedOperations(operations);
-  const stillFailed = await failedOperations(failed);
 
-  if (stillFailed.length > 0) {
+  if (failed.length > 0) {
     throw new Error(
       "Organa closed the account, but some local cleanup must be retried.",
     );
   }
+}
+
+async function retryPhase(operations: Array<() => Promise<unknown>>) {
+  return failedOperations(await failedOperations(operations));
 }
 
 async function failedOperations(

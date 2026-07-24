@@ -92,8 +92,13 @@ Local evidence:
   owner ID matches the active account or isolated local-preview identity;
   malformed persisted keys fail closed
 - deletion state and trusted-device lists are hidden unless their fetched
-  owner matches the active account; revocation/final-deletion cleanup attempts
-  every private store and sign-out, then retries only failed operations once
+  owner matches the active account; revocation/final-deletion cleanup uses
+  ordered phases, attempts every private store and sign-out, and retries only
+  failed operations once
+- destructive cleanup keeps the authenticated session and device proof alive
+  through platform/server-subscription cleanup, signs out next, and removes
+  the content key and device identity last; web key-vault deletion errors are
+  surfaced rather than misreported as successful erasure
 - cached account-deletion state can preserve read-only mode offline but cannot
   trigger local erasure; a strict authenticated status RPC uses server time for
   the cancellation deadline and local cleanup starts only after the server

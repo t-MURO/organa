@@ -268,13 +268,15 @@ read does not infer revocation, preserving offline-first access from the last
 known local state.
 
 Unauthorized-device cleanup and final deletion attempt every local erasure
-operation independently, retry only failed operations once, and close the
-in-memory authentication session before fallible platform cleanup can finish.
-A failure in one store cannot prevent the remaining stores or sign-out from
-being attempted. Before that batch starts, the app verifies that Supabase's
-currently persisted session still belongs to the cleanup's expected owner.
-Delayed work from an unmounted account therefore cannot remove a later
-account's device identity, notifications, widgets, or session.
+operation and retry only failed operations once. Credential-dependent cleanup
+runs first while the authenticated session and device proof are still
+available, sign-out runs next, and content-key/device-identity removal runs
+last. A failure in one phase cannot prevent the later privacy phases from
+being attempted. Web content-key removal propagates IndexedDB failures instead
+of treating an unverified deletion as success. Before cleanup starts, the app
+verifies that Supabase's currently persisted session still belongs to the
+expected owner. Delayed work from an unmounted account therefore cannot remove
+a later account's device identity, notifications, widgets, or session.
 
 Offline reminder authorization can only represent the last server-confirmed
 state. A device that remains offline cannot learn that it was revoked; the
