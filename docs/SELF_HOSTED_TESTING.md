@@ -43,7 +43,28 @@ Network rules:
 
 ## 2. Install The Official Docker Stack
 
-On the Linux home server:
+On the Linux home server, first confirm every prerequisite and that the current
+user can reach the Docker daemon:
+
+```sh
+git --version
+docker --version
+docker compose version
+docker info >/dev/null
+openssl version
+jq --version
+```
+
+If only `openssl` or `jq` is missing on Debian or Ubuntu, install it before
+continuing:
+
+```sh
+sudo apt-get update
+sudo apt-get install -y openssl jq
+```
+
+Install Git and Docker Engine/Compose from their official instructions rather
+than continuing after a failed preflight. Then copy the current official stack:
 
 ```sh
 git clone --depth 1 https://github.com/supabase/supabase.git
