@@ -10,6 +10,9 @@ export async function clearPrivatePlatformState() {
   await clearAndroidWidgetTimeline().catch(() => undefined);
   await Promise.allSettled([
     updateAndroidWidgets(contentFreeAndroidWidgetSnapshot()),
+    Promise.resolve().then(() =>
+      Notifications.clearLastNotificationResponse(),
+    ),
     Notifications.cancelAllScheduledNotificationsAsync(),
     Notifications.dismissAllNotificationsAsync(),
   ]);

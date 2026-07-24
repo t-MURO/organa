@@ -9,6 +9,11 @@ import {
 } from "react-native";
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
+import { useAuth } from "../../auth/auth-context";
+import {
+  readShownReminderKeys,
+  rememberShownReminder,
+} from "../../data/in-app-reminder-history.web";
 import { darkTheme, lightTheme } from "../../theme";
 import {
   taskSnoozeEvent,
@@ -25,6 +30,10 @@ import {
 
 export function NotificationCoordinator() {
   const router = useRouter();
+  const auth = useAuth();
+  const ownerId = auth.localPreview
+    ? "local-preview"
+    : (auth.user?.id ?? "signed-out");
   const { tasks } = useTasks();
   const { entries } = useCheckIns();
   const devices = useDevices();
@@ -37,13 +46,25 @@ export function NotificationCoordinator() {
   const [notice, setNotice] = useState<InAppReminder>();
   const noticeRef = useRef<InAppReminder | undefined>(undefined);
   const tasksRef = useRef(tasks);
-  const shown = useRef(readShownReminderKeys());
+  const shown = useRef(readShownReminderKeys(ownerId));
+  const shownOwnerId = useRef(ownerId);
   const snoozeTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  if (shownOwnerId.current !== ownerId) {
+    shownOwnerId.current = ownerId;
+    shown.current = readShownReminderKeys(ownerId);
+  }
   tasksRef.current = tasks;
 
   useEffect(() => {
     noticeRef.current = notice;
   }, [notice]);
+
+  useEffect(() => {
+    snoozeTimers.current.forEach(clearTimeout);
+    snoozeTimers.current = [];
+    noticeRef.current = undefined;
+    setNotice(undefined);
+  }, [ownerId]);
 
   useEffect(() => {
     function receiveSnooze(event: Event) {
@@ -88,7 +109,7 @@ export function NotificationCoordinator() {
           shown.current,
         );
       if (!candidate) return;
-      rememberShown(candidate.key, shown.current);
+      rememberShownReminder(ownerId, candidate.key, shown.current);
       noticeRef.current = candidate;
       setNotice(candidate);
     }
@@ -102,6 +123,7 @@ export function NotificationCoordinator() {
     entries,
     settings.checkInReminder,
     tasks,
+    ownerId,
   ]);
 
   useEffect(() => {
@@ -269,28 +291,6 @@ function findCheckInReminder(
     snoozePresets: [],
     title: "A quiet moment, if you want it",
   };
-}
-
-function readShownReminderKeys() {
-  try {
-    return new Set<string>(
-      JSON.parse(sessionStorage.getItem("organa:shown-reminders") ?? "[]"),
-    );
-  } catch {
-    return new Set<string>();
-  }
-}
-
-function rememberShown(key: string, keys: Set<string>) {
-  keys.add(key);
-  try {
-    sessionStorage.setItem(
-      "organa:shown-reminders",
-      JSON.stringify([...keys].slice(-200)),
-    );
-  } catch {
-    // A private browser may block session storage; the in-memory set still works.
-  }
 }
 
 function createStyles(theme: typeof lightTheme) {

@@ -1488,6 +1488,27 @@ No tests were added, changed, or run for this milestone.
   and both native Hermes exports pass. No test files were added or changed for
   this milestone.
 
+## Account-Scoped Reminder Residue
+
+- Web active-tab reminder suppression previously used one global
+  `sessionStorage` key. Because daily Check-In keys contain only the date,
+  showing account A's reminder could suppress account B's reminder for the same
+  day in that browser tab.
+- Reminder history now uses an owner-scoped key, strictly filters restored
+  entries to strings, resets its in-memory set and open-app snooze timers when
+  the owner changes, and remains bounded to the newest 200 keys.
+- Web privacy cleanup removes all scoped and legacy Organa reminder-history
+  keys while leaving unrelated session data untouched.
+- iOS, Android, and the generic native cleanup path now clear Expo's last
+  notification response in addition to canceling schedules and dismissing
+  notifications. A task/check-in tap from account A cannot be replayed after
+  account B signs in.
+- A two-owner storage drill proved account A's marker is invisible to account B
+  and cleanup removes only Organa history. Expo 57 source inspection confirms
+  the clear API is implemented by both native modules. Strict TypeScript, the
+  production web/PWA export with 18 artifact checks, and both native Hermes
+  exports pass. No test files were added or changed.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

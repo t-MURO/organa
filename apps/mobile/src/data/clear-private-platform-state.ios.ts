@@ -26,6 +26,9 @@ export async function clearPrivatePlatformState() {
         },
       ]),
     ),
+    Promise.resolve().then(() =>
+      Notifications.clearLastNotificationResponse(),
+    ),
     Notifications.cancelAllScheduledNotificationsAsync(),
     Notifications.dismissAllNotificationsAsync(),
   ]);

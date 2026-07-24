@@ -224,6 +224,10 @@ Local evidence:
 - normal and Supabase-driven sign-out clear scheduled/displayed native
   notifications and replace iOS/Android widgets with content-free states
   without deleting the returning user's local repositories
+- native privacy cleanup also clears Expo's last notification-response payload,
+  preventing a later account from inheriting a previous task/check-in route;
+  web active-tab reminder history is owner-scoped and all Organa history keys
+  are removed on sign-out
 - per-user reminder authorization is restored from a content-free local cache
   during offline startup; unresolved ownership does not cancel existing native
   schedules, and fresh server device state always overrides the cache

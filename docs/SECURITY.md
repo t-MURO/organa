@@ -283,7 +283,8 @@ local cleanup.
 
 Normal sign-out has a narrower privacy boundary than revocation or deletion.
 It cancels scheduled native notifications, dismisses displayed notifications,
-and replaces iOS and Android widget timelines with content-free states.
+clears the last native notification-response payload, and replaces iOS and
+Android widget timelines with content-free states.
 Android's bounded widget projection is stored in SecureStore and malformed
 cached timelines fail closed to empty widgets. Sign-out retains local
 repositories, the content-key vault, and device identity so the same trusted
@@ -292,7 +293,10 @@ On web, explicit sign-out first removes the current server subscription while
 the session is authenticated, then closes visible notifications, clears the
 content-free pending schedule queue, and unsubscribes locally. A
 Supabase-driven `SIGNED_OUT` event repeats the local cleanup; unsubscribe is
-the fallback when authenticated server cleanup is no longer possible.
+the fallback when authenticated server cleanup is no longer possible. Web
+active-tab reminder suppression is stored under the current account ID and
+sign-out removes every scoped or legacy Organa suppression key, so one account
+cannot silence another account's daily Check-In reminder.
 
 Content-key rotation after device compromise is not implemented in this MVP.
 Treat that as a production threat-model decision, not as a guaranteed remote

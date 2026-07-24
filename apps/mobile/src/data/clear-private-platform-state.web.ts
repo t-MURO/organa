@@ -2,10 +2,12 @@ import {
   clearPendingWebPushSchedules,
   removeCurrentWebPushSubscription,
 } from "./web-push-scheduler.web";
+import { clearShownReminderHistory } from "./in-app-reminder-history.web";
 
 export async function clearPrivatePlatformState() {
   await removeCurrentWebPushSubscription().catch(() => undefined);
   clearPendingWebPushSchedules();
+  clearShownReminderHistory();
   if (
     typeof navigator === "undefined" ||
     !("serviceWorker" in navigator)
