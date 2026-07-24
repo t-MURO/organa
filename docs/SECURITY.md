@@ -332,6 +332,10 @@ wipe.
   canonical Brain Dump snapshot therefore cannot race the local projection of
   an encrypting delta, while a canonical deletion tombstone remains
   authoritative rather than being suppressed by an alias.
+- Remote listeners acknowledge a row only after its local repository mutation
+  succeeds. Reconciliation advances its in-memory cursor after all listeners
+  finish, so a storage failure remains a visible read-side error and the row
+  is eligible for retry instead of being silently skipped.
 - Previous encrypted versions are retained for seven days.
 - Mutation IDs make outbox retries idempotent.
 - Yjs updates make Brain Dump edits commutative and conflict-free.

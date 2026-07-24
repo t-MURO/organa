@@ -187,15 +187,15 @@ export function TemplateProvider({ children }: PropsWithChildren) {
 
   useEffect(
     () =>
-      sync.subscribe<TaskTemplate>("template", (change) => {
+      sync.subscribe<TaskTemplate>("template", async (change) => {
         if (change.operation === "delete") {
+          await repository.remove(change.recordId);
           dispatch({ type: "removed", id: change.recordId });
-          void repository.remove(change.recordId);
           return;
         }
         if (!change.value) return;
+        await repository.upsert(change.value);
         dispatch({ type: "upserted", template: change.value });
-        void repository.upsert(change.value);
       }),
     [repository],
   );

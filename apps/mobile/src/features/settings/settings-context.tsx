@@ -122,12 +122,12 @@ export function SettingsProvider({ children }: PropsWithChildren) {
 
   useEffect(
     () =>
-      sync.subscribe<Partial<UserSettings>>("settings", (change) => {
+      sync.subscribe<Partial<UserSettings>>("settings", async (change) => {
         if (change.operation === "delete" || !change.value) return;
         const next = mergeSettingsPatch(settingsRef.current, change.value);
+        await repository.upsert(next);
         settingsRef.current = next;
         setSettings(next);
-        void repository.upsert(next);
         if (devices.reminderAuthorizationReady) {
           void syncCheckInReminder(
             reminderSettings(next, devices.remindersAllowed),

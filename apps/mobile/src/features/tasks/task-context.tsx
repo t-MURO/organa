@@ -270,13 +270,13 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
   useEffect(
     () =>
-      sync.subscribe<Task>("task", (change) => {
-        void reconcileRemoteTaskChange(change, {
+      sync.subscribe<Task>("task", (change) =>
+        reconcileRemoteTaskChange(change, {
           cancelNotifications: (id) =>
             cancelNotifications(id, setReminderNotice),
           remove: async (id) => {
-            dispatch({ type: "removed", id });
             await repository.remove(id);
+            dispatch({ type: "removed", id });
           },
           syncNotifications: (task) =>
             syncNotifications(
@@ -287,11 +287,11 @@ export function TaskProvider({ children }: PropsWithChildren) {
               setReminderNotice,
             ),
           upsert: async (task) => {
-            dispatch({ type: "upserted", task });
             await repository.upsert(task);
+            dispatch({ type: "upserted", task });
           },
-        });
-      }),
+        }),
+      ),
     [
       devices.reminderAuthorizationReady,
       devices.remindersAllowed,

@@ -35,6 +35,10 @@ export interface RemoteRecordChange<T = unknown> {
   value?: T;
 }
 
+type RemoteRecordListener<T = unknown> = (
+  change: RemoteRecordChange<T>,
+) => void | Promise<void>;
+
 export type SyncCommitChange =
   | {
       local?: LocalRecordChange;
@@ -78,7 +82,7 @@ interface SyncContextValue {
   flush(): Promise<void>;
   subscribe<T>(
     recordType: SyncRecordType,
-    listener: (change: RemoteRecordChange<T>) => void,
+    listener: RemoteRecordListener<T>,
   ): () => void;
 }
 
@@ -130,7 +134,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
     [namespace],
   );
   const subscribers = useRef(
-    new Map<SyncRecordType, Set<(change: RemoteRecordChange) => void>>(),
+    new Map<SyncRecordType, Set<RemoteRecordListener>>(),
   );
   const flushing = useRef(false);
   const reconciling = useRef(false);
@@ -579,14 +583,12 @@ export function SyncProvider({ children }: PropsWithChildren) {
 
   function subscribe<T>(
     recordType: SyncRecordType,
-    listener: (change: RemoteRecordChange<T>) => void,
+    listener: RemoteRecordListener<T>,
   ) {
     const listeners =
       subscribers.current.get(recordType) ??
-      new Set<(change: RemoteRecordChange) => void>();
-    const untypedListener = listener as (
-      change: RemoteRecordChange,
-    ) => void;
+      new Set<RemoteRecordListener>();
+    const untypedListener = listener as RemoteRecordListener;
     listeners.add(untypedListener);
     subscribers.current.set(recordType, listeners);
     void pullRecordType(recordType, untypedListener);
@@ -597,7 +599,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
 
   async function pullRecordType(
     recordType: SyncRecordType,
-    listener: (change: RemoteRecordChange) => void,
+    listener: RemoteRecordListener,
   ) {
     if (
       !outboxReady.current ||
@@ -771,7 +773,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
 
   async function deliverRow(
     row: EncryptedRecordRow,
-    listener: (change: RemoteRecordChange) => void,
+    listener: RemoteRecordListener,
   ) {
     await commitChain.current;
     if (
@@ -784,7 +786,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
       return;
     }
     if (row.deleted || !row.ciphertext) {
-      listener({
+      await listener({
         operation: "delete",
         recordId: row.record_id,
         recordType: row.record_type,
@@ -798,7 +800,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
           row.record_id,
         )
       : await decryptFields(row, security.decryptRecord);
-    listener({
+    await listener({
       operation: "upsert",
       recordId: row.record_id,
       recordType: row.record_type,

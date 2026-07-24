@@ -98,10 +98,10 @@ export function CheckInProvider({ children }: PropsWithChildren) {
 
   useEffect(
     () =>
-      sync.subscribe<CheckInEntry>("check_in", (change) => {
+      sync.subscribe<CheckInEntry>("check_in", async (change) => {
         if (change.operation === "delete" || !change.value) return;
+        await repository.upsert(change.value);
         dispatch({ type: "upserted", entry: change.value });
-        void repository.upsert(change.value);
       }),
     [repository],
   );

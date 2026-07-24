@@ -141,10 +141,10 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
 
   useEffect(
     () =>
-      sync.subscribe<BrainDumpBullet>("brain_dump_bullet", (change) => {
+      sync.subscribe<BrainDumpBullet>("brain_dump_bullet", async (change) => {
         if (change.operation === "delete") {
+          await repository.remove(change.recordId);
           dispatch({ type: "removed", id: change.recordId });
-          void repository.remove(change.recordId);
           deletedBulletIds.current.add(change.recordId);
           pendingUpdates.current.delete(change.recordId);
           confirmedUpdateIds.current.delete(change.recordId);
@@ -157,13 +157,14 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
           (bullet) => bullet.id === change.recordId,
         );
         let merged = mergeCrdtBullets(local, change.value);
-        for (const update of pendingUpdates.current.get(change.recordId) ?? []) {
+        const pending = pendingUpdates.current.get(change.recordId) ?? [];
+        for (const update of pending) {
           merged = applyCrdtUpdate(merged, update);
-          rememberConfirmedUpdate(update);
         }
+        await repository.upsert(merged);
+        pending.forEach(rememberConfirmedUpdate);
         pendingUpdates.current.delete(change.recordId);
         dispatch({ type: "upserted", bullet: merged });
-        void repository.upsert(merged);
         maybeCompact(merged);
       }),
     [repository],
@@ -173,14 +174,13 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
     () =>
       sync.subscribe<BrainDumpCrdtUpdate>(
         "brain_dump_update",
-        (change) => {
+        async (change) => {
           if (change.operation === "delete") {
             forgetConfirmedUpdate(change.recordId);
             return;
           }
           if (!change.value) return;
           if (deletedBulletIds.current.has(change.value.bulletId)) return;
-          rememberConfirmedUpdate(change.value);
           const local = stateRef.current.bullets.find(
             (bullet) => bullet.id === change.value?.bulletId,
           );
@@ -194,8 +194,9 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
             return;
           }
           const merged = applyCrdtUpdate(local, change.value);
+          await repository.upsert(merged);
+          rememberConfirmedUpdate(change.value);
           dispatch({ type: "upserted", bullet: merged });
-          void repository.upsert(merged);
           maybeCompact(merged);
         },
       ),

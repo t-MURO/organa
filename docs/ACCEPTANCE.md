@@ -183,6 +183,10 @@ Local evidence:
   row, preventing a canonical Brain Dump snapshot from racing and overwriting
   the local projection of an encrypting CRDT delta; canonical deletion
   tombstones remain authoritative and are never hidden behind a parent alias
+- incoming task, template, Check-In, settings, and Brain Dump listeners
+  acknowledge delivery only after their repository operation succeeds;
+  reconciliation does not advance its cursor past a failed local write, and
+  the failure remains visible through sync health for a later retry
 - a temporary real-browser IndexedDB drill passed 9 checks: successful task
   and outbox persistence, forced mid-batch unique-index rollback with no
   partial Check-In or mutation, atomic recurring pairs, and pre-write owner

@@ -1561,6 +1561,22 @@ No tests were added, changed, or run for this milestone.
   web/PWA export with 18 artifact checks and 22 precached assets, and both
   native Hermes exports pass. No test files were added or changed.
 
+## Durable Incoming Sync Acknowledgements
+
+- The sync subscription contract now accepts asynchronous listeners and awaits
+  each one before treating a remote row as delivered.
+- Task, template, Check-In, settings, and Brain Dump reconciliation persist
+  incoming state before dispatching it to the UI or running follow-up reminder
+  and compaction effects.
+- A failed repository write now rejects remote delivery into the existing
+  read-side sync error path. The reconciliation cursor is not advanced, so the
+  row remains eligible for the next overlapping retry rather than disappearing
+  after only an in-memory update.
+- Brain Dump snapshots persist their fully merged projection before pending
+  update bookkeeping is cleared, and CRDT deltas are marked confirmed only
+  after their merged bullet is durable.
+- No test files were added or changed for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
