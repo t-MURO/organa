@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from "node:fs";
+import { lstatSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -10,22 +10,30 @@ export function readConnectedSupabaseConfig(configPath) {
     configPath ?? ".organa-connected-supabase.json",
   );
   let fileStats;
-  let config;
   try {
-    fileStats = statSync(resolvedPath);
-    config = JSON.parse(readFileSync(resolvedPath, "utf8"));
+    fileStats = lstatSync(resolvedPath);
   } catch {
     throw new Error(
-      "The connected Supabase config is missing, unreadable, or invalid JSON.",
+      "The connected Supabase config is missing or unreadable.",
     );
   }
   if (!fileStats.isFile()) {
-    throw new Error("The connected Supabase config must be a regular file.");
+    throw new Error(
+      "The connected Supabase config must be a regular file, not a symlink.",
+    );
   }
   const mode = fileStats.mode & 0o777;
   if (mode !== 0o400 && mode !== 0o600) {
     throw new Error(
       "The connected Supabase config must have mode 600 or 400.",
+    );
+  }
+  let config;
+  try {
+    config = JSON.parse(readFileSync(resolvedPath, "utf8"));
+  } catch {
+    throw new Error(
+      "The connected Supabase config is unreadable or invalid JSON.",
     );
   }
   if (
@@ -38,6 +46,9 @@ export function readConnectedSupabaseConfig(configPath) {
   }
 
   const supabaseUrl = validateConnectedUrl(config.supabaseUrl);
+  const supabaseSourceRevision = validateSourceRevision(
+    config.supabaseSourceRevision,
+  );
   requireConnectedKey(config.publishableKey, "sb_publishable_", "publishableKey");
   requireConnectedKey(config.secretKey, "sb_secret_", "secretKey");
   if (config.publishableKey === config.secretKey) {
@@ -50,8 +61,18 @@ export function readConnectedSupabaseConfig(configPath) {
       config.allowWebPushSchedulerDrill === true,
     publishableKey: config.publishableKey,
     secretKey: config.secretKey,
+    supabaseSourceRevision,
     supabaseUrl,
   };
+}
+
+function validateSourceRevision(value) {
+  if (typeof value !== "string" || !/^[0-9a-f]{40}$/.test(value)) {
+    throw new Error(
+      "supabaseSourceRevision must be the recorded 40-character lowercase Git revision.",
+    );
+  }
+  return value;
 }
 
 function validateConnectedUrl(value) {

@@ -14,9 +14,9 @@
     "verify:migrations": "pnpm --filter @organa/app verify:migrations",
     "verify:platform": "pnpm --filter @organa/app verify:platform",
     "verify:performance": "pnpm --filter @organa/app verify:performance",
-    "verify:connected:deletion": "pnpm --filter @organa/app verify:connected:deletion",
-    "verify:connected:supabase": "pnpm --filter @organa/app verify:connected:supabase",
-    "verify:connected:web-push": "pnpm --filter @organa/app verify:connected:web-push",
+    "verify:connected:acceptance": "pnpm --filter @organa/app verify:connected:acceptance",
+    "verify:connected:acceptance:deletion": "pnpm --filter @organa/app verify:connected:acceptance:deletion",
+    "verify:connected:acceptance:web-push": "pnpm --filter @organa/app verify:connected:acceptance:web-push",
     "verify:web-push": "pnpm --filter @organa/app verify:web-push",
     "verify:supabase": "pnpm --filter @organa/app verify:supabase"
   },

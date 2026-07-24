@@ -19,6 +19,7 @@ apps/mobile/ios/
 .env.*.local
 .env.functions
 .organa-connected-supabase.json
+.organa-connected-evidence/
 .organa-self-hosted-db-url
 supabase/.branches/
 supabase/.temp/

@@ -471,21 +471,35 @@ ${EDITOR:-vi} .organa-connected-supabase.json
 
 Set `supabaseUrl` to the public HTTPS origin without `/auth/v1`. Use
 `SUPABASE_PUBLISHABLE_KEY` for `publishableKey` and `SUPABASE_SECRET_KEY` for
-`secretKey`. Keep the secret key only in this ignored operator file. Change
+`secretKey`. Set `supabaseSourceRevision` to the exact lowercase 40-character
+revision printed when the official Docker stack was copied. Keep the secret
+key only in this ignored operator file. Change
 `allowSyntheticAccountCreationAndDeletion` to `true` only for the isolated
-controlled-beta test deployment, then run:
+controlled-beta test deployment, then run the guarded baseline:
 
 ```sh
-pnpm verify:connected:supabase
+pnpm verify:connected:acceptance
 ```
 
-The verifier refuses placeholder/insecure URLs, legacy or swapped key types,
-credential-file modes other than 600/400, and missing destructive-test
-consent. Before creating users it confirms email, Google, Apple, and GitHub are
-enabled and phone Auth is disabled through the public settings endpoint. Its
-output contains check labels and counts only, never keys, sessions, proofs, or
+The runner requires a clean Organa commit and a recorded Supabase revision. It
+refuses placeholder/insecure URLs, legacy or swapped key types, symlinked or
+non-private credential files, and missing destructive-test consent. Before
+creating users it confirms email, Google, Apple, and GitHub are enabled and
+phone Auth is disabled through the public settings endpoint. Its output
+contains check labels and counts only, never keys, sessions, proofs, or
 payloads. Do not interrupt the run; if cleanup reports a failure, inspect and
 remove only synthetic Auth users whose addresses begin with `approval-`.
+
+Every run that clears preflight writes a mode-600 JSON result below the ignored
+`.organa-connected-evidence/` directory. The evidence records the exact Organa
+commit, declared Supabase source revision, public origin, runtime, timestamps,
+duration, and pass/fail status for each completed phase. It never records
+credentials, sessions, proofs, ciphertext, Push capabilities, scheduler
+secrets, or user content.
+
+The lower-level verifier files are runner internals. Only the guarded
+`verify:connected:acceptance*` commands produce acceptance evidence; do not use
+standalone child-script output to mark a connected row complete.
 
 Passing this command is evidence for the connected Auth configuration and
 backend authorization contract. It also proves one raw encrypted-record
@@ -530,15 +544,17 @@ In the private connected configuration, temporarily set:
 Then run:
 
 ```sh
-pnpm verify:connected:web-push
+pnpm verify:connected:acceptance:web-push
 ```
 
-The command creates one `web-push-live-` synthetic account and a valid P-256
-Push subscription with a content-free route. Its endpoint uses the reserved,
-non-resolving `.invalid` namespace, so no internal service, real Push provider,
-or third-party capture service receives the request. The command never invokes
-the Edge Function and never reads the scheduler bearer. It waits up to three
-minutes for the real cron path to:
+This command requires both the temporary config consent and the explicit
+Web-Push command name. It reruns the connected baseline first, then creates one
+`web-push-live-` synthetic account and a valid P-256 Push subscription with a
+content-free route. Its endpoint uses the reserved, non-resolving `.invalid`
+namespace, so no internal service, real Push provider, or third-party capture
+service receives the request. The command never invokes the Edge Function and
+never reads the scheduler bearer. It waits up to three minutes for the real
+cron path to:
 
 - authorize and invoke `dispatch-web-push`
 - validate that the configured VAPID public/private keys are a matching pair
@@ -574,13 +590,15 @@ this evidence. In the same private connected configuration, temporarily set:
 Then keep the client machine awake and connected while running:
 
 ```sh
-pnpm verify:connected:deletion
+pnpm verify:connected:acceptance:deletion
 ```
 
-This command intentionally takes at least 60 minutes and allows the scheduler
-five additional minutes. It creates one `deletion-live-` synthetic account,
-seeds ciphertext, mutation history, a pending device approval, and content-free
-Web Push state, then verifies:
+This command requires both the temporary config consent and the explicit
+deletion command name. It reruns the connected baseline first, then
+intentionally takes at least 60 minutes and allows the scheduler five
+additional minutes. It creates one `deletion-live-` synthetic account, seeds
+ciphertext, mutation history, a pending device approval, and content-free Web
+Push state, then verifies:
 
 - the server sets an exact one-hour deadline
 - encrypted, device, and Web Push writes are read-only while deletion is pending

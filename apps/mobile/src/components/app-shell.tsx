@@ -273,7 +273,7 @@ function MobileHeader({
             style={styles.mobileSyncPill}
           >
             <View style={styles.mobileSyncDot} />
-            <Text numberOfLines={1} style={styles.mobileSyncText}>
+            <Text style={styles.mobileSyncText}>
               {syncLabel}
             </Text>
           </View>

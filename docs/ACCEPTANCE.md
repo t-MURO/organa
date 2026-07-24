@@ -281,17 +281,18 @@ Local evidence:
 - A self-hosted Docker instance may provide functional evidence for this
   section when it follows `docs/SELF_HOSTED_TESTING.md`. It does not replace
   the final region, operations, legal, or independent-review gates.
-- `pnpm verify:connected:deletion` is prepared to capture the real one-hour
-  scheduler and cascade evidence. It has not been run against a connected
-  backend in this workspace, so the corresponding row remains unchecked.
-- `pnpm verify:connected:supabase` now prepares direct private-channel evidence
+- `pnpm verify:connected:acceptance:deletion` is prepared to capture the real
+  one-hour scheduler and cascade evidence after rerunning the connected
+  baseline. It has not been run against a connected backend in this workspace,
+  so the corresponding row remains unchecked.
+- `pnpm verify:connected:acceptance` prepares direct private-channel evidence
   for primary ownership, explicit secondary opt-in, target revocation, proof
   denial, and refresh-session invalidation. It remains unclaimed until the
   connected command and rendered-client cleanup drill pass.
-- `pnpm verify:connected:web-push` is prepared to observe a real cron-authorized
-  claim and retry through a VAPID-validated dispatcher. It has not been run
-  against a connected backend, so function/scheduler and browser-delivery rows
-  remain unchecked.
+- `pnpm verify:connected:acceptance:web-push` is prepared to rerun the baseline
+  and observe a real cron-authorized claim and retry through a VAPID-validated
+  dispatcher. It has not been run against a connected backend, so
+  function/scheduler and browser-delivery rows remain unchecked.
 - The dispatcher now fails closed on a missing/malformed trusted Push-host
   allowlist and removes unlisted subscriptions before network access. Actual
   release-browser endpoint compatibility remains part of the browser-delivery

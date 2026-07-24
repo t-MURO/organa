@@ -1138,12 +1138,13 @@ silently creating an authentication client:
 - Extracts the mode-600 connected URL and modern publishable/secret-key
   validation into one operator-config module so destructive connected commands
   cannot drift to weaker credential handling.
-- Adds a separately consented `verify:connected:deletion` command that creates
-  one disposable account, verifies the one-hour request/read-only/cancel/resume
-  contract, then polls through the real scheduler deadline without changing
-  database time. It checks Auth and refresh-session removal plus cascades for
-  account keys, devices, approvals, encrypted records/history, mutations,
-  deletion state, and Web Push subscriptions/reminders.
+- Adds a separately consented connected-deletion verifier that creates one
+  disposable account, verifies the one-hour
+  request/read-only/cancel/resume contract, then polls through the real
+  scheduler deadline without changing database time. It checks Auth and
+  refresh-session removal plus cascades for account keys, devices, approvals,
+  encrypted records/history, mutations, deletion state, and Web Push
+  subscriptions/reminders.
 - The long deletion verifier uses bounded requests, conservative near-deadline
   polling, safe progress output, and a separate interruption cleanup client.
   It is prepared but has not been run because no private connected operator
@@ -1156,8 +1157,8 @@ silently creating an authentication client:
   invalid-subject configuration now returns a scheduler-visible `500` instead
   of silently consuming delivery retries; the local worker drill now supplies
   a real generated keypair.
-- Adds a separately consented `verify:connected:web-push` command. It creates
-  one disposable account and valid synthetic Push subscription, schedules
+- Adds a separately consented connected Web Push verifier. It creates one
+  disposable account and valid synthetic Push subscription, schedules
   content-free metadata against the non-resolving `.invalid` namespace, and
   waits without invoking the function for the real cron path to claim once,
   clear the failed claim, apply the five-minute retry, and retain the
@@ -1184,6 +1185,14 @@ silently creating an authentication client:
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.
+- Adds one guarded connected-acceptance runner that requires a clean Organa
+  commit, a mode-600 non-symlink operator config, the exact recorded Supabase
+  source revision, and separate config plus command consent for Web Push or the
+  hour-long deletion drill.
+- Each connected run writes ignored mode-600 evidence containing only public
+  deployment identity, exact revisions, runtime, timestamps, durations, and
+  phase outcomes. Credentials, sessions, proofs, payloads, capabilities,
+  scheduler secrets, and user content are never serialized.
 - Uncached strict TypeScript, the production web/PWA build with all 18 artifact
   checks, iOS and Android Hermes exports, and the production dependency audit
   pass. No tests were added, changed, or run.
@@ -1268,6 +1277,18 @@ Edge Function TypeScript transpilation, exact allowlist/endpoint protocol
 checks, shell and script syntax, the portable server-preflight contract,
 strict repository TypeScript, and the production web/PWA artifact checks pass.
 No tests were added, changed, or run for this milestone.
+
+## Mobile Text Scaling Regression Fix
+
+- Removed the single-line restriction from the compact mobile sync-status
+  label. The pill keeps its flexible width but may now grow vertically when a
+  user selects a large system text size instead of clipping the status.
+- The existing application accessibility contract caught the regression and
+  now passes again without changing or adding test files.
+- All 151 existing tests, uncached strict TypeScript, the four local
+  performance checks, the 19 platform checks, Web Push protocol verification,
+  and the production web/PWA build with all 18 artifact checks pass.
+- iOS and Android Hermes exports also pass after the fix.
 
 ## Remaining Acceptance Gates
 
