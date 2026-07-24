@@ -77,6 +77,7 @@ Expo Go.
 ```sh
 pnpm typecheck
 pnpm test
+pnpm verify:platform
 pnpm verify:yjs-runtime
 pnpm verify:web-push
 pnpm build:native
@@ -94,9 +95,10 @@ pnpm dlx supabase db lint --local --level warning
 pnpm verify:supabase
 ```
 
-See [supabase/README.md](./supabase/README.md) for production setup and
-[docs/ACCEPTANCE.md](./docs/ACCEPTANCE.md) for the controlled-beta checklist.
-The requirement-by-requirement evidence map is in
+See [supabase/README.md](./supabase/README.md) for production setup,
+[docs/PLATFORM_SUPPORT.md](./docs/PLATFORM_SUPPORT.md) for the release
+compatibility contract, and [docs/ACCEPTANCE.md](./docs/ACCEPTANCE.md) for the
+controlled-beta checklist. The requirement-by-requirement evidence map is in
 [docs/REQUIREMENTS_TRACEABILITY.md](./docs/REQUIREMENTS_TRACEABILITY.md).
 
 ## Security

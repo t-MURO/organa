@@ -10,7 +10,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.organa.mobile",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "deploymentTarget": "16.4"
     },
     "android": {
       "package": "app.organa.mobile",
@@ -109,7 +110,18 @@
           ]
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

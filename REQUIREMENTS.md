@@ -716,11 +716,15 @@ Resolved recurrence, grace-day, and parent/subtask decisions are recorded in
   planning templates.
 - The controlled beta launches in English only. Localization infrastructure
   and additional languages are post-MVP.
+- The controlled-beta platform matrix in `docs/PLATFORM_SUPPORT.md` targets
+  iOS/iPadOS 16.4+, Android 7+ (API 24; compile/target API 36), and the current
+  stable browser releases in `docs/BROWSER_SUPPORT.md`. The required Today and
+  Next Reminder widgets are supported on iOS/iPadOS, where the selected widget
+  library is available.
 
 The remaining product and launch decisions are:
 
 - Final product name and trademark validation
-- Supported OS and browser version matrix
 - Monetization and subscription model
 - Regulatory and legal review requirements
 

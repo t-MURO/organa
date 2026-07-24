@@ -31,6 +31,8 @@ Status recorded on 2026-07-24.
   generic service-worker notifications, and an active-tab fallback
 - [x] Keyboard roles/labels, visible focus, semantic state, reduced motion, and
   AA light/dark theme token contrast
+- [x] Source-pinned iOS 16.4+ and Android 7+/API 36 build targets plus a
+  documented browser and platform capability matrix
 
 Local evidence:
 
@@ -78,6 +80,12 @@ Local evidence:
 - generated iOS configuration has no microphone or background-audio
   declarations, uses the explicit widget bundle ID, and produces an opaque
   1024-pixel App Store icon
+- source configuration pins iOS 16.4 and Android API 24/36/36
+  minimum/compile/target values, matching the documented Expo SDK 57 support
+  contract
+- `pnpm verify:platform` passes 19 checks for source and generated target
+  values, sensitive Android manifest boundaries, the browser policy, and the
+  iOS-only widget claim
 - iOS and Android Hermes bundle exports succeed
 - native notification-plan tests cover task/subtask payloads, Focus and snooze
   actions, killed-app-compatible response delivery, completion suppression,

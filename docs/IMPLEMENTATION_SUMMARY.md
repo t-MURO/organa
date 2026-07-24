@@ -32,6 +32,24 @@ Latest checkpoint commits:
 - `b12bc7a` fixes reminder-bearing template instantiation.
 - `9bd7d24` delivers privacy-minimized standards-based Web Push.
 
+## Platform Compatibility Milestone
+
+- Pins the iOS deployment target to 16.4.
+- Pins Android minimum API 24 and compile/target API 36.
+- Adds a release platform and capability contract covering native apps,
+  browsers, reminders, biometrics, haptics, and widgets.
+- Explicitly limits the controlled-beta widget claim to iOS/iPadOS because the
+  selected Expo widget module is iOS-only.
+- Adds a deterministic platform verifier covering source/generated build
+  targets, sensitive Android manifest boundaries, browser policy, and the
+  widget support claim.
+- The verifier passes all 19 checks.
+- Strict TypeScript and all 110 automated tests pass.
+- iOS and Android Hermes exports and the configured production PWA export
+  succeed from the regenerated native source state.
+- Expo Doctor passes 19 of 20 checks; only the previously documented local
+  CocoaPods/full-Xcode tooling check remains unavailable on this host.
+
 Latest committed implementation milestones:
 
 - Cached per-user reminder-device authorization for offline startup

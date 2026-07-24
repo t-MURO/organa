@@ -1,5 +1,8 @@
 # Browser Support
 
+Native OS targets and cross-platform capability differences are recorded in
+`docs/PLATFORM_SUPPORT.md`.
+
 ## Policy
 
 The controlled beta supports the current stable releases of:
