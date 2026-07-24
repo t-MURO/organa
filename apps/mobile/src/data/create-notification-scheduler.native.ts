@@ -114,13 +114,26 @@ function isGranted(settings: Notifications.NotificationPermissionsStatus) {
 }
 
 async function cancelTaskNotifications(taskId: string) {
-  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-  const matching = scheduled.filter(
+  const [scheduled, presented] = await Promise.all([
+    Notifications.getAllScheduledNotificationsAsync(),
+    Notifications.getPresentedNotificationsAsync(),
+  ]);
+  const matchingScheduled = scheduled.filter(
     (request) => request.content.data?.taskId === taskId,
   );
+  const matchingPresented = presented.filter(
+    (notification) => notification.request.content.data?.taskId === taskId,
+  );
   await Promise.all(
-    matching.map((request) =>
-      Notifications.cancelScheduledNotificationAsync(request.identifier),
-    ),
+    [
+      ...matchingScheduled.map((request) =>
+        Notifications.cancelScheduledNotificationAsync(request.identifier),
+      ),
+      ...matchingPresented.map((notification) =>
+        Notifications.dismissNotificationAsync(
+          notification.request.identifier,
+        ),
+      ),
+    ],
   );
 }

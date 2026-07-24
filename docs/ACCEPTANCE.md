@@ -8,7 +8,8 @@ Status recorded on 2026-07-24.
   priority/time lanes, week/month calendar, inbox, and history
 - [x] One-off, routine, medication, dose confirmation, subtasks, and
   independently configurable optional subtask reminders
-- [x] Multiple reminder stages and per-task snooze presets
+- [x] Multiple reminder stages and per-task snooze presets, with every saved
+  preset available from Focus and active-tab reminders
 - [x] Persistent, dismissible delivery notices when system reminder
   permission or scheduling is unavailable
 - [x] Templates browse/copy/create/edit/delete
@@ -177,6 +178,19 @@ Local evidence:
   implying delivery
 - strict TypeScript and the web, iOS, and Android production exports pass after
   the non-silent reminder-delivery changes; no test files were changed
+- native notification quick actions expose the first two task presets within
+  the compact system action surface; Focus exposes every saved preset and
+  schedules a real local notification after permission and reminder-device
+  authorization checks
+- browser Focus and active-tab reminders expose every saved preset; Focus
+  snoozes are explicitly open-app timers rather than falsely claiming
+  closed-tab Web Push delivery
+- task completion, subtask completion, preset edits, remote reconciliation,
+  and reminder-device demotion prevent stale snoozes from being delivered;
+  native reconciliation also dismisses matching notifications already shown
+- strict TypeScript and production web, iOS, and Android builds pass for the
+  snooze-fidelity changes; no tests were added, changed, or run for this
+  milestone
 - promoting a new primary reminder device atomically makes every other device
   quiet; a demoted device requires a later explicit secondary-reminder opt-in
 - a task-load race test contract verifies that reconciliation reads the latest

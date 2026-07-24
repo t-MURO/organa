@@ -116,6 +116,18 @@ export function buildNativeTaskNotificationPlan(
   };
 }
 
+export function createNativeTaskSnoozeContent(
+  task: Task,
+): NativeNotificationContent {
+  return {
+    body: task.title,
+    categoryIdentifier: taskCategoryId(task.id),
+    data: taskNotificationData(task),
+    sound: false,
+    title: "A snoozed task is ready",
+  };
+}
+
 export function resolveNativeNotificationResponse(
   actionIdentifier: string,
   data: NativeNotificationData,
@@ -130,7 +142,17 @@ export function resolveNativeNotificationResponse(
   const snoozeMatch = /^snooze-(\d+)$/.exec(actionIdentifier);
   if (snoozeMatch) {
     const minutes = Number(snoozeMatch[1]);
-    if (!Number.isSafeInteger(minutes) || minutes <= 0) {
+    const presets = Array.isArray(data.snoozePresets)
+      ? data.snoozePresets.filter(
+          (value): value is number =>
+            Number.isSafeInteger(value) && value > 0,
+        )
+      : [];
+    if (
+      !Number.isSafeInteger(minutes) ||
+      minutes <= 0 ||
+      !presets.includes(minutes)
+    ) {
       return { type: "ignore" };
     }
 

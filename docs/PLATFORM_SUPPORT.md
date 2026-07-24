@@ -68,6 +68,13 @@ browser Push support. iOS/iPadOS Web Push requires an installed Home Screen
 PWA. The complete browser behavior and fallback contract is in
 `docs/BROWSER_SUPPORT.md`.
 
+Native notification banners expose the first two configured snooze presets as
+quick actions because system action space is limited. Opening Focus exposes
+every preset saved with the task and schedules an offline local notification.
+The web Focus screen also exposes every preset, but its direct snooze fallback
+is an open-app timer: Organa must remain open for that reminder. Closed-tab web
+delivery continues to use the separately scheduled Web Push reminder plan.
+
 ## Release Checks
 
 For every native beta build:

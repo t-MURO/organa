@@ -47,6 +47,9 @@ not a final-release polish pass.
 - Read-side encrypted-sync failures use a route-wide accessibility alert with
   plain recovery copy. Compact layouts expose offline and pending sync status
   through a polite live region rather than color alone.
+- Focus exposes every configured snooze preset as a labeled button. Scheduling
+  success, fallback, and failure copy uses alert/live-region semantics rather
+  than relying on a silent action.
 
 ## Automated Evidence
 

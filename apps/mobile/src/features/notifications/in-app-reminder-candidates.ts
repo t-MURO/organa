@@ -4,6 +4,7 @@ export interface InAppReminder {
   body: string;
   key: string;
   route: "/check-in" | "/focus";
+  subtaskId?: string;
   taskId?: string;
   title: string;
   snoozePresets: number[];
@@ -75,6 +76,7 @@ function toCandidate(
         triggerAt,
       ].join(":"),
       route: "/focus" as const,
+      subtaskId,
       snoozePresets: task.snoozePresets,
       taskId: task.id,
       title: "A task is ready",

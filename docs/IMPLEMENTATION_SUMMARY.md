@@ -17,6 +17,7 @@ Committed and verified milestones:
 - Trusted-device approval, revocation, and account-deletion finalization
 - Offline PWA restoration and durable outbox behavior
 - Native reminder payloads, actions, reconciliation, and widget timelines
+- Full configured snooze access with truthful native and web delivery status
 - Dual-platform Today Tasks and Next Reminder mobile widgets
 - Non-silent reminder delivery status across native and web
 - Paginated durable sync with visible read-side health
@@ -771,6 +772,31 @@ This milestone includes:
   notifications after revocation or deletion, plus content-free iOS and
   Android widget timelines before local database removal
 - Successful iOS and Android Hermes exports after the platform-specific changes
+
+## Snooze Fidelity Milestone
+
+This milestone closes the gap between configurable task presets and the
+choices users can actually reach:
+
+- Focus exposes every snooze preset saved with the current task on native and
+  web.
+- Active-tab web reminder cards expose every configured preset instead of only
+  the first.
+- Native notification banners retain two fast actions for the limited system
+  action surface; opening Focus provides the complete set.
+- Native Focus snoozes schedule real local notifications. Browser Focus
+  snoozes use a clearly labeled open-app timer and do not claim closed-tab Web
+  Push delivery.
+- Native quick actions and browser timer delivery re-check the current task,
+  completion state, subtask state, configured presets, and trusted
+  reminder-device authorization.
+- Task reconciliation cancels future native schedules and dismisses matching
+  alerts that are already presented, preventing obsolete actions from
+  surviving completion or edits.
+- Snooze scheduling success, fallback, and failure are visible in Focus, with
+  alert/live-region semantics for assistive technology.
+- Strict TypeScript, the production web/PWA build, and both native Hermes
+  exports pass. No tests were added, changed, or run for this milestone.
 
 ## Task Semantics Milestone
 

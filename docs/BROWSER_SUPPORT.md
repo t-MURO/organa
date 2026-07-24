@@ -66,6 +66,13 @@ quiet unless the user explicitly enables reminders for it. During an offline
 restart, Organa uses the last server-confirmed content-free authorization
 boolean. If no authorization has ever been confirmed, it shows no reminder.
 
+Every snooze preset saved with a task is available in Focus and in the
+active-tab reminder card. A snooze selected directly in Focus uses an in-memory
+open-app timer and tells the user to keep Organa open. It is not represented as
+closed-tab Web Push delivery. At delivery time, Organa checks the current task,
+subtask, presets, and reminder-device authorization so completed or edited
+work does not produce a stale snooze.
+
 ## Release Checks
 
 For each browser:

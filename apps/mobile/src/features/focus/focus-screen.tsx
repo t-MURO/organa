@@ -9,7 +9,9 @@ import {
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
+import { createTaskSnoozeScheduler } from "../../data/create-task-snooze-scheduler";
 import type { OrganaTheme } from "../../theme";
+import { useDevices } from "../account/device-context";
 import { useTasks } from "../tasks/task-context";
 
 const timerOptions = [
@@ -17,18 +19,41 @@ const timerOptions = [
   { minutes: 15, label: "15 min" },
   { minutes: 25, label: "25 min" },
 ];
+const taskSnoozeScheduler = createTaskSnoozeScheduler();
 
 export function FocusScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const router = useRouter();
-  const { taskId } = useLocalSearchParams<{ taskId?: string }>();
+  const devices = useDevices();
+  const { snoozed, snoozeError, taskId } = useLocalSearchParams<{
+    snoozed?: string;
+    snoozeError?: string;
+    taskId?: string;
+  }>();
   const { confirmDose, loading, tasks, toggleSubtask, toggleTask } = useTasks();
   const task = tasks.find((item) => item.id === taskId);
   const [timerMinutes, setTimerMinutes] = useState<number>();
   const [secondsRemaining, setSecondsRemaining] = useState(0);
   const [running, setRunning] = useState(false);
   const [mode, setMode] = useState<"task" | "break">("task");
+  const [snoozing, setSnoozing] = useState<number>();
+  const [snoozeStatus, setSnoozeStatus] = useState("");
+
+  useEffect(() => {
+    if (snoozeError) {
+      setSnoozeStatus(
+        "Organa could not schedule that snooze. Check notification settings before relying on it.",
+      );
+      return;
+    }
+    const minutes = Number(snoozed);
+    if (Number.isSafeInteger(minutes) && minutes > 0) {
+      setSnoozeStatus(
+        `A system reminder is scheduled for ${minutes} minutes from now.`,
+      );
+    }
+  }, [snoozeError, snoozed]);
 
   useEffect(() => {
     if (!running || secondsRemaining <= 0) return;
@@ -74,6 +99,35 @@ export function FocusScreen() {
       return;
     }
     setRunning((current) => !current);
+  }
+
+  async function snooze(minutes: number) {
+    if (
+      !task ||
+      !devices.reminderAuthorizationReady ||
+      !devices.remindersAllowed ||
+      !task.snoozePresets.includes(minutes)
+    ) {
+      return;
+    }
+    setSnoozing(minutes);
+    setSnoozeStatus("");
+    try {
+      const result = await taskSnoozeScheduler.schedule(task, minutes);
+      setSnoozeStatus(
+        result.delivery === "system"
+          ? `A system reminder is scheduled for ${minutes} minutes from now.`
+          : result.delivery === "in_app"
+            ? `Snoozed for ${minutes} minutes. Keep Organa open for this reminder.`
+            : "This device cannot schedule a snooze reminder here.",
+      );
+    } catch {
+      setSnoozeStatus(
+        "Organa could not schedule that snooze. Check notification settings before relying on it.",
+      );
+    } finally {
+      setSnoozing(undefined);
+    }
   }
 
   if (loading) {
@@ -213,6 +267,44 @@ export function FocusScreen() {
             </>
           )}
         </View>
+
+        {mode === "task" &&
+        !task.completedAt &&
+        devices.reminderAuthorizationReady &&
+        devices.remindersAllowed &&
+        task.snoozePresets.length > 0 ? (
+          <View style={styles.snoozeCard}>
+            <Text style={styles.snoozeTitle}>Remind me again</Text>
+            <Text style={styles.snoozeHint}>
+              Choose any preset saved with this task.
+            </Text>
+            <View style={styles.snoozeOptions}>
+              {task.snoozePresets.map((minutes) => (
+                <Pressable
+                  key={minutes}
+                  accessibilityLabel={`Snooze task for ${minutes} minutes`}
+                  accessibilityRole="button"
+                  disabled={snoozing !== undefined}
+                  style={styles.snoozeOption}
+                  onPress={() => void snooze(minutes)}
+                >
+                  <Text style={styles.snoozeOptionText}>
+                    {snoozing === minutes ? "Scheduling..." : `${minutes} min`}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            {snoozeStatus ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                accessibilityRole="alert"
+                style={styles.snoozeStatus}
+              >
+                {snoozeStatus}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
         {mode === "task" && task.subtasks.length > 0 ? (
           <View style={styles.steps}>
@@ -508,6 +600,57 @@ function createStyles(theme: OrganaTheme) {
       maxWidth: 520,
       padding: 16,
       width: "100%",
+    },
+    snoozeCard: {
+      alignItems: "center",
+      backgroundColor: theme.niceSoft,
+      borderColor: theme.nice,
+      borderRadius: 18,
+      borderWidth: 1,
+      marginTop: 16,
+      maxWidth: 520,
+      padding: 16,
+      width: "100%",
+    },
+    snoozeTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 13,
+    },
+    snoozeHint: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 11,
+      marginTop: 4,
+      textAlign: "center",
+    },
+    snoozeOptions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      justifyContent: "center",
+      marginTop: 12,
+    },
+    snoozeOption: {
+      backgroundColor: theme.surface,
+      borderColor: theme.border,
+      borderRadius: 999,
+      borderWidth: 1,
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+    },
+    snoozeOptionText: {
+      color: theme.text,
+      fontFamily: "Manrope_700Bold",
+      fontSize: 11,
+    },
+    snoozeStatus: {
+      color: theme.text,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 11,
+      lineHeight: 17,
+      marginTop: 12,
+      textAlign: "center",
     },
     stepsTitle: {
       color: theme.textMuted,

@@ -1,4 +1,4 @@
-import { formatLocalDate } from "@organa/domain";
+import { formatLocalDate, type Task } from "@organa/domain";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -10,6 +10,10 @@ import {
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { darkTheme, lightTheme } from "../../theme";
+import {
+  taskSnoozeEvent,
+  type TaskSnoozeEventDetail,
+} from "../../data/task-snooze-scheduler.types";
 import { useDevices } from "../account/device-context";
 import { useCheckIns } from "../check-in/check-in-context";
 import { useSettings } from "../settings/settings-context";
@@ -32,12 +36,40 @@ export function NotificationCoordinator() {
   const styles = createStyles(theme);
   const [notice, setNotice] = useState<InAppReminder>();
   const noticeRef = useRef<InAppReminder | undefined>(undefined);
+  const tasksRef = useRef(tasks);
   const shown = useRef(readShownReminderKeys());
   const snoozeTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  tasksRef.current = tasks;
 
   useEffect(() => {
     noticeRef.current = notice;
   }, [notice]);
+
+  useEffect(() => {
+    function receiveSnooze(event: Event) {
+      const detail = (event as CustomEvent<TaskSnoozeEventDetail>).detail;
+      if (
+        !devices.reminderAuthorizationReady ||
+        !devices.remindersAllowed ||
+        !isTaskSnoozeEventDetail(detail) ||
+        !canDeliverTaskSnooze(
+          tasksRef.current,
+          detail,
+          detail.snoozedForMinutes,
+        )
+      ) {
+        return;
+      }
+      noticeRef.current = detail;
+      setNotice(detail);
+    }
+
+    window.addEventListener(taskSnoozeEvent, receiveSnooze);
+    return () => window.removeEventListener(taskSnoozeEvent, receiveSnooze);
+  }, [
+    devices.reminderAuthorizationReady,
+    devices.remindersAllowed,
+  ]);
 
   useEffect(() => {
     if (!devices.reminderAuthorizationReady || !devices.remindersAllowed) {
@@ -114,6 +146,11 @@ export function NotificationCoordinator() {
     setNotice(undefined);
     snoozeTimers.current.push(
       setTimeout(() => {
+        if (
+          !canDeliverTaskSnooze(tasksRef.current, snoozed, minutes)
+        ) {
+          return;
+        }
         noticeRef.current = snoozed;
         setNotice(snoozed);
       }, minutes * 60 * 1_000),
@@ -134,7 +171,7 @@ export function NotificationCoordinator() {
           <Text style={styles.body}>{notice.body}</Text>
         </View>
         <View style={styles.actions}>
-          {notice.snoozePresets.slice(0, 1).map((minutes) => (
+          {notice.snoozePresets.map((minutes) => (
             <Pressable
               key={minutes}
               accessibilityLabel={`Snooze for ${minutes} minutes`}
@@ -166,6 +203,44 @@ export function NotificationCoordinator() {
       </View>
     </View>
   );
+}
+
+function isTaskSnoozeEventDetail(
+  value: unknown,
+): value is TaskSnoozeEventDetail {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const detail = value as Record<string, unknown>;
+  return (
+    typeof detail.body === "string" &&
+    typeof detail.key === "string" &&
+    detail.route === "/focus" &&
+    typeof detail.snoozedForMinutes === "number" &&
+    Number.isSafeInteger(detail.snoozedForMinutes) &&
+    detail.snoozedForMinutes > 0 &&
+    Array.isArray(detail.snoozePresets) &&
+    detail.snoozePresets.every(
+      (minutes) => Number.isSafeInteger(minutes) && minutes > 0,
+    ) &&
+    typeof detail.taskId === "string" &&
+    typeof detail.title === "string"
+  );
+}
+
+function canDeliverTaskSnooze(
+  tasks: Task[],
+  notice: Pick<InAppReminder, "subtaskId" | "taskId" | "snoozePresets">,
+  minutes: number,
+) {
+  if (!notice.taskId || !notice.snoozePresets.includes(minutes)) return false;
+  const task = tasks.find((candidate) => candidate.id === notice.taskId);
+  if (!task || task.completedAt || !task.snoozePresets.includes(minutes)) {
+    return false;
+  }
+  if (!notice.subtaskId) return true;
+  const subtask = task.subtasks.find(
+    (candidate) => candidate.id === notice.subtaskId,
+  );
+  return Boolean(subtask && !subtask.completedAt);
 }
 
 function findCheckInReminder(
