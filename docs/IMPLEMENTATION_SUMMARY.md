@@ -23,6 +23,7 @@ Committed and verified milestones:
 - Native OAuth callback recovery across browser completion, resume, and cold
   start
 - Native-only completion haptics with non-disruptive feedback failure handling
+- Fail-closed native app-lock startup and foreground transitions
 - Explicit controlled-beta OS and browser support boundaries
 - Deterministic local performance checks against a 2,000-task dataset
 - Fail-closed encrypted-backup domain validation
@@ -102,6 +103,32 @@ Latest verified task-type work:
   pass.
 - Physical device sound, haptic, and operating-system preference behavior
   remains a release gate.
+
+## App Lock Fail-Closed Milestone
+
+- Keeps the app-lock loading and locked boundary outside every provider that
+  opens private repositories, sync state, tasks, templates, Check-In entries,
+  or Brain Dump content.
+- Loads secure preference and device-authentication support once at startup,
+  avoiding the previous immediate re-lock after a user enabled app lock.
+- Separates foreground lifecycle handling so any enabled lock closes when the
+  native app becomes inactive or enters the background.
+- Treats only a missing or explicit `false` SecureStore value as disabled.
+  Malformed or unreadable preferences fail closed.
+- Preserves an enabled stored lock when device authentication later becomes
+  unavailable instead of silently opening private content.
+- Catches thrown native authentication errors, retains pressure-free local
+  copy, and always restores the Unlock control.
+- Four state tests and one source integration contract cover startup,
+  unsupported authentication, failures, lifecycle transitions, strict
+  storage decoding, effect separation, and private-provider ordering.
+- The complete suite passes 151 tests: 43 domain, 6 cryptography, and 102
+  application tests.
+- Strict TypeScript, all 19 platform checks, iOS and Android Hermes exports,
+  the production PWA export with all 18 artifact checks, and `git diff --check`
+  pass.
+- Face ID, Touch ID, Android biometric, device-PIN fallback, and process-state
+  behavior remain signed physical-device gates.
 
 ## Platform Compatibility Milestone
 
@@ -490,10 +517,10 @@ Known security work that remains mandatory before production:
 Latest verified repository checks:
 
 - Strict TypeScript passes for all three workspace packages.
-- 146 automated tests pass:
+- 151 automated tests pass:
   - 43 domain tests
   - 6 cryptography tests
-  - 97 application integration tests
+  - 102 application integration tests
 - All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
 - The isolated migration-upgrade verifier passes 6 checks and preserves all

@@ -8,6 +8,10 @@ import {
 import { AppState, Platform } from "react-native";
 
 import { createAppLockAdapter } from "./create-app-lock-adapter";
+import {
+  loadAppLockState,
+  shouldLockForAppState,
+} from "./app-lock-state";
 
 interface AppLockContextValue {
   enabled: boolean;
@@ -33,34 +37,42 @@ export function AppLockProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
-    void Promise.all([adapter.isSupported(), adapter.getEnabled()])
-      .then(([nextSupported, nextEnabled]) => {
+    void loadAppLockState(adapter)
+      .then((state) => {
         if (!active) return;
-        setSupported(nextSupported);
-        setEnabledState(nextEnabled && nextSupported);
-        setLocked(nextEnabled && nextSupported);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        setSupported(state.supported);
+        setEnabledState(state.enabled);
+        setLocked(state.locked);
+        setError(state.error);
+        setLoading(false);
       });
 
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const subscription =
       Platform.OS === "web"
         ? undefined
         : AppState.addEventListener("change", (state) => {
-            if (state !== "active" && enabled) setLocked(true);
+            if (shouldLockForAppState(enabled, state)) setLocked(true);
           });
     return () => {
-      active = false;
       subscription?.remove();
     };
   }, [enabled]);
 
   async function unlock() {
     setError("");
-    if (await adapter.authenticate()) {
-      setLocked(false);
-      return;
+    try {
+      if (await adapter.authenticate()) {
+        setLocked(false);
+        return;
+      }
+    } catch {
+      // The same pressure-free error is used for denial and unavailable APIs.
     }
     setError("Organa stayed locked. You can try again when you are ready.");
   }

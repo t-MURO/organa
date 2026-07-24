@@ -41,7 +41,8 @@ Status recorded on 2026-07-24.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 146 automated tests pass: 43 domain, 6 cryptography, and 97 application tests
+- 151 automated tests pass: 43 domain, 6 cryptography, and 102 application
+  tests
 - OAuth callback tests accept only the configured app redirect, map remote
   provider errors to safe local copy, deduplicate simultaneous and repeated
   one-time codes, and allow a failed exchange to be retried
@@ -53,6 +54,12 @@ Local evidence:
   unavailable haptic hardware does not interrupt task completion
 - optional creation/completion audio failures are absorbed instead of
   producing an unhandled task-interaction rejection
+- app-lock state tests prove disabled startup, enabled startup, unavailable
+  device authentication, malformed/unreadable secure preferences, and
+  background transitions; uncertain native state always remains locked
+- the app-lock integration contract keeps startup loading separate from
+  foreground locking, restores the unlock control after thrown native errors,
+  and pins every private data provider inside the loading/locked boundary
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,

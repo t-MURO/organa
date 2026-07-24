@@ -18,7 +18,10 @@ export function createAppLockAdapter(): AppLockAdapter {
       return result.success;
     },
     async getEnabled() {
-      return (await SecureStore.getItemAsync(enabledKey)) === "true";
+      const value = await SecureStore.getItemAsync(enabledKey);
+      if (value === null || value === "false") return false;
+      if (value === "true") return true;
+      throw new Error("The app lock preference is invalid.");
     },
     async isSupported() {
       const level = await LocalAuthentication.getEnrolledLevelAsync();

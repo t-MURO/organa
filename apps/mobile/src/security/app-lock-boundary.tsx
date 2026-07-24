@@ -28,8 +28,11 @@ export function AppLockBoundary({ children }: PropsWithChildren) {
 
   async function unlock() {
     setUnlocking(true);
-    await appLock.unlock();
-    setUnlocking(false);
+    try {
+      await appLock.unlock();
+    } finally {
+      setUnlocking(false);
+    }
   }
 
   return (

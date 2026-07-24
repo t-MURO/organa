@@ -48,7 +48,11 @@ Status meanings:
 - `pnpm verify:performance`: Quick Add, recurring completion, Today planning,
   and search pass a 100 ms median budget against 2,000 local tasks on the
   verification host; release-device timing remains a physical gate
-- `pnpm test`: 146 tests (43 domain, 6 cryptography, 97 application)
+- `pnpm test`: 151 tests (43 domain, 6 cryptography, 102 application)
+- app-lock state and integration contracts fail closed on unreadable or
+  malformed secure preferences, preserve enabled locks when device
+  authentication disappears, and keep private providers unmounted until
+  startup and unlock checks pass
 - `pnpm typecheck`: all strict TypeScript packages pass
 - `pnpm verify:migrations`: 6 isolated-schema upgrade checks preserve every
   seeded encrypted/account row while installing later protected objects

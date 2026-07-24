@@ -60,6 +60,14 @@ Native:
 - A random per-device proof secret is stored with the device identity in Expo
   SecureStore.
 - Optional app lock uses platform local authentication and device fallback.
+  Its loading and locked boundary wraps every provider that opens private
+  repositories or decrypted state.
+- A missing or explicit `false` SecureStore value disables app lock. An
+  explicit `true` value locks on startup and whenever the app leaves the
+  foreground. Malformed or unreadable lock state fails closed.
+- A stored enabled lock remains locked when enrolled device authentication is
+  no longer available. Native authentication exceptions use generic local
+  copy and never reveal private screens.
 
 Web:
 
