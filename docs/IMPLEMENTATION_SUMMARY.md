@@ -15,6 +15,8 @@ Committed and verified milestones:
 - Controlled-beta product foundation across iOS, Android, web, and PWA
 - Encrypted local-first persistence, realtime synchronization, and recovery
 - Trusted-device approval, revocation, and account-deletion finalization
+- Fail-closed malformed, missing, untrusted, and revoked device identity
+  handling
 - Offline PWA restoration and durable outbox behavior
 - Native reminder payloads, actions, reconciliation, and widget timelines
 - Full configured snooze access with truthful native and web delivery status
@@ -581,7 +583,7 @@ Known security work that remains mandatory before production:
   secure bounded transition caching, launcher refresh, and deep links.
 - Clean Expo Prebuild completes without configuration warnings.
 - Android Hermes export succeeds. Gradle APK compilation is not locally
-  verified because this host does not have a Java runtime installed.
+  verified because this host has Java 17 but no Android SDK installed.
 - Generated iOS configuration contains no microphone or background-audio
   declarations.
 
@@ -1314,6 +1316,26 @@ No tests were added, changed, or run for this milestone.
   checks, 13 account-deletion checks, 15 Web Push checks, database lint, the
   production web/PWA build, and both native Hermes exports pass.
 - No test files were added or changed for this milestone.
+
+## Trusted Device Identity Hardening
+
+- Native and web now use one parser for persisted device identity. It accepts
+  the UUID identity and two-UUID proof format Organa generates, preserves the
+  legacy identity shape for its intended proof migration, and replaces
+  malformed JSON or fields instead of crashing or accepting truthy garbage.
+- After a successful connected device-list read, a current identity that is
+  absent, still untrusted, or revoked is unauthorized and takes the existing
+  comprehensive local-erasure and sign-out path.
+- A server/network failure does not mark an identity unauthorized, so a
+  previously signed-in user retains the required offline-first access.
+- All 151 existing tests, uncached strict TypeScript, the 19 platform checks,
+  the production web/PWA build with 18 artifact checks, and both native Hermes
+  exports pass. No test files were added or changed.
+- Expo Doctor passes 19 of 20 checks. Its only failure is the unavailable
+  CocoaPods/full-Xcode host tooling. A real Gradle application build reached
+  Organa project configuration with Java 17 and then stopped because this host
+  has no Android SDK; export-only Android evidence therefore remains the
+  honest boundary.
 
 ## Remaining Acceptance Gates
 

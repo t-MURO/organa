@@ -2,6 +2,7 @@ import * as SecureStore from "expo-secure-store";
 
 import {
   createDeviceIdentity,
+  parseStoredDeviceIdentity,
   type DeviceIdentity,
 } from "./device-identity.shared";
 
@@ -10,11 +11,11 @@ const key = "organa.device-identity";
 export async function getDeviceIdentity(): Promise<DeviceIdentity> {
   const existing = await SecureStore.getItemAsync(key);
   if (existing) {
-    const parsed = JSON.parse(existing) as Partial<DeviceIdentity>;
-    if (parsed.id && parsed.createdAt && parsed.secret) {
+    const parsed = parseStoredDeviceIdentity(existing);
+    if (parsed?.id && parsed.createdAt && parsed.secret) {
       return parsed as DeviceIdentity;
     }
-    if (parsed.id && parsed.createdAt) {
+    if (parsed?.id && parsed.createdAt) {
       const migrated = {
         ...createDeviceIdentity(),
         createdAt: parsed.createdAt,

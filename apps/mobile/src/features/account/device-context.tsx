@@ -59,7 +59,7 @@ export function DeviceProvider({ children }: PropsWithChildren) {
   const [remoteResolvedUserId, setRemoteResolvedUserId] = useState<
     string | null
   >(null);
-  const revocationHandled = useRef(false);
+  const localErasureHandled = useRef(false);
 
   async function refresh() {
     if (auth.localPreview || !auth.user || !supabase) {
@@ -269,20 +269,36 @@ export function DeviceProvider({ children }: PropsWithChildren) {
   ]);
 
   useEffect(() => {
-    if (!auth.user || !current?.revokedAt || revocationHandled.current) return;
-    revocationHandled.current = true;
+    if (
+      !auth.user ||
+      !security.device ||
+      !remoteResolved ||
+      devicesUserId !== auth.user.id ||
+      localErasureHandled.current ||
+      (current?.trustedAt && !current.revokedAt)
+    ) {
+      return;
+    }
+    localErasureHandled.current = true;
     const userId = auth.user.id;
     void eraseLocalAccount(
       userId,
       auth.signOut,
       () => reminderAuthorizationCache.remove(userId),
     ).catch(() => {
-      revocationHandled.current = false;
+      localErasureHandled.current = false;
     });
-  }, [auth.user?.id, current?.revokedAt]);
+  }, [
+    auth.user?.id,
+    current?.revokedAt,
+    current?.trustedAt,
+    devicesUserId,
+    remoteResolved,
+    security.device?.id,
+  ]);
 
   useEffect(() => {
-    revocationHandled.current = false;
+    localErasureHandled.current = false;
   }, [auth.user?.id]);
 
   return (

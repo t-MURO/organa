@@ -69,6 +69,12 @@ Native:
   private application boundary.
 - A random per-device proof secret is stored with the device identity in Expo
   SecureStore.
+- Stored identities are parsed through one native/web validator. Current
+  identities must contain Organa's UUID device ID, valid creation timestamp,
+  and two-UUID proof format; the legacy no-proof shape remains eligible for
+  its one-time proof migration. Malformed JSON and malformed fields are
+  replaced rather than crashing security initialization or being accepted by
+  truthiness alone.
 - Optional app lock uses platform local authentication and device fallback.
   Its loading and locked boundary wraps every provider that opens private
   repositories or decrypted state.
@@ -86,7 +92,8 @@ Web:
 - Decrypted key-vault values receive the same runtime validation as native
   values before use.
 - The per-device proof secret is stored with the browser device identity in
-  local storage. It is an authorization control, not an encryption key.
+  the protected IndexedDB store when available; restricted-browser fallback
+  uses local storage. It is an authorization control, not an encryption key.
 - If durable CryptoKey storage is blocked, the key remains memory-only and the
   recovery code is needed after the session is lost.
 - This protects against simple storage export, not malicious same-origin
@@ -245,11 +252,17 @@ also expires refresh tokens for other sessions. Existing access-token JWTs
 remain valid until expiry, and revocation is not retroactive against data
 already copied from a device.
 
-Revocation and final deletion attempt every local erasure operation
-independently, retry only failed operations once, and close the in-memory
-authentication session before fallible platform cleanup can finish. A failure
-in one store cannot prevent the remaining stores or sign-out from being
-attempted.
+A successful connected device-list read also treats a missing or still
+untrusted current identity as unauthorized. Revoked, missing, and untrusted
+identities all take the same local-erasure and sign-out path. A failed server
+read does not infer revocation, preserving offline-first access from the last
+known local state.
+
+Unauthorized-device cleanup and final deletion attempt every local erasure
+operation independently, retry only failed operations once, and close the
+in-memory authentication session before fallible platform cleanup can finish.
+A failure in one store cannot prevent the remaining stores or sign-out from
+being attempted.
 
 Offline reminder authorization can only represent the last server-confirmed
 state. A device that remains offline cannot learn that it was revoked; the

@@ -1,5 +1,6 @@
 import {
   createDeviceIdentity,
+  parseStoredDeviceIdentity,
   type DeviceIdentity,
 } from "./device-identity.shared";
 import {
@@ -13,7 +14,7 @@ const key = "organa.device-identity";
 export async function getDeviceIdentity(): Promise<DeviceIdentity> {
   const existing = await getProtectedBrowserValue(key);
   if (existing) {
-    const parsed = parseIdentity(existing);
+    const parsed = parseStoredDeviceIdentity(existing);
     if (parsed?.id && parsed.createdAt && parsed.secret) {
       return parsed as DeviceIdentity;
     }
@@ -35,20 +36,4 @@ export async function getDeviceIdentity(): Promise<DeviceIdentity> {
 
 export async function removeDeviceIdentity() {
   await removeProtectedBrowserValue(key);
-}
-
-function parseIdentity(value: string) {
-  try {
-    const parsed = JSON.parse(value) as Partial<DeviceIdentity>;
-    if (
-      typeof parsed.id !== "string" ||
-      typeof parsed.createdAt !== "string" ||
-      (parsed.secret !== undefined && typeof parsed.secret !== "string")
-    ) {
-      return undefined;
-    }
-    return parsed;
-  } catch {
-    return undefined;
-  }
 }

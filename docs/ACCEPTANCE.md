@@ -86,6 +86,10 @@ Local evidence:
 - deletion state and trusted-device lists are hidden unless their fetched
   owner matches the active account; revocation/final-deletion cleanup attempts
   every private store and sign-out, then retries only failed operations once
+- native and web device identities share strict persisted-state parsing, and a
+  successful server read that proves the current identity missing, untrusted,
+  or revoked triggers private local erasure; an unreachable server preserves
+  offline access
 - recovery and approval envelopes must match their expected key/device IDs;
   decrypted approval keys are persisted only after server trust is confirmed,
   and ambiguous committed RPC responses require matching server state
@@ -150,7 +154,7 @@ Local evidence:
   AppWidget providers, Java receivers, resize metadata, descriptions, and
   30-minute launcher updates
 - the Android Hermes export succeeds; a local Gradle APK build remains
-  unverified because this host does not have a Java runtime installed
+  unverified because this host has Java 17 but no Android SDK installed
 - generated iOS configuration has no microphone or background-audio
   declarations, uses the explicit widget bundle ID, and produces an opaque
   1024-pixel App Store icon
