@@ -296,7 +296,12 @@ Supabase-driven `SIGNED_OUT` event repeats the local cleanup; unsubscribe is
 the fallback when authenticated server cleanup is no longer possible. Web
 active-tab reminder suppression is stored under the current account ID and
 sign-out removes every scoped or legacy Organa suppression key, so one account
-cannot silence another account's daily Check-In reminder.
+cannot silence another account's daily Check-In reminder. Browser Focus
+snooze timers are also owner-scoped and canceled when that owner leaves the
+notification boundary or private platform state is cleared. A surviving
+snooze event must match the active owner, and its displayed task title and
+presets are rebuilt from that owner's current task rather than trusted from
+the captured timeout payload.
 
 Content-key rotation after device compromise is not implemented in this MVP.
 Treat that as a production threat-model decision, not as a guaranteed remote

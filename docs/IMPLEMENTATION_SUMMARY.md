@@ -1509,6 +1509,24 @@ No tests were added, changed, or run for this milestone.
   production web/PWA export with 18 artifact checks, and both native Hermes
   exports pass. No test files were added or changed.
 
+## Account-Scoped Browser Focus Snoozes
+
+- Browser Focus snoozes previously created unowned module-level timeouts whose
+  closures retained the task title. A timeout from account A could survive
+  sign-out and fire while account B was active; matching task IDs are possible
+  after backup restore, so task-ID validation alone could expose A's title.
+- Every browser snooze now requires and carries the active account owner.
+  Pending timer handles are tracked per owner and canceled on owner change,
+  normal sign-out, revocation, final deletion, or full web privacy cleanup.
+- The notification coordinator rejects malformed or wrong-owner snooze events.
+  For an accepted event, it revalidates completion and presets against the
+  current account's live task and rebuilds the displayed body from that task;
+  captured copy is not trusted.
+- A deterministic two-owner Vite module drill scheduled the same restored task
+  ID for accounts A and B, cleared A, proved only B fired with B's title, and
+  proved global cleanup canceled every remaining timer. Strict TypeScript
+  passes, and no test files were added or changed.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

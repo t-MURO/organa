@@ -9,6 +9,7 @@ export interface TaskSnoozeResult {
 export interface TaskSnoozeEventDetail {
   body: string;
   key: string;
+  ownerId: string;
   route: "/focus";
   snoozedForMinutes: number;
   snoozePresets: number[];
@@ -17,7 +18,11 @@ export interface TaskSnoozeEventDetail {
 }
 
 export interface TaskSnoozeScheduler {
-  schedule(task: Task, minutes: number): Promise<TaskSnoozeResult>;
+  schedule(
+    task: Task,
+    minutes: number,
+    ownerId: string,
+  ): Promise<TaskSnoozeResult>;
 }
 
 export const taskSnoozeEvent = "organa:task-snooze";

@@ -2,11 +2,13 @@ import {
   clearPendingWebPushSchedules,
   removeCurrentWebPushSubscription,
 } from "./web-push-scheduler.web";
+import { clearPendingTaskSnoozes } from "./create-task-snooze-scheduler.web";
 import { clearShownReminderHistory } from "./in-app-reminder-history.web";
 
 export async function clearPrivatePlatformState() {
   await removeCurrentWebPushSubscription().catch(() => undefined);
   clearPendingWebPushSchedules();
+  clearPendingTaskSnoozes();
   clearShownReminderHistory();
   if (
     typeof navigator === "undefined" ||

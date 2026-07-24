@@ -8,6 +8,7 @@ import {
 } from "react-native";
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
+import { useAuth } from "../../auth/auth-context";
 import { useAppTheme } from "../../components/app-shell";
 import { createTaskSnoozeScheduler } from "../../data/create-task-snooze-scheduler";
 import type { OrganaTheme } from "../../theme";
@@ -22,6 +23,7 @@ const timerOptions = [
 const taskSnoozeScheduler = createTaskSnoozeScheduler();
 
 export function FocusScreen() {
+  const auth = useAuth();
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const router = useRouter();
@@ -102,8 +104,10 @@ export function FocusScreen() {
   }
 
   async function snooze(minutes: number) {
+    const ownerId = auth.localPreview ? "local-preview" : auth.user?.id;
     if (
       !task ||
+      !ownerId ||
       !devices.reminderAuthorizationReady ||
       !devices.remindersAllowed ||
       !task.snoozePresets.includes(minutes)
@@ -113,7 +117,7 @@ export function FocusScreen() {
     setSnoozing(minutes);
     setSnoozeStatus("");
     try {
-      const result = await taskSnoozeScheduler.schedule(task, minutes);
+      const result = await taskSnoozeScheduler.schedule(task, minutes, ownerId);
       setSnoozeStatus(
         result.delivery === "system"
           ? `A system reminder is scheduled for ${minutes} minutes from now.`

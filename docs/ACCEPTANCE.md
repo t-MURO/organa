@@ -247,6 +247,10 @@ Local evidence:
 - browser Focus and active-tab reminders expose every saved preset; Focus
   snoozes are explicitly open-app timers rather than falsely claiming
   closed-tab Web Push delivery
+- browser Focus snooze timers are tagged to their account owner and canceled
+  on account change, sign-out, revocation, or final deletion; delivery also
+  requires the active owner and rebuilds copy from that owner's current task,
+  so a restored task ID cannot expose another account's captured title
 - task completion, subtask completion, preset edits, remote reconciliation,
   and reminder-device demotion prevent stale snoozes from being delivered;
   native reconciliation also dismisses matching notifications already shown
