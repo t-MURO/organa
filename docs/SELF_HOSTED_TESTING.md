@@ -468,6 +468,44 @@ structured-field or Yjs merging, real provider redirects, SMTP delivery, Edge
 Function scheduling, browser Push, or physical-device behavior; perform the
 remaining drills below.
 
+After the account-deletion function and its once-per-minute scheduler are
+deployed, use the separate long-running drill to verify the real one-hour
+contract. Do not invoke the function manually or rewrite `execute_after` for
+this evidence. In the same private connected configuration, temporarily set:
+
+```text
+"allowOneHourDeletionDrill": true
+```
+
+Then keep the client machine awake and connected while running:
+
+```sh
+pnpm verify:connected:deletion
+```
+
+This command intentionally takes at least 60 minutes and allows the scheduler
+five additional minutes. It creates one `deletion-live-` synthetic account,
+seeds ciphertext, mutation history, a pending device approval, and content-free
+Web Push state, then verifies:
+
+- the server sets an exact one-hour deadline
+- encrypted, device, and Web Push writes are read-only while deletion is pending
+- cancellation persists before the deadline and writes resume immediately
+- a second request leaves the Auth user present through the deadline boundary
+- the real scheduler permanently removes the Auth user
+- the refresh session is invalid and every user-owned row has cascaded
+
+The command polls Auth without printing account IDs, credentials, proofs,
+tokens, Push capabilities, or payloads. On failure or interruption it uses a
+separate bounded cleanup client to delete the disposable account; if cleanup
+also fails, remove only Auth users with the `deletion-live-` prefix. Set
+`allowOneHourDeletionDrill` back to `false` after the run.
+
+Capture the sanitized command outcome and corresponding scheduler/function logs
+before checking the connected deletion acceptance row. Preparing the command
+does not count as evidence, and this drill does not cover encrypted-export
+restore on a separate clean device.
+
 1. Sign in by email OTP, then Google, Apple, and GitHub as each provider is
    configured.
 2. Confirm recovery-key setup and approve a second clean browser/device.
@@ -483,8 +521,8 @@ remaining drills below.
 8. Exercise permission-granted Web Push, replacement, cancellation, deep
    links, sign-out cleanup, and the active-tab fallback.
 9. Restore an encrypted export on a separate clean client.
-10. Request deletion, verify the read-only hour and cancellation, then use a
-    disposable account to exercise final deletion after the deadline.
+10. Run the guarded one-hour connected deletion verifier and retain its
+    sanitized scheduler evidence.
 11. Inspect database rows and function/scheduler logs for plaintext user
     content or leaked secrets.
 

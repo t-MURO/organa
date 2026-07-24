@@ -1107,6 +1107,22 @@ silently creating an authentication client:
   content-free record hint, enforces the one-second mutation-to-peer target,
   verifies durable ciphertext, disconnects the peer, and recovers a later
   missed record through the app's overlapping timestamp cursor strategy.
+- Extracts the mode-600 connected URL and modern publishable/secret-key
+  validation into one operator-config module so destructive connected commands
+  cannot drift to weaker credential handling.
+- Adds a separately consented `verify:connected:deletion` command that creates
+  one disposable account, verifies the one-hour request/read-only/cancel/resume
+  contract, then polls through the real scheduler deadline without changing
+  database time. It checks Auth and refresh-session removal plus cascades for
+  account keys, devices, approvals, encrypted records/history, mutations,
+  deletion state, and Web Push subscriptions/reminders.
+- The long deletion verifier uses bounded requests, conservative near-deadline
+  polling, safe progress output, and a separate interruption cleanup client.
+  It is prepared but has not been run because no private connected operator
+  configuration is available in this workspace.
+- Shared-script syntax, JSON syntax, secret-file fail-closed behavior, strict
+  TypeScript, and the production web/PWA build with all 18 artifact checks pass.
+  No tests were added, changed, or run for this milestone.
 - Keeps decrypted UI propagation, field/CRDT conflict behavior, provider
   redirects, SMTP, functions, Push, and physical clients unclaimed until their
   separate connected drills run.

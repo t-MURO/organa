@@ -281,6 +281,9 @@ Local evidence:
 - A self-hosted Docker instance may provide functional evidence for this
   section when it follows `docs/SELF_HOSTED_TESTING.md`. It does not replace
   the final region, operations, legal, or independent-review gates.
+- `pnpm verify:connected:deletion` is prepared to capture the real one-hour
+  scheduler and cascade evidence. It has not been run against a connected
+  backend in this workspace, so the corresponding row remains unchecked.
 - [ ] Google, Apple, GitHub, and email OTP against configured connected
   providers
 - [ ] Apply and lint the proven migrations against the self-hosted test
