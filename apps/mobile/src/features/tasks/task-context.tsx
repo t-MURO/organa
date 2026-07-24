@@ -218,10 +218,17 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
       if (tasks.length === 0 && auth.localPreview) {
         tasks = seedTasks(formatLocalDate(new Date()));
-        await Promise.all(tasks.map((task) => repository.upsert(task)));
-        await Promise.all(
-          tasks.map((task) => sync.queueUpsert("task", task.id, task)),
+        const committed = await sync.commit(
+          tasks.map((task) => ({
+            operation: "upsert",
+            recordId: task.id,
+            recordType: "task",
+            value: task,
+          })),
         );
+        if (!committed) {
+          throw new Error("The preview tasks could not be saved.");
+        }
       }
 
       if (active) {
@@ -295,8 +302,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
   function addTask(input: CreateTaskInput) {
     const task = createTask(input, makeId());
     dispatch({ type: "upserted", task });
-    void repository.upsert(task);
-    void sync.queueUpsert("task", task.id, task);
+    void sync.commitUpsert("task", task.id, task);
     syncNotifications(
       task,
       true,
@@ -311,8 +317,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
   function editTask(task: Task, input: CreateTaskInput) {
     const updated = updateTask(task, input);
     dispatch({ type: "upserted", task: updated });
-    void repository.upsert(updated);
-    void sync.queueUpsert("task", updated.id, updated, task);
+    void sync.commitUpsert("task", updated.id, updated, task);
     syncNotifications(
       updated,
       true,
@@ -325,20 +330,23 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
   function removeTask(id: string) {
     dispatch({ type: "removed", id });
-    void repository.remove(id);
-    void sync.queueDelete("task", id);
+    void sync.commitDelete("task", id);
     cancelNotifications(id, setReminderNotice);
   }
 
   async function restoreTasks(tasks: Task[]) {
     const current = await repository.list();
     const changes = selectRestoreChanges(current, tasks);
-    await Promise.all(
-      changes.map(async ({ previous, value }) => {
-        await repository.upsert(value);
-        await sync.queueUpsert("task", value.id, value, previous);
-      }),
+    const committed = await sync.commit(
+      changes.map(({ previous, value }) => ({
+        operation: "upsert",
+        previousValue: previous,
+        recordId: value.id,
+        recordType: "task",
+        value,
+      })),
     );
+    if (!committed) throw new Error("The restored tasks could not be saved.");
     for (const { value } of changes) {
       dispatch({ type: "upserted", task: value });
       syncNotifications(
@@ -357,8 +365,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     if (confirmed === task) return;
 
     dispatch({ type: "upserted", task: confirmed });
-    void repository.upsert(confirmed);
-    void sync.queueUpsert("task", confirmed.id, confirmed, task);
+    void sync.commitUpsert("task", confirmed.id, confirmed, task);
   }
 
   function toggleTask(task: Task) {
@@ -370,8 +377,6 @@ export function TaskProvider({ children }: PropsWithChildren) {
       );
 
       dispatch({ type: "upserted", task: reopened });
-      void repository.upsert(reopened);
-      void sync.queueUpsert("task", reopened.id, reopened, task);
       syncNotifications(
         reopened,
         false,
@@ -381,10 +386,26 @@ export function TaskProvider({ children }: PropsWithChildren) {
       );
       if (generatedOccurrence) {
         dispatch({ type: "removed", id: generatedOccurrence.id });
-        void repository.remove(generatedOccurrence.id);
-        void sync.queueDelete("task", generatedOccurrence.id);
         cancelNotifications(generatedOccurrence.id, setReminderNotice);
       }
+      void sync.commit([
+        {
+          operation: "upsert",
+          previousValue: task,
+          recordId: reopened.id,
+          recordType: "task",
+          value: reopened,
+        },
+        ...(generatedOccurrence
+          ? [
+              {
+                operation: "delete" as const,
+                recordId: generatedOccurrence.id,
+                recordType: "task" as const,
+              },
+            ]
+          : []),
+      ]);
       return;
     }
 
@@ -393,13 +414,6 @@ export function TaskProvider({ children }: PropsWithChildren) {
     );
     const result = completeTaskOccurrence(task, makeId());
     dispatch({ type: "upserted", task: result.completedTask });
-    void repository.upsert(result.completedTask);
-    void sync.queueUpsert(
-      "task",
-      result.completedTask.id,
-      result.completedTask,
-      task,
-    );
     syncNotifications(
       result.completedTask,
       false,
@@ -411,8 +425,6 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
     if (result.nextTask && !existingOccurrence) {
       dispatch({ type: "upserted", task: result.nextTask });
-      void repository.upsert(result.nextTask);
-      void sync.queueUpsert("task", result.nextTask.id, result.nextTask);
       syncNotifications(
         result.nextTask,
         false,
@@ -421,6 +433,25 @@ export function TaskProvider({ children }: PropsWithChildren) {
         setReminderNotice,
       );
     }
+    void sync.commit([
+      {
+        operation: "upsert",
+        previousValue: task,
+        recordId: result.completedTask.id,
+        recordType: "task",
+        value: result.completedTask,
+      },
+      ...(result.nextTask && !existingOccurrence
+        ? [
+            {
+              operation: "upsert" as const,
+              recordId: result.nextTask.id,
+              recordType: "task" as const,
+              value: result.nextTask,
+            },
+          ]
+        : []),
+    ]);
   }
 
   function toggleSubtask(task: Task, subtaskId: string) {
@@ -428,8 +459,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     if (nextTask === task) return;
 
     dispatch({ type: "upserted", task: nextTask });
-    void repository.upsert(nextTask);
-    void sync.queueUpsert("task", nextTask.id, nextTask, task);
+    void sync.commitUpsert("task", nextTask.id, nextTask, task);
     syncNotifications(
       nextTask,
       false,

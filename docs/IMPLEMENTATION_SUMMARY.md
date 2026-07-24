@@ -1527,6 +1527,40 @@ No tests were added, changed, or run for this milestone.
   proved global cleanup canceled every remaining timer. Strict TypeScript
   passes, and no test files were added or changed.
 
+## Atomic Local And Encrypted-Outbox Persistence
+
+- Structured user actions previously dispatched optimistic UI state and then
+  launched the local repository write and encrypted-outbox write independently.
+  Process termination or a storage failure between those operations could
+  leave an offline record with no future sync mutation, or a mutation without
+  the local state the user had just seen.
+- One deep storage module now owns the crash-consistency seam. Web commits all
+  local object stores and `syncOutbox` in one IndexedDB transaction; iOS and
+  Android use one exclusive SQLite transaction in the account database.
+  Owner, record-ID, operation, and local-alias validation runs before storage.
+- The sync module now owns encryption, strictly ordered commit serialization,
+  pending-record registration, atomic persistence, outbox recount, and flush.
+  Task, template, Check-In, settings, and Brain Dump contexts no longer need to
+  coordinate two repositories correctly at every mutation call site.
+- Recurring completion plus next-occurrence creation and recurring reopen plus
+  generated-occurrence deletion are single batches. Preview seeding and every
+  restore category also commit all selected records and mutations together.
+- Remote delivery waits behind the ordered local commit chain. A canonical
+  Brain Dump snapshot cannot race the local projection of an encrypting delta,
+  while canonical deletion tombstones remain immediately authoritative rather
+  than being hidden behind a pending parent alias.
+- A transaction failure is distinguished from post-commit bookkeeping failure.
+  Only a real rollback removes pending protection and raises a sticky,
+  accessible local-save warning; an outbox recount failure cannot relabel an
+  already durable change as lost.
+- A temporary browser harness passed 9 checks against the real IndexedDB
+  adapter, including a forced mid-batch unique-index abort that left no partial
+  local or outbox rows, successful task and recurring-pair commits, and
+  pre-write wrong-owner rejection. The temporary harness was removed.
+- All 151 existing tests pass unchanged. Strict TypeScript, the production
+  web/PWA export with 18 artifact checks and 22 precached assets, and both
+  native Hermes exports pass. No test files were added or changed.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

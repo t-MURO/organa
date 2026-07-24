@@ -202,8 +202,12 @@ export function TemplateProvider({ children }: PropsWithChildren) {
 
   function persist(template: TaskTemplate, previous?: TaskTemplate) {
     dispatch({ type: "upserted", template });
-    void repository.upsert(template);
-    void sync.queueUpsert("template", template.id, template, previous);
+    void sync.commitUpsert(
+      "template",
+      template.id,
+      template,
+      previous,
+    );
     return template;
   }
 
@@ -231,19 +235,24 @@ export function TemplateProvider({ children }: PropsWithChildren) {
 
   function removeTemplate(id: string) {
     dispatch({ type: "removed", id });
-    void repository.remove(id);
-    void sync.queueDelete("template", id);
+    void sync.commitDelete("template", id);
   }
 
   async function restoreTemplates(templates: TaskTemplate[]) {
     const current = await repository.list();
     const changes = selectRestoreChanges(current, templates);
-    await Promise.all(
-      changes.map(async ({ previous, value }) => {
-        await repository.upsert(value);
-        await sync.queueUpsert("template", value.id, value, previous);
-      }),
+    const committed = await sync.commit(
+      changes.map(({ previous, value }) => ({
+        operation: "upsert",
+        previousValue: previous,
+        recordId: value.id,
+        recordType: "template",
+        value,
+      })),
     );
+    if (!committed) {
+      throw new Error("The restored templates could not be saved.");
+    }
     for (const { value } of changes) {
       dispatch({ type: "upserted", template: value });
     }

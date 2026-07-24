@@ -113,20 +113,25 @@ export function CheckInProvider({ children }: PropsWithChildren) {
       : createCheckInEntry(input, `check-in-${input.date}`);
 
     dispatch({ type: "upserted", entry });
-    void repository.upsert(entry);
-    void sync.queueUpsert("check_in", entry.id, entry, existing);
+    void sync.commitUpsert("check_in", entry.id, entry, existing);
     return entry;
   }
 
   async function restoreEntries(entries: CheckInEntry[]) {
     const current = await repository.list();
     const changes = selectRestoreChanges(current, entries);
-    await Promise.all(
-      changes.map(async ({ previous, value }) => {
-        await repository.upsert(value);
-        await sync.queueUpsert("check_in", value.id, value, previous);
-      }),
+    const committed = await sync.commit(
+      changes.map(({ previous, value }) => ({
+        operation: "upsert",
+        previousValue: previous,
+        recordId: value.id,
+        recordType: "check_in",
+        value,
+      })),
     );
+    if (!committed) {
+      throw new Error("The restored Check-In entries could not be saved.");
+    }
     for (const { value } of changes) {
       dispatch({ type: "upserted", entry: value });
     }

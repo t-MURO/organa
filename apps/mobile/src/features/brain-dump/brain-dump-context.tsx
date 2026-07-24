@@ -218,8 +218,7 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       ),
     );
     dispatch({ type: "upserted", bullet });
-    void repository.upsert(bullet);
-    void sync.queueUpsert("brain_dump_bullet", bullet.id, bullet);
+    void sync.commitUpsert("brain_dump_bullet", bullet.id, bullet);
     return bullet.id;
   }
 
@@ -237,19 +236,24 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       ),
     );
     dispatch({ type: "upserted", bullet: result.bullet });
-    void repository.upsert(result.bullet);
-    void sync.queueUpsert(
+    void sync.commitUpsert(
       "brain_dump_update",
       result.update.id,
       result.update,
+      undefined,
+      {
+        operation: "upsert",
+        recordId: result.bullet.id,
+        recordType: "brain_dump_bullet",
+        value: result.bullet,
+      },
     );
   }
 
   function removeBullet(id: string) {
     deletedBulletIds.current.add(id);
     dispatch({ type: "removed", id });
-    void repository.remove(id);
-    void sync.queueDelete("brain_dump_bullet", id);
+    void sync.commitDelete("brain_dump_bullet", id);
     pendingUpdates.current.delete(id);
     confirmedUpdateIds.current.delete(id);
     compactingBullets.current.delete(id);
@@ -314,17 +318,18 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       );
       return { local, value: mergeCrdtBullets(local, incoming) };
     });
-    await Promise.all(
-      restored.map(async ({ local, value }) => {
-        await repository.upsert(value);
-        await sync.queueUpsert(
-          "brain_dump_bullet",
-          value.id,
-          value,
-          local,
-        );
-      }),
+    const committed = await sync.commit(
+      restored.map(({ local, value }) => ({
+        operation: "upsert",
+        previousValue: local,
+        recordId: value.id,
+        recordType: "brain_dump_bullet",
+        value,
+      })),
     );
+    if (!committed) {
+      throw new Error("The restored Brain Dump could not be saved.");
+    }
     for (const { value } of restored) {
       dispatch({ type: "upserted", bullet: value });
     }

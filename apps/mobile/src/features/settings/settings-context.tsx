@@ -148,8 +148,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
     const next = updateUserSettings(previous, input);
     settingsRef.current = next;
     setSettings(next);
-    void repository.upsert(next);
-    void sync.queueUpsert("settings", next.id, next, previous);
+    void sync.commitUpsert("settings", next.id, next, previous);
     if (devices.reminderAuthorizationReady) {
       void syncCheckInReminder(
         reminderSettings(next, devices.remindersAllowed),
@@ -162,8 +161,15 @@ export function SettingsProvider({ children }: PropsWithChildren) {
 
   async function restore(next: UserSettings) {
     const previous = settingsRef.current;
-    await repository.upsert(next);
-    await sync.queueUpsert("settings", next.id, next, previous);
+    const committed = await sync.commitUpsert(
+      "settings",
+      next.id,
+      next,
+      previous,
+    );
+    if (!committed) {
+      throw new Error("The restored settings could not be saved.");
+    }
     settingsRef.current = next;
     setSettings(next);
     if (devices.reminderAuthorizationReady) {

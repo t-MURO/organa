@@ -13,7 +13,13 @@ import { AppState } from "react-native";
 
 import { useAuth } from "../auth/auth-context";
 import { supabase } from "../auth/supabase";
+import { createDurableRecordWriter } from "../data/create-durable-record-writer";
 import { createSyncOutboxRepository } from "../data/create-sync-outbox-repository";
+import type {
+  DurableRecordWrite,
+  LocalRecordChange,
+  LocalRecordType,
+} from "../data/durable-record-writer.types";
 import type {
   EncryptedFieldPatch,
   EncryptedMutation,
@@ -29,24 +35,47 @@ export interface RemoteRecordChange<T = unknown> {
   value?: T;
 }
 
+export type SyncCommitChange =
+  | {
+      local?: LocalRecordChange;
+      operation: "upsert";
+      previousValue?: unknown;
+      recordId: string;
+      recordType: SyncRecordType;
+      value: unknown;
+    }
+  | {
+      local?: LocalRecordChange;
+      operation: "delete";
+      recordId: string;
+      recordType: SyncRecordType;
+    };
+
 interface SyncContextValue {
   error: string;
   lastSyncedAt?: string;
+  localSaveFailed: boolean;
   pending: number;
   status: "local" | "offline" | "syncing" | "synced" | "error";
+  commit(changes: SyncCommitChange[]): Promise<boolean>;
+  commitDelete(
+    recordType: SyncRecordType,
+    recordId: string,
+    local?: LocalRecordChange,
+  ): Promise<boolean>;
+  commitUpsert(
+    recordType: SyncRecordType,
+    recordId: string,
+    value: unknown,
+    previousValue?: unknown,
+    local?: LocalRecordChange,
+  ): Promise<boolean>;
   compactBrainDumpUpdates(
     bulletId: string,
     snapshot: unknown,
     updateIds: string[],
   ): Promise<boolean>;
   flush(): Promise<void>;
-  queueDelete(recordType: SyncRecordType, recordId: string): Promise<void>;
-  queueUpsert(
-    recordType: SyncRecordType,
-    recordId: string,
-    value: unknown,
-    previousValue?: unknown,
-  ): Promise<void>;
   subscribe<T>(
     recordType: SyncRecordType,
     listener: (change: RemoteRecordChange<T>) => void,
@@ -70,6 +99,13 @@ interface EncryptedRecordSignal {
   recordType?: unknown;
 }
 
+interface PreparedRecordWrite {
+  changedFields?: string[];
+  local: LocalRecordChange;
+  mutation?: EncryptedMutation;
+  nextRecord?: Record<string, unknown>;
+}
+
 const syncRecordTypes = new Set<SyncRecordType>([
   "task",
   "brain_dump_bullet",
@@ -89,6 +125,10 @@ export function SyncProvider({ children }: PropsWithChildren) {
     () => createSyncOutboxRepository(namespace),
     [namespace],
   );
+  const durableWriter = useMemo(
+    () => createDurableRecordWriter(namespace),
+    [namespace],
+  );
   const subscribers = useRef(
     new Map<SyncRecordType, Set<(change: RemoteRecordChange) => void>>(),
   );
@@ -96,6 +136,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
   const reconciling = useRef(false);
   const reconciliationCursor = useRef(initialSyncCursor);
   const lastMutationTimestamp = useRef(0);
+  const commitChain = useRef<Promise<unknown>>(Promise.resolve());
   const outboxInitialization = useRef<Promise<void> | null>(null);
   const outboxReady = useRef(false);
   const pendingMutationIdsByRecord = useRef(
@@ -106,12 +147,16 @@ export function SyncProvider({ children }: PropsWithChildren) {
     useState<SyncContextValue["status"]>("local");
   const [outboxError, setOutboxError] = useState("");
   const [readError, setReadError] = useState("");
+  const [storageError, setStorageError] = useState("");
   const [lastSyncedAt, setLastSyncedAt] = useState<string>();
 
   useEffect(() => {
     let active = true;
     outboxReady.current = false;
-    const initialization = repository.initialize();
+    const initialization = Promise.all([
+      repository.initialize(),
+      durableWriter.initialize(),
+    ]).then(() => undefined);
     outboxInitialization.current = initialization;
     void initialization
       .then(async () => {
@@ -161,7 +206,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
       }
       clearInterval(interval);
     };
-  }, [auth.user, repository]);
+  }, [auth.user, durableWriter, repository]);
 
   useEffect(() => {
     const client = supabase;
@@ -209,98 +254,49 @@ export function SyncProvider({ children }: PropsWithChildren) {
     };
   }, [auth.user, security.contentKey?.id]);
 
-  async function queueUpsert(
+  function commitUpsert(
     recordType: SyncRecordType,
     recordId: string,
     value: unknown,
     previousValue?: unknown,
+    local?: LocalRecordChange,
   ) {
-    if (!auth.user || !security.device) return;
-    const nextRecord = asRecord(value);
-    const changedFields = changedFieldNames(previousValue, value);
-    if (changedFields.length === 0) return;
-    const timestamp = nextMutationTimestamp(lastMutationTimestamp);
-    const mutationId = randomUUID();
-    rememberPendingMutation(
-      pendingMutationIdsByRecord.current,
-      recordType,
-      recordId,
-      mutationId,
-    );
-
-    try {
-      const ciphertext: EncryptedFieldPatch = {};
-      const fieldVersions: Record<string, string> = {};
-      for (const field of changedFields) {
-        ciphertext[field] = await security.encryptRecord(
-          recordType,
-          `${recordId}:${field}`,
-          Object.prototype.hasOwnProperty.call(nextRecord, field)
-            ? { present: true, value: nextRecord[field] }
-            : { present: false },
-        );
-        fieldVersions[field] = timestamp;
-      }
-      await enqueue({
-        attempts: 0,
-        baseVersion: 0,
-        ciphertext,
-        createdAt: timestamp,
-        deviceId: security.device.id,
-        fieldVersions,
-        id: mutationId,
+    return commit([
+      {
+        local,
         operation: "upsert",
         recordId,
         recordType,
-        userId: auth.user.id,
-      });
-    } catch (error) {
-      forgetPendingMutation(
-        pendingMutationIdsByRecord.current,
-        recordType,
-        recordId,
-        mutationId,
-      );
-      throw error;
-    }
+        previousValue,
+        value,
+      },
+    ]);
   }
 
-  async function queueDelete(
+  function commitDelete(
     recordType: SyncRecordType,
     recordId: string,
+    local?: LocalRecordChange,
   ) {
-    if (!auth.user || !security.device) return;
-    const timestamp = nextMutationTimestamp(lastMutationTimestamp);
-    const mutationId = randomUUID();
-    rememberPendingMutation(
-      pendingMutationIdsByRecord.current,
-      recordType,
-      recordId,
-      mutationId,
-    );
+    return commit([{ local, operation: "delete", recordId, recordType }]);
+  }
 
+  function commit(changes: SyncCommitChange[]) {
+    let prepared: PreparedRecordWrite[];
     try {
-      await enqueue({
-        attempts: 0,
-        baseVersion: 0,
-        createdAt: timestamp,
-        deviceId: security.device.id,
-        fieldVersions: { deleted: timestamp },
-        id: mutationId,
-        operation: "delete",
-        recordId,
-        recordType,
-        userId: auth.user.id,
-      });
-    } catch (error) {
-      forgetPendingMutation(
-        pendingMutationIdsByRecord.current,
-        recordType,
-        recordId,
-        mutationId,
-      );
-      throw error;
+      prepared = prepareRecordWrites(changes);
+    } catch {
+      setStorageError(localSaveErrorMessage);
+      return Promise.resolve(false);
     }
+
+    const persist = () => persistRecordWrites(prepared);
+    const result = commitChain.current.then(persist, persist);
+    commitChain.current = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
   }
 
   async function compactBrainDumpUpdates(
@@ -351,16 +347,158 @@ export function SyncProvider({ children }: PropsWithChildren) {
     }
   }
 
-  async function enqueue(mutation: EncryptedMutation) {
-    const initialization = outboxInitialization.current;
-    if (!initialization) {
-      throw new Error("The local encrypted sync queue is not ready.");
+  function prepareRecordWrites(changes: SyncCommitChange[]) {
+    const prepared: PreparedRecordWrite[] = [];
+    try {
+      for (const change of changes) {
+        const local = change.local ?? defaultLocalChange(change);
+        if (local.operation !== change.operation) {
+          throw new Error("Local and encrypted operations do not match.");
+        }
+        if (!auth.user) {
+          prepared.push({ local });
+          continue;
+        }
+
+        if (change.operation === "upsert") {
+          const nextRecord = asRecord(change.value);
+          const changedFields = changedFieldNames(
+            change.previousValue,
+            change.value,
+          );
+          if (changedFields.length === 0) {
+            prepared.push({ local });
+            continue;
+          }
+          if (!security.device) {
+            throw new Error("A trusted device is required to save changes.");
+          }
+          const timestamp = nextMutationTimestamp(lastMutationTimestamp);
+          const mutationId = randomUUID();
+          const mutation: EncryptedMutation = {
+            attempts: 0,
+            baseVersion: 0,
+            ciphertext: {},
+            createdAt: timestamp,
+            deviceId: security.device.id,
+            fieldVersions: Object.fromEntries(
+              changedFields.map((field) => [field, timestamp]),
+            ),
+            id: mutationId,
+            operation: "upsert",
+            recordId: change.recordId,
+            recordType: change.recordType,
+            userId: auth.user.id,
+          };
+          rememberPendingMutation(
+            pendingMutationIdsByRecord.current,
+            mutation.recordType,
+            mutation.recordId,
+            mutation.id,
+          );
+          prepared.push({
+            changedFields,
+            local,
+            mutation,
+            nextRecord,
+          });
+          continue;
+        }
+
+        if (!security.device) {
+          throw new Error("A trusted device is required to save changes.");
+        }
+        const timestamp = nextMutationTimestamp(lastMutationTimestamp);
+        const mutationId = randomUUID();
+        const mutation: EncryptedMutation = {
+          attempts: 0,
+          baseVersion: 0,
+          createdAt: timestamp,
+          deviceId: security.device.id,
+          fieldVersions: { deleted: timestamp },
+          id: mutationId,
+          operation: "delete",
+          recordId: change.recordId,
+          recordType: change.recordType,
+          userId: auth.user.id,
+        };
+        rememberPendingMutation(
+          pendingMutationIdsByRecord.current,
+          mutation.recordType,
+          mutation.recordId,
+          mutation.id,
+        );
+        prepared.push({
+          local,
+          mutation,
+        });
+      }
+      return prepared;
+    } catch (error) {
+      prepared.forEach((item) => {
+        if (!item.mutation) return;
+        forgetPendingMutation(
+          pendingMutationIdsByRecord.current,
+          item.mutation.recordType,
+          item.mutation.recordId,
+          item.mutation.id,
+        );
+      });
+      throw error;
     }
-    await initialization;
-    await repository.upsert(mutation);
-    const mutations = await repository.list();
-    setPending(mutations.length);
+  }
+
+  async function persistRecordWrites(prepared: PreparedRecordWrite[]) {
+    let writes: DurableRecordWrite[];
+    try {
+      writes = [];
+      for (const item of prepared) {
+        let mutation = item.mutation;
+        if (mutation?.operation === "upsert") {
+          if (!item.nextRecord) {
+            throw new Error("The encrypted upsert value is missing.");
+          }
+          const ciphertext: EncryptedFieldPatch = {};
+          for (const field of item.changedFields ?? []) {
+            ciphertext[field] = await security.encryptRecord(
+              mutation.recordType,
+              `${mutation.recordId}:${field}`,
+              Object.prototype.hasOwnProperty.call(item.nextRecord, field)
+                ? { present: true, value: item.nextRecord[field] }
+                : { present: false },
+            );
+          }
+          mutation = { ...mutation, ciphertext };
+        }
+        writes.push({ local: item.local, mutation });
+      }
+
+      await durableWriter.commit(writes);
+    } catch {
+      prepared.forEach((item) => {
+        if (!item.mutation) return;
+        forgetPendingMutation(
+          pendingMutationIdsByRecord.current,
+          item.mutation.recordType,
+          item.mutation.recordId,
+          item.mutation.id,
+        );
+      });
+      setStorageError(localSaveErrorMessage);
+      return false;
+    }
+
+    try {
+      const mutations = await repository.list();
+      setPending(mutations.length);
+    } catch {
+      setOutboxStatus("error");
+      setOutboxError(
+        "The saved encrypted sync queue could not be recounted.",
+      );
+    }
     void flush();
+    return true;
   }
 
   async function flush() {
@@ -426,7 +564,14 @@ export function SyncProvider({ children }: PropsWithChildren) {
           ? nextError.message
           : "Encrypted changes are waiting to sync.",
       );
-      setPending((await repository.list()).length);
+      try {
+        setPending((await repository.list()).length);
+      } catch {
+        setOutboxStatus("error");
+        setOutboxError(
+          "The local encrypted sync queue could not be read.",
+        );
+      }
     } finally {
       flushing.current = false;
     }
@@ -628,6 +773,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
     row: EncryptedRecordRow,
     listener: (change: RemoteRecordChange) => void,
   ) {
+    await commitChain.current;
     if (
       hasPendingMutation(
         pendingMutationIdsByRecord.current,
@@ -663,17 +809,19 @@ export function SyncProvider({ children }: PropsWithChildren) {
   return (
     <SyncContext.Provider
       value={{
+        commit,
+        commitDelete,
+        commitUpsert,
         compactBrainDumpUpdates,
-        error: readError || outboxError,
+        error: readError || storageError || outboxError,
         flush,
         lastSyncedAt,
+        localSaveFailed: Boolean(storageError),
         pending,
-        queueDelete,
-        queueUpsert,
-        status: auth.localPreview
-          ? "local"
-          : readError
-            ? "error"
+        status: storageError || readError
+          ? "error"
+          : auth.localPreview
+            ? "local"
             : outboxStatus,
         subscribe,
       }}
@@ -681,6 +829,28 @@ export function SyncProvider({ children }: PropsWithChildren) {
       {children}
     </SyncContext.Provider>
   );
+}
+
+const localSaveErrorMessage =
+  "A recent change could not be saved safely on this device.";
+
+function defaultLocalChange(change: SyncCommitChange): LocalRecordChange {
+  if (change.recordType === "brain_dump_update") {
+    throw new Error("Brain Dump updates require a local bullet change.");
+  }
+  const recordType = change.recordType as LocalRecordType;
+  return change.operation === "upsert"
+    ? {
+        operation: "upsert",
+        recordId: change.recordId,
+        recordType,
+        value: change.value,
+      }
+    : {
+        operation: "delete",
+        recordId: change.recordId,
+        recordType,
+      };
 }
 
 function overlapSyncCursor(cursor: string) {

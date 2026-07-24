@@ -320,6 +320,18 @@ wipe.
   is withheld while that record has an encrypting or queued local mutation,
   then repulled after the final acknowledgement so an older server snapshot
   cannot replace optimistic offline state.
+- User-originated structured changes commit their local record and encrypted
+  outbox mutation in one owner-validating IndexedDB transaction or exclusive
+  SQLite transaction. A failure rolls back the complete batch; the UI reports
+  a sticky local-save warning instead of claiming the change remains safe.
+- Client commits are serialized in invocation order. Recurring completion and
+  its next occurrence, recurring reopen and generated-occurrence deletion, and
+  multi-record restores therefore cannot persist as half-applied local/outbox
+  pairs.
+- Remote rows wait for the ordered local commit chain before delivery. A
+  canonical Brain Dump snapshot therefore cannot race the local projection of
+  an encrypting delta, while a canonical deletion tombstone remains
+  authoritative rather than being suppressed by an alias.
 - Previous encrypted versions are retained for seven days.
 - Mutation IDs make outbox retries idempotent.
 - Yjs updates make Brain Dump edits commutative and conflict-free.

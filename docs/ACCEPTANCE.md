@@ -1,6 +1,6 @@
 # Controlled-Beta Acceptance
 
-Status recorded on 2026-07-24.
+Status recorded on 2026-07-25.
 
 The criterion-by-criterion status and evidence boundary is recorded in
 `docs/MVP_TRACEABILITY.md`.
@@ -33,6 +33,8 @@ The criterion-by-criterion status and evidence boundary is recorded in
 - [x] SQLite native persistence and IndexedDB web persistence
 - [x] Encrypted field outbox, idempotent RPC contract, private Broadcast, and
   incremental durable reconciliation integration
+- [x] Atomic local-record plus encrypted-outbox commits for every structured
+  user mutation, including recurring-task pairs and multi-record restores
 - [x] Explicitly paginated encrypted pulls and visible read-side sync health
 - [x] Recovery-key confirmation and recovery-code restore flow
 - [x] Short-lived encrypted new-device approval by an existing trusted device,
@@ -168,6 +170,26 @@ Local evidence:
 - pull, decryption, and durable reconciliation failures remain separate from
   outbox state and force a route-wide accessible "Sync needs attention" notice;
   compact layouts also expose offline and pending status
+- task, template, Check-In, settings, and Brain Dump user mutations no longer
+  launch independent local and outbox writes; one owner-validating adapter
+  commits both in a single IndexedDB transaction or exclusive SQLite
+  transaction, and serializes encryption/commit order
+- recurring completion plus next-occurrence creation, recurring reopen plus
+  generated-occurrence removal, preview seeding, and every restore batch commit
+  as one local/outbox unit; a failed durable commit leaves neither side and
+  raises a sticky route-wide warning that does not falsely claim the change is
+  safe
+- remote delivery waits for the ordered local commit chain before applying a
+  row, preventing a canonical Brain Dump snapshot from racing and overwriting
+  the local projection of an encrypting CRDT delta; canonical deletion
+  tombstones remain authoritative and are never hidden behind a parent alias
+- a temporary real-browser IndexedDB drill passed 9 checks: successful task
+  and outbox persistence, forced mid-batch unique-index rollback with no
+  partial Check-In or mutation, atomic recurring pairs, and pre-write owner
+  rejection
+- all 151 existing tests pass unchanged, strict TypeScript passes, production
+  web/PWA artifact verification passes 18 checks with 22 precached assets, and
+  iOS and Android Hermes exports succeed after the atomic persistence changes
 - strict TypeScript, production web/PWA artifact verification, and iOS/Android
   Hermes exports pass after the sync pagination and health changes; no test
   files were changed

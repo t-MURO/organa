@@ -100,8 +100,9 @@ export function AppShell() {
             style={styles.syncNotice}
           >
             <Text style={styles.syncNoticeText}>
-              Encrypted sync needs attention. Your changes remain safe on this
-              device while Organa retries.
+              {sync.localSaveFailed
+                ? "A recent change could not be saved safely on this device. Keep Organa open and review the change before closing the app."
+                : "Encrypted sync needs attention. Your changes remain safe on this device while Organa retries."}
             </Text>
           </View>
         ) : null}
