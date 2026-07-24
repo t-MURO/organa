@@ -10,10 +10,8 @@ import {
 
 import { useAuth } from "../../auth/auth-context";
 import { supabase } from "../../auth/supabase";
-import { deleteLocalAccountData } from "../../data/delete-local-account-data";
-import { contentKeyVault } from "../../security/content-key-vault";
-import { removeDeviceIdentity } from "../../security/device-identity";
 import { useSecurity } from "../../security/security-context";
+import { eraseLocalAccount } from "./erase-local-account";
 import { reminderAuthorizationCache } from "./reminder-authorization-cache";
 import { resolveReminderAuthorization } from "./reminder-authorization";
 
@@ -232,10 +230,11 @@ export function DeviceProvider({ children }: PropsWithChildren) {
   }
 
   const userId = auth.user?.id;
-  const current =
-    userId && devicesUserId === userId
-      ? devices.find((item) => item.id === security.device?.id)
-      : undefined;
+  const visibleDevices =
+    userId && devicesUserId === userId ? devices : [];
+  const current = visibleDevices.find(
+    (item) => item.id === security.device?.id,
+  );
   const remoteResolved =
     Boolean(userId) && remoteResolvedUserId === userId;
   const cacheLoaded =
@@ -273,16 +272,13 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     if (!auth.user || !current?.revokedAt || revocationHandled.current) return;
     revocationHandled.current = true;
     const userId = auth.user.id;
-    void Promise.all([
-      contentKeyVault.remove(userId),
-      deleteLocalAccountData(userId),
-      reminderAuthorizationCache.remove(userId),
-      removeDeviceIdentity(),
-    ])
-      .then(() => auth.signOut())
-      .catch(() => {
-        revocationHandled.current = false;
-      });
+    void eraseLocalAccount(
+      userId,
+      auth.signOut,
+      () => reminderAuthorizationCache.remove(userId),
+    ).catch(() => {
+      revocationHandled.current = false;
+    });
   }, [auth.user?.id, current?.revokedAt]);
 
   useEffect(() => {
@@ -295,7 +291,7 @@ export function DeviceProvider({ children }: PropsWithChildren) {
         approve,
         configureReminders,
         currentDeviceId: security.device?.id ?? null,
-        devices,
+        devices: visibleDevices,
         loading,
         reminderAuthorizationReady: reminderAuthorization.ready,
         refresh,

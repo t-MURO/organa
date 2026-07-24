@@ -180,6 +180,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   async function signOut() {
     setLocalPreview(false);
     setCallbackError("");
+    setSession(null);
     if (!supabase) {
       await clearPrivatePlatformState();
       return;

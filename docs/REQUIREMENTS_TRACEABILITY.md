@@ -53,6 +53,9 @@ Status meanings:
   malformed secure preferences, preserve enabled locks when device
   authentication disappears, and keep private providers unmounted until
   startup and unlock checks pass
+- content keys, deletion state, and trusted-device lists are account-scoped;
+  revocation and final deletion close local auth immediately, attempt every
+  private-store cleanup independently, and retry failed operations once
 - `pnpm typecheck`: all strict TypeScript packages pass
 - `pnpm verify:migrations`: 6 isolated-schema upgrade checks preserve every
   seeded encrypted/account row while installing later protected objects

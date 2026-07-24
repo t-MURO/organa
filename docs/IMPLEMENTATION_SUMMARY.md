@@ -482,6 +482,11 @@ Implemented user-facing areas:
   devices require explicit enablement.
 - Revoked devices clear local Organa data and sign out when revocation is
   observed.
+- Revocation and final deletion use shared best-effort erasure: all private
+  stores and sign-out are attempted independently, failed operations retry
+  once, and the local session closes before platform cleanup completes.
+- Deletion state and device lists are account-scoped so delayed responses from
+  a previous session stay hidden and cannot act on the active account.
 - Revocation and final account deletion remove the local device proof secret
   and clear all known SQLite/IndexedDB stores before database removal. Native
   cleanup also removes scheduled and displayed notifications, while iOS clears
@@ -621,6 +626,8 @@ Major implementation commits:
 - Account-bound in-memory content keys that close the private-data boundary
   immediately during account changes
 - Runtime validation for decrypted native and web content-key vault records
+- Account-bound deletion/device state and non-fail-fast local erasure on
+  revocation or final deletion
 - Recovery-authorized device enrollment and per-device write proofs
 - One-time encrypted trusted-device approval with 15-minute expiry,
   target-binding, explicit rejection, and envelope erasure after claim

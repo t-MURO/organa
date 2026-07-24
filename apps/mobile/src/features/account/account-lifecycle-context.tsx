@@ -9,16 +9,19 @@ import { AppState, Platform } from "react-native";
 
 import { useAuth } from "../../auth/auth-context";
 import { supabase } from "../../auth/supabase";
-import { deleteLocalAccountData } from "../../data/delete-local-account-data";
-import { contentKeyVault } from "../../security/content-key-vault";
-import { removeDeviceIdentity } from "../../security/device-identity";
 import { useSecurity } from "../../security/security-context";
 import { accountDeletionCache } from "./account-deletion-cache";
+import { eraseLocalAccount } from "./erase-local-account";
 import { reminderAuthorizationCache } from "./reminder-authorization-cache";
 
 interface DeletionRequest {
   executeAfter: string;
   requestedAt: string;
+}
+
+interface ScopedDeletionRequest {
+  request: DeletionRequest | null;
+  userId: string;
 }
 
 interface AccountLifecycleContextValue {
@@ -38,21 +41,29 @@ const AccountLifecycleContext = createContext<
 export function AccountLifecycleProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
   const security = useSecurity();
-  const [deletionRequest, setDeletionRequest] =
-    useState<DeletionRequest | null>(null);
-  const [loading, setLoading] = useState(Boolean(auth.user));
+  const userId = auth.user?.id;
+  const [scopedDeletionRequest, setScopedDeletionRequest] =
+    useState<ScopedDeletionRequest | null>(null);
+  const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
+  const deletionRequest =
+    userId && scopedDeletionRequest?.userId === userId
+      ? scopedDeletionRequest.request
+      : null;
+  const loading =
+    Boolean(userId) && !auth.localPreview && resolvedUserId !== userId;
 
   async function refresh() {
-    if (!auth.user || !supabase || auth.localPreview) {
-      setDeletionRequest(null);
-      setLoading(false);
+    const refreshUserId = auth.user?.id;
+    if (!refreshUserId || !supabase || auth.localPreview) {
+      setScopedDeletionRequest(null);
+      setResolvedUserId(null);
       return;
     }
 
     const result = await supabase
       .from("account_deletion_requests")
       .select("requested_at,execute_after")
-      .eq("user_id", auth.user.id)
+      .eq("user_id", refreshUserId)
       .is("cancelled_at", null)
       .is("completed_at", null)
       .maybeSingle();
@@ -63,37 +74,44 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
           requestedAt: result.data.requested_at,
         }
       : null;
-    setDeletionRequest(nextRequest);
+    setScopedDeletionRequest({
+      request: nextRequest,
+      userId: refreshUserId,
+    });
     if (nextRequest) {
-      await accountDeletionCache.set(auth.user.id, nextRequest);
+      await accountDeletionCache.set(refreshUserId, nextRequest);
     } else {
-      await accountDeletionCache.remove(auth.user.id);
+      await accountDeletionCache.remove(refreshUserId);
     }
-    setLoading(false);
+    setResolvedUserId(refreshUserId);
   }
 
   useEffect(() => {
     let active = true;
+    const initializeUserId = auth.user?.id;
 
     async function initialize() {
-      if (!auth.user || auth.localPreview) {
+      if (!initializeUserId || auth.localPreview) {
         if (active) {
-          setDeletionRequest(null);
-          setLoading(false);
+          setScopedDeletionRequest(null);
+          setResolvedUserId(null);
         }
         return;
       }
 
-      setLoading(true);
-      const cached = await accountDeletionCache.get(auth.user.id);
+      setResolvedUserId(null);
+      const cached = await accountDeletionCache.get(initializeUserId);
       if (!active) return;
-      setDeletionRequest(cached);
-      setLoading(false);
+      setScopedDeletionRequest({
+        request: cached,
+        userId: initializeUserId,
+      });
+      setResolvedUserId(initializeUserId);
       void refresh().catch(() => undefined);
     }
 
     void initialize().catch(() => {
-      if (active) setLoading(false);
+      if (active) setResolvedUserId(initializeUserId ?? null);
     });
 
     const interval = setInterval(
@@ -142,14 +160,11 @@ export function AccountLifecycleProvider({ children }: PropsWithChildren) {
   async function finalizeLocalDeletion() {
     if (!auth.user) return;
     const userId = auth.user.id;
-    await Promise.all([
-      accountDeletionCache.remove(userId),
-      contentKeyVault.remove(userId),
-      deleteLocalAccountData(userId),
-      reminderAuthorizationCache.remove(userId),
-      removeDeviceIdentity(),
-    ]);
-    await auth.signOut();
+    await eraseLocalAccount(
+      userId,
+      auth.signOut,
+      () => reminderAuthorizationCache.remove(userId),
+    );
   }
 
   return (

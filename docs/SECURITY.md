@@ -96,6 +96,11 @@ when that owner matches the active authentication state, so an account change
 closes encryption, decryption, synchronization, and private providers before
 asynchronous key initialization can finish.
 
+Account-deletion state and trusted-device lists are also exposed only when
+their fetched owner matches the active account. Delayed responses from a
+previous session therefore cannot place another account into deletion mode or
+display its device metadata.
+
 Reminder authorization:
 
 - Native stores the last server-confirmed per-user reminder authorization as a
@@ -200,6 +205,12 @@ out, and encrypted writes from the revoked device ID are rejected. Revoking
 also expires refresh tokens for other sessions. Existing access-token JWTs
 remain valid until expiry, and revocation is not retroactive against data
 already copied from a device.
+
+Revocation and final deletion attempt every local erasure operation
+independently, retry only failed operations once, and close the in-memory
+authentication session before fallible platform cleanup can finish. A failure
+in one store cannot prevent the remaining stores or sign-out from being
+attempted.
 
 Offline reminder authorization can only represent the last server-confirmed
 state. A device that remains offline cannot learn that it was revoked; the

@@ -65,6 +65,9 @@ Local evidence:
 - the security provider exposes an in-memory content key only when its atomic
   owner ID matches the active account or isolated local-preview identity;
   malformed persisted keys fail closed
+- deletion state and trusted-device lists are hidden unless their fetched
+  owner matches the active account; revocation/final-deletion cleanup attempts
+  every private store and sign-out, then retries only failed operations once
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,
