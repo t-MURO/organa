@@ -90,6 +90,72 @@ require_configured_value() {
   esac
 }
 
+require_jwt_value() {
+  file="$1"
+  key="$2"
+  value=$(value_from "$file" "$key")
+  printf '%s\n' "$value" |
+    awk -F. '
+      NF == 3 &&
+      $1 ~ /^[A-Za-z0-9_-]+$/ &&
+      $2 ~ /^[A-Za-z0-9_-]+$/ &&
+      $3 ~ /^[A-Za-z0-9_-]+$/ {
+        valid = 1
+      }
+      END { exit valid ? 0 : 1 }
+    ' ||
+    fail "$key is not a three-segment URL-safe JWT in $file"
+}
+
+require_asymmetric_keyset() {
+  file="$1"
+  signing_keys=$(value_from "$file" JWT_KEYS)
+  verification_keys=$(value_from "$file" JWT_JWKS)
+  printf '[%s,%s]\n' "$signing_keys" "$verification_keys" |
+    jq -e '
+      .[0] as $signing
+      | .[1] as $verification
+      | ($signing | type == "array" and length == 2)
+        and ($verification | type == "object")
+        and ($verification.keys | type == "array" and length == 2)
+        and ($signing | any(.[];
+          .kty == "EC"
+          and .alg == "ES256"
+          and .crv == "P-256"
+          and (.d | type == "string" and length > 0)
+          and (.x | type == "string" and length > 0)
+          and (.y | type == "string" and length > 0)))
+        and ($signing | any(.[];
+          .kty == "oct"
+          and .alg == "HS256"
+          and (.k | type == "string" and length > 0)))
+        and ($verification.keys | any(.[];
+          .kty == "EC"
+          and .alg == "ES256"
+          and .crv == "P-256"
+          and (has("d") | not)))
+        and ($verification.keys | any(.[];
+          .kty == "oct"
+          and .alg == "HS256"
+          and (.k | type == "string" and length > 0)))
+        and (
+          ($signing | map(
+            select(.kty == "EC") | {alg, crv, kid, kty, x, y}
+          ))
+          ==
+          ($verification.keys | map(
+            select(.kty == "EC") | {alg, crv, kid, kty, x, y}
+          ))
+        )
+        and (
+          ($signing | map(select(.kty == "oct") | {alg, k, kty}))
+          ==
+          ($verification.keys | map(select(.kty == "oct") | {alg, k, kty}))
+        )
+    ' >/dev/null 2>&1 ||
+    fail "JWT_KEYS and JWT_JWKS do not form a valid matching asymmetric keyset"
+}
+
 require_hex_secret() {
   file="$1"
   key="$2"
@@ -148,10 +214,15 @@ for key in \
   DASHBOARD_PASSWORD \
   SUPABASE_PUBLISHABLE_KEY \
   SUPABASE_SECRET_KEY \
+  ANON_KEY_ASYMMETRIC \
+  SERVICE_ROLE_KEY_ASYMMETRIC \
   JWT_KEYS \
   JWT_JWKS; do
   require_generated_value .env .env.example "$key"
 done
+require_jwt_value .env ANON_KEY_ASYMMETRIC
+require_jwt_value .env SERVICE_ROLE_KEY_ASYMMETRIC
+require_asymmetric_keyset .env
 
 docker compose -f docker-compose.yml config --quiet >/dev/null 2>&1 ||
   fail "the base Docker Compose configuration is invalid"
@@ -266,7 +337,10 @@ docker compose config --quiet >/dev/null 2>&1 ||
 
 docker compose config --format json |
   jq -e --arg callback "$oauth_callback" '
-    .services.auth.environment as $auth
+    .services as $services
+    | $services.auth.environment as $auth
+    | ($auth.GOTRUE_JWT_KEYS | fromjson) as $signing
+    | ($services.rest.environment.PGRST_JWT_SECRET | fromjson) as $jwks
     | ($auth.GOTRUE_EXTERNAL_GOOGLE_ENABLED == "true")
       and ($auth.GOTRUE_EXTERNAL_APPLE_ENABLED == "true")
       and ($auth.GOTRUE_EXTERNAL_GITHUB_ENABLED == "true")
@@ -279,8 +353,23 @@ docker compose config --format json |
         == "http://templates-server/email-code.html")
       and ($auth.GOTRUE_MAILER_TEMPLATES_MAGIC_LINK
         == "http://templates-server/email-code.html")
+      and ($signing | type == "array" and length == 2)
+      and ($jwks | type == "object" and (.keys | length == 2))
+      and (($services.realtime.environment.API_JWT_JWKS | fromjson) == $jwks)
+      and (($services.storage.environment.JWT_JWKS | fromjson) == $jwks)
+      and (($services.functions.environment.SUPABASE_JWKS | fromjson) == $jwks)
+      and ($signing | any(.[];
+        .kty == "EC"
+        and .alg == "ES256"
+        and .crv == "P-256"
+        and (.d | type == "string" and length > 0)))
+      and ($jwks.keys | any(.[];
+        .kty == "EC"
+        and .alg == "ES256"
+        and .crv == "P-256"
+        and (has("d") | not)))
   ' >/dev/null 2>&1 ||
-  fail "the resolved Auth provider or email-code configuration is invalid"
+  fail "the resolved asymmetric Auth, provider, or email-code configuration is invalid"
 
 services=$(docker compose config --services)
 for service in auth rest realtime functions db templates-server; do

@@ -1110,6 +1110,15 @@ silently creating an authentication client:
 - Keeps decrypted UI propagation, field/CRDT conflict behavior, provider
   redirects, SMTP, functions, Push, and physical clients unclaimed until their
   separate connected drills run.
+- Makes the Organa Compose override authoritative for asymmetric authentication
+  instead of relying on the upstream key script's best-effort in-place
+  uncommenting. Auth receives the private signing set while PostgREST,
+  Realtime, Storage, and Edge Functions receive the matching verification
+  JWKS.
+- Extends key and full preflight stages to validate both generated asymmetric
+  gateway JWTs, the EC/legacy private-public key relationship, absence of the
+  EC private scalar from verification services, and equality of every resolved
+  verifier JWKS without exposing credential values.
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.

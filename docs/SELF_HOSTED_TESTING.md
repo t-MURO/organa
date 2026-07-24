@@ -113,6 +113,14 @@ Only `SUPABASE_PUBLISHABLE_KEY` is embedded in Organa. `SUPABASE_SECRET_KEY`,
 legacy service-role material, database credentials, signing keys, and
 scheduler secrets stay server-side.
 
+The key script also tries to uncomment asymmetric verification variables in
+the current upstream Compose file. Organa does not rely on that in-place edit:
+`docker-compose.organa.yml` explicitly passes the private signing set to Auth
+and the matching verification JWKS to PostgREST, Realtime, Storage, and Edge
+Functions. The server preflight validates the private/public key structure,
+matching EC and legacy entries, asymmetric gateway JWT shape, and resolved
+service wiring without printing any key material.
+
 Set the public URL contract in the server `.env`:
 
 ```text
