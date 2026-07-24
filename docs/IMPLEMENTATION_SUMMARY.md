@@ -1342,6 +1342,22 @@ No tests were added, changed, or run for this milestone.
   has no Android SDK; export-only Android evidence therefore remains the
   honest boundary.
 
+## Brain Dump Single-Enter Handling
+
+- The editable continuous note previously registered both a web Enter
+  keypress callback and `onSubmitEditing`, so one browser action could reach
+  next-bullet creation through two event paths.
+- Web now uses only its prevented Enter keypress path. iOS and Android keep
+  only the native `onSubmitEditing` path with `submitBehavior="submit"`, so one
+  action creates one next bullet without changing keyboard behavior on the
+  other platform.
+- All 151 existing tests, uncached strict TypeScript, the production web/PWA
+  build with 18 artifact checks, and both native Hermes exports pass. No test
+  files were added or changed.
+- A full local Gradle APK build remains paused because downloading the missing
+  Android SDK requires accepting Google's SDK License Agreement; no
+  third-party terms were accepted on the user's behalf.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

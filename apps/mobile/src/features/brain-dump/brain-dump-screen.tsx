@@ -260,7 +260,9 @@ function BulletEditor({
             onCreateNext();
           }
         }}
-        onSubmitEditing={onCreateNext}
+        onSubmitEditing={
+          Platform.OS === "web" ? undefined : onCreateNext
+        }
       />
       <Pressable
         accessibilityRole="button"

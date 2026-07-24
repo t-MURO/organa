@@ -19,6 +19,8 @@ The criterion-by-criterion status and evidence boundary is recorded in
 - [x] Focus mode and reminder deep links
 - [x] Optional Check-In mood/reflection/search/trends/reminder setting
 - [x] Continuous searchable Brain Dump and Yjs merge tests
+- [x] Platform-separated Brain Dump Enter handling so one web or native
+  submission creates exactly one next bullet
 - [x] Race-safe encrypted Brain Dump update compaction with exact-set locking,
   offline-safe retry, legacy-client compatibility, and bounded new delta rows
 - [x] Atomic cleanup of current structured Brain Dump deltas and history on
