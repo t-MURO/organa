@@ -421,7 +421,9 @@ Before the manual two-client drills, run the guarded backend contract verifier
 from the development machine. It creates two synthetic password-authenticated
 accounts through the administrator API, exercises the same RLS, trusted-device,
 reminder-ownership, Web Push storage, and deletion read-only contract used by
-local verification, and deletes both accounts in a `finally` cleanup.
+local verification, measures a two-session private Realtime mutation, recovers
+a deliberately missed event from durable ciphertext, and deletes both accounts
+in a `finally` cleanup.
 
 Create its ignored mode-600 configuration with a local editor:
 
@@ -450,9 +452,13 @@ payloads. Do not interrupt the run; if cleanup reports a failure, inspect and
 remove only synthetic Auth users whose addresses begin with `approval-`.
 
 Passing this command is evidence for the connected Auth configuration and
-backend authorization contract. It does not exercise real provider redirects,
-SMTP delivery, Realtime latency, Edge Function scheduling, browser Push, or
-physical-device behavior; perform the remaining drills below.
+backend authorization contract. It also proves one raw encrypted-record
+broadcast reaches a separate same-account session within the one-second target
+and that an unsubscribed session can recover a later ciphertext row with the
+app's overlapping durable cursor. It does not prove decrypted UI propagation,
+structured-field or Yjs merging, real provider redirects, SMTP delivery, Edge
+Function scheduling, browser Push, or physical-device behavior; perform the
+remaining drills below.
 
 1. Sign in by email OTP, then Google, Apple, and GitHub as each provider is
    configured.

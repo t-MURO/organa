@@ -1100,8 +1100,16 @@ silently creating an authentication client:
   synthetic-account deletion consent, checks the four intended Auth methods,
   and always attempts to remove created accounts.
 - Documents exactly which connected acceptance rows that verifier can support
-  and leaves provider redirects, SMTP, Realtime, functions, Push, and physical
-  behavior explicitly unclaimed until their direct drills run.
+  and leaves provider redirects, SMTP, app-level sync merging, functions, Push,
+  and physical behavior explicitly unclaimed until their direct drills run.
+- Extends connected verification with a second authenticated session on the
+  same disposable account. A private-channel drill checks the exact
+  content-free record hint, enforces the one-second mutation-to-peer target,
+  verifies durable ciphertext, disconnects the peer, and recovers a later
+  missed record through the app's overlapping timestamp cursor strategy.
+- Keeps decrypted UI propagation, field/CRDT conflict behavior, provider
+  redirects, SMTP, functions, Push, and physical clients unclaimed until their
+  separate connected drills run.
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.

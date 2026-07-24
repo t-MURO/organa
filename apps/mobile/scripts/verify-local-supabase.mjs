@@ -157,6 +157,19 @@ async function verifyDeviceApprovalContract() {
     "second account enrolled",
   );
 
+  if (verificationEnvironment.connected) {
+    await verifyRealtimeAndDurableReconciliation({
+      client: client1,
+      deviceId: trustedDeviceId,
+      deviceProof: trustedProof,
+      email: users[0].email,
+      keyId,
+      otherClient: client2,
+      password,
+      userId: users[0].id,
+    });
+  }
+
   noError(
     await client1.rpc("request_device_approval", {
       p_device_id: approvedDeviceId,
@@ -592,6 +605,221 @@ async function verifyDeviceApprovalContract() {
   );
 }
 
+async function verifyRealtimeAndDurableReconciliation({
+  client,
+  deviceId,
+  deviceProof,
+  email,
+  keyId,
+  otherClient,
+  password,
+  userId,
+}) {
+  const peer = createClient(apiUrl, publishableKey, clientOptions);
+  let channel;
+  try {
+    noError(
+      await peer.auth.signInWithPassword({ email, password }),
+      "second same-account session authenticated",
+    );
+    await peer.realtime.setAuth();
+
+    const realtimeRecordId = `realtime-${randomUUID()}`;
+    let resolveSignal;
+    const signalPromise = new Promise((resolveSignalPromise) => {
+      resolveSignal = resolveSignalPromise;
+    });
+    let resolveSubscription;
+    let rejectSubscription;
+    const subscriptionPromise = new Promise((resolve, reject) => {
+      resolveSubscription = resolve;
+      rejectSubscription = reject;
+    });
+    let subscriptionSettled = false;
+
+    channel = peer
+      .channel(`organa:${userId}:encrypted-records`, {
+        config: { private: true },
+      })
+      .on("broadcast", { event: "changed" }, ({ payload }) => {
+        if (
+          payload?.recordId === realtimeRecordId &&
+          payload?.recordType === "task"
+        ) {
+          resolveSignal({
+            payload,
+            receivedAt: performance.now(),
+          });
+        }
+      })
+      .subscribe((status) => {
+        if (subscriptionSettled) return;
+        if (status === "SUBSCRIBED") {
+          subscriptionSettled = true;
+          resolveSubscription();
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          subscriptionSettled = true;
+          rejectSubscription(
+            new Error("The private Realtime channel could not subscribe."),
+          );
+        }
+      });
+
+    await withTimeout(
+      subscriptionPromise,
+      15_000,
+      "The private Realtime channel did not subscribe within 15 seconds.",
+    );
+    ok(true, "private encrypted-record channel subscribed");
+
+    const realtimeTimestamp = new Date().toISOString();
+    const realtimeCiphertext = {
+      title: fakeRecordEnvelope(keyId, "R"),
+    };
+    const mutationStartedAt = performance.now();
+    noError(
+      await client.rpc("apply_encrypted_mutation", {
+        p_base_version: 0,
+        p_ciphertext: realtimeCiphertext,
+        p_created_at: realtimeTimestamp,
+        p_device_id: deviceId,
+        p_device_proof: deviceProof,
+        p_field_versions: { title: realtimeTimestamp },
+        p_mutation_id: randomUUID(),
+        p_operation: "upsert",
+        p_record_id: realtimeRecordId,
+        p_record_type: "task",
+      }),
+      "connected encrypted mutation applied",
+    );
+
+    const signal = await withTimeout(
+      signalPromise,
+      10_000,
+      "The encrypted-record broadcast was not received within 10 seconds.",
+    );
+    ok(
+      signal.payload.recordId === realtimeRecordId &&
+        signal.payload.recordType === "task" &&
+        sameJson(Object.keys(signal.payload).sort(), [
+          "recordId",
+          "recordType",
+        ]),
+      "Realtime broadcast exposes only the expected record hint",
+    );
+    const latencyMilliseconds = Math.round(
+      signal.receivedAt - mutationStartedAt,
+    );
+    ok(
+      latencyMilliseconds <= 1_000,
+      `encrypted change reached the active peer in ${latencyMilliseconds} ms`,
+    );
+
+    const realtimeRow = noError(
+      await peer
+        .from("encrypted_records")
+        .select("record_id,ciphertext,updated_at")
+        .eq("record_type", "task")
+        .eq("record_id", realtimeRecordId)
+        .single(),
+      "active peer loaded the durable encrypted record",
+    );
+    ok(
+      sameJson(realtimeRow.ciphertext, realtimeCiphertext),
+      "durable Realtime row remains ciphertext-only",
+    );
+    const crossAccountRows = noError(
+      await otherClient
+        .from("encrypted_records")
+        .select("record_id")
+        .eq("record_type", "task")
+        .eq("record_id", realtimeRecordId),
+      "cross-account encrypted-record read evaluated",
+    );
+    ok(
+      crossAccountRows.length === 0,
+      "RLS hides connected ciphertext from another account",
+    );
+    expectedError(
+      await otherClient.rpc("apply_encrypted_mutation", {
+        p_base_version: 0,
+        p_ciphertext: realtimeCiphertext,
+        p_created_at: realtimeTimestamp,
+        p_device_id: deviceId,
+        p_device_proof: deviceProof,
+        p_field_versions: { title: realtimeTimestamp },
+        p_mutation_id: randomUUID(),
+        p_operation: "upsert",
+        p_record_id: `cross-account-${randomUUID()}`,
+        p_record_type: "task",
+      }),
+      /device proof is invalid/i,
+      "cross-account encrypted mutation is rejected",
+    );
+
+    const removalStatus = await peer.removeChannel(channel);
+    channel = undefined;
+    ok(
+      removalStatus === "ok",
+      "second client disconnected before the missed-broadcast mutation",
+    );
+
+    const reconciliationRecordId = `reconcile-${randomUUID()}`;
+    const reconciliationTimestamp = new Date().toISOString();
+    const reconciliationCiphertext = {
+      details: fakeRecordEnvelope(keyId, "D"),
+    };
+    noError(
+      await client.rpc("apply_encrypted_mutation", {
+        p_base_version: 0,
+        p_ciphertext: reconciliationCiphertext,
+        p_created_at: reconciliationTimestamp,
+        p_device_id: deviceId,
+        p_device_proof: deviceProof,
+        p_field_versions: { details: reconciliationTimestamp },
+        p_mutation_id: randomUUID(),
+        p_operation: "upsert",
+        p_record_id: reconciliationRecordId,
+        p_record_type: "task",
+      }),
+      "encrypted mutation persisted while the peer was disconnected",
+    );
+
+    const cursor = overlapSyncCursor(realtimeRow.updated_at);
+    const reconciliationRows = noError(
+      await peer
+        .from("encrypted_records")
+        .select("record_id,ciphertext,updated_at")
+        .gt("updated_at", cursor)
+        .order("updated_at", { ascending: true })
+        .order("record_type", { ascending: true })
+        .order("record_id", { ascending: true })
+        .limit(100),
+      "disconnected peer ran durable cursor reconciliation",
+    );
+    const recovered = reconciliationRows.find(
+      (row) => row.record_id === reconciliationRecordId,
+    );
+    ok(
+      Boolean(recovered),
+      "durable reconciliation recovered the missed encrypted record",
+    );
+    ok(
+      sameJson(recovered?.ciphertext, reconciliationCiphertext),
+      "recovered record remains ciphertext-only",
+    );
+  } finally {
+    if (channel) {
+      await peer.removeChannel(channel).catch(() => undefined);
+    }
+    await peer.realtime.disconnect().catch(() => undefined);
+  }
+}
+
 function fakeRecoveryEnvelope(keyId, fill) {
   return {
     algorithm: "AES-256-GCM",
@@ -599,6 +827,44 @@ function fakeRecoveryEnvelope(keyId, fill) {
     keyId,
     version: 1,
   };
+}
+
+function fakeRecordEnvelope(keyId, fill) {
+  return {
+    algorithm: "AES-256-GCM",
+    combined: fill.repeat(80),
+    keyId,
+    version: 1,
+  };
+}
+
+function overlapSyncCursor(cursor) {
+  const timestamp = new Date(cursor).getTime();
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    throw new Error("The durable Realtime cursor is invalid.");
+  }
+  return new Date(timestamp - 1).toISOString();
+}
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+async function withTimeout(promise, timeoutMilliseconds, message) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(message)),
+          timeoutMilliseconds,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function ok(condition, label) {
