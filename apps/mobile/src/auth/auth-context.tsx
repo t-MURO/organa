@@ -64,14 +64,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
 
     let active = true;
-    void client.auth.getSession().then(({ data }) => {
-      if (active) {
-        setSession(data.session);
+    let authStateChanged = false;
+    void client.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (!active || authStateChanged) return;
+        if (error) {
+          setCallbackError(initialSessionErrorMessage);
+          setSession(null);
+        } else {
+          setSession(data.session);
+        }
         setLoading(false);
-      }
-    });
+      })
+      .catch(() => {
+        if (!active || authStateChanged) return;
+        setCallbackError(initialSessionErrorMessage);
+        setSession(null);
+        setLoading(false);
+      });
 
     const { data } = client.auth.onAuthStateChange((event, nextSession) => {
+      authStateChanged = true;
       setSession(nextSession);
       setLoading(false);
       if (event === "SIGNED_OUT") {
@@ -238,3 +252,6 @@ function oauthCallbackMessage(error: unknown) {
     ? error.message
     : "Sign-in could not be completed. Please try again.";
 }
+
+const initialSessionErrorMessage =
+  "Saved sign-in could not be opened. Please sign in again.";

@@ -246,7 +246,9 @@ export function TaskProvider({ children }: PropsWithChildren) {
       }
     }
 
-    void load();
+    void load().catch(() => {
+      if (active) sync.reportLocalReadFailure();
+    });
     return () => {
       active = false;
     };

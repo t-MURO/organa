@@ -133,7 +133,9 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       await Promise.all(bullets.map((bullet) => repository.upsert(bullet)));
     }
 
-    void load();
+    void load().catch(() => {
+      if (active) sync.reportLocalReadFailure();
+    });
     return () => {
       active = false;
     };

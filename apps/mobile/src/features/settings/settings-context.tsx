@@ -86,23 +86,28 @@ export function SettingsProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
-    void repository.initialize().then(async () => {
-      const stored = mergeSettingsPatch(
-        createUserSettings(),
-        (await repository.get()) ?? {},
-      );
-      if (!active) return;
-      settingsRef.current = stored;
-      setSettings(stored);
-      setLoading(false);
-      if (devices.reminderAuthorizationReady) {
-        void syncCheckInReminder(
-          reminderSettings(stored, devices.remindersAllowed),
-          false,
-          setCheckInReminderNotice,
+    void repository
+      .initialize()
+      .then(async () => {
+        const stored = mergeSettingsPatch(
+          createUserSettings(),
+          (await repository.get()) ?? {},
         );
-      }
-    });
+        if (!active) return;
+        settingsRef.current = stored;
+        setSettings(stored);
+        setLoading(false);
+        if (devices.reminderAuthorizationReady) {
+          void syncCheckInReminder(
+            reminderSettings(stored, devices.remindersAllowed),
+            false,
+            setCheckInReminderNotice,
+          );
+        }
+      })
+      .catch(() => {
+        if (active) sync.reportLocalReadFailure();
+      });
     return () => {
       active = false;
     };

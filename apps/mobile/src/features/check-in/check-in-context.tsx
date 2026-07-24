@@ -90,7 +90,9 @@ export function CheckInProvider({ children }: PropsWithChildren) {
       }
     }
 
-    void load();
+    void load().catch(() => {
+      if (active) sync.reportLocalReadFailure();
+    });
     return () => {
       active = false;
     };

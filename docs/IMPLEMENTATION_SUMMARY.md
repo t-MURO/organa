@@ -1586,6 +1586,24 @@ No tests were added, changed, or run for this milestone.
   overall delivery unsuccessful so reconciliation retries it.
 - No test files were added or changed for this milestone.
 
+## Fail-Closed Local Data Startup
+
+- Task, template, Check-In, settings, and Brain Dump startup reads previously
+  launched without rejection handlers. A repository failure could become an
+  unhandled promise, leave loading indefinitely, and expose other screens with
+  default state.
+- Every feature loader now reports repository initialization, listing, reading,
+  or migration-write failure to the sync health boundary.
+- Organa replaces the editable shell with an accessible local-data pause
+  screen. It explains that unread data was not replaced and asks the user to
+  reopen the app, preventing accidental writes over state that could not be
+  loaded safely.
+- Initial Supabase session lookup now handles returned and thrown errors,
+  releases the loading boundary, and presents a recovery message. A later auth
+  event takes precedence so the initial lookup cannot overwrite a newer
+  session.
+- No test files were added or changed for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

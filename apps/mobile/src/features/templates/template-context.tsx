@@ -179,7 +179,9 @@ export function TemplateProvider({ children }: PropsWithChildren) {
       const templates = await repository.list();
       if (active) dispatch({ type: "loaded", templates });
     }
-    void load();
+    void load().catch(() => {
+      if (active) sync.reportLocalReadFailure();
+    });
     return () => {
       active = false;
     };

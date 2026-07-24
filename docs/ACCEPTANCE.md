@@ -179,6 +179,13 @@ Local evidence:
   as one local/outbox unit; a failed durable commit leaves neither side and
   raises a sticky route-wide warning that does not falsely claim the change is
   safe
+- task, template, Check-In, settings, and Brain Dump startup reads handle
+  repository rejection explicitly; Organa enters an accessible fail-closed
+  local-data boundary that blocks editing instead of exposing empty/default
+  state that could overwrite unread records
+- a failed initial Supabase session lookup releases the authentication loading
+  state and shows a sign-in recovery message, while a newer auth-state event
+  cannot be overwritten by the older lookup result
 - remote delivery waits for the ordered local commit chain before applying a
   row, preventing a canonical Brain Dump snapshot from racing and overwriting
   the local projection of an encrypting CRDT delta; canonical deletion

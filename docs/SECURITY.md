@@ -324,6 +324,10 @@ wipe.
   outbox mutation in one owner-validating IndexedDB transaction or exclusive
   SQLite transaction. A failure rolls back the complete batch; the UI reports
   a sticky local-save warning instead of claiming the change remains safe.
+- If any feature repository cannot initialize or read its saved records, the
+  app enters a fail-closed local-data boundary. Editing and navigation are
+  withheld rather than presenting empty/default state that could overwrite
+  unread records; reopening the app is the recovery path.
 - Client commits are serialized in invocation order. Recurring completion and
   its next occurrence, recurring reopen and generated-occurrence deletion, and
   multi-record restores therefore cannot persist as half-applied local/outbox

@@ -68,8 +68,10 @@ export type SyncCommitChange =
 interface SyncContextValue {
   error: string;
   lastSyncedAt?: string;
+  localReadFailed: boolean;
   localSaveFailed: boolean;
   pending: number;
+  reportLocalReadFailure(): void;
   status: "local" | "offline" | "syncing" | "synced" | "error";
   commit(changes: SyncCommitChange[]): Promise<boolean>;
   commitDelete(
@@ -162,6 +164,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
     useState<SyncContextValue["status"]>("local");
   const [outboxError, setOutboxError] = useState("");
   const [readError, setReadError] = useState("");
+  const [localReadError, setLocalReadError] = useState("");
   const [storageError, setStorageError] = useState("");
   const [lastSyncedAt, setLastSyncedAt] = useState<string>();
 
@@ -865,12 +868,15 @@ export function SyncProvider({ children }: PropsWithChildren) {
         commitDelete,
         commitUpsert,
         compactBrainDumpUpdates,
-        error: readError || storageError || outboxError,
+        error: localReadError || readError || storageError || outboxError,
         flush,
         lastSyncedAt,
+        localReadFailed: Boolean(localReadError),
         localSaveFailed: Boolean(storageError),
         pending,
-        status: storageError || readError
+        reportLocalReadFailure: () =>
+          setLocalReadError(localReadErrorMessage),
+        status: localReadError || storageError || readError
           ? "error"
           : auth.localPreview
             ? "local"
@@ -885,6 +891,8 @@ export function SyncProvider({ children }: PropsWithChildren) {
 
 const localSaveErrorMessage =
   "A recent change could not be saved safely on this device.";
+const localReadErrorMessage =
+  "Saved data could not be opened safely on this device.";
 
 function defaultLocalChange(change: SyncCommitChange): LocalRecordChange {
   if (change.recordType === "brain_dump_update") {

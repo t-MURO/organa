@@ -58,6 +58,34 @@ export function AppShell() {
   const theme = effectiveMode === "dark" ? darkTheme : lightTheme;
   const styles = createStyles(theme, isWide);
 
+  if (sync.localReadFailed) {
+    return (
+      <AppShellThemeContext.Provider value={{ theme }}>
+        <SafeAreaView style={styles.safeArea}>
+          <StatusBar style={effectiveMode === "dark" ? "light" : "dark"} />
+          <View
+            accessibilityLiveRegion="assertive"
+            accessibilityRole="alert"
+            style={styles.localReadBoundary}
+          >
+            <View style={styles.localReadCard}>
+              <BrandMark />
+              <Text style={styles.localReadEyebrow}>LOCAL DATA PAUSED</Text>
+              <Text style={styles.localReadTitle}>
+                Your saved space did not open safely.
+              </Text>
+              <Text style={styles.localReadText}>
+                Organa has paused editing instead of replacing unread data.
+                Close and reopen the app to try again. Your account data has
+                not been deleted.
+              </Text>
+            </View>
+          </View>
+        </SafeAreaView>
+      </AppShellThemeContext.Provider>
+    );
+  }
+
   function cycleTheme() {
     const next =
       themeMode === "system"
@@ -425,6 +453,42 @@ function createStyles(theme: OrganaTheme, isWide: boolean) {
       fontSize: 13,
       lineHeight: 19,
       textAlign: "center",
+    },
+    localReadBoundary: {
+      alignItems: "center",
+      flex: 1,
+      justifyContent: "center",
+      padding: 24,
+    },
+    localReadCard: {
+      backgroundColor: theme.surface,
+      borderColor: theme.border,
+      borderRadius: 24,
+      borderWidth: 1,
+      gap: 16,
+      maxWidth: 520,
+      padding: isWide ? 40 : 28,
+      width: "100%",
+    },
+    localReadEyebrow: {
+      color: theme.must,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 11,
+      letterSpacing: 1.8,
+      marginTop: 12,
+    },
+    localReadTitle: {
+      color: theme.text,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: isWide ? 30 : 25,
+      letterSpacing: -0.8,
+      lineHeight: isWide ? 38 : 32,
+    },
+    localReadText: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 15,
+      lineHeight: 23,
     },
     shell: {
       backgroundColor: theme.background,
