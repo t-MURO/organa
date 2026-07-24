@@ -39,10 +39,35 @@ export function createTaskTemplate(
       ...input.task,
       title,
       details: input.task.details?.trim() || undefined,
+      dueAt: undefined,
+      dueDate: undefined,
+      occurrenceNumber: undefined,
       plannedFor: undefined,
+      previousOccurrenceId: undefined,
+      seriesId: undefined,
     },
     createdAt: timestamp,
     updatedAt: timestamp,
+  };
+}
+
+export function instantiateTaskTemplate(
+  template: TaskTemplate,
+  plannedFor: string,
+): CreateTaskInput {
+  const hasEnabledReminder = template.task.reminders?.some(
+    (reminder) => reminder.enabled,
+  );
+  const dueAt =
+    hasEnabledReminder && template.task.scheduledTime
+      ? localDateTime(plannedFor, template.task.scheduledTime)
+      : undefined;
+
+  return {
+    ...template.task,
+    dueAt,
+    dueDate: dueAt ? plannedFor : undefined,
+    plannedFor,
   };
 }
 
@@ -60,6 +85,30 @@ export function updateTaskTemplate(
     ...updated,
     createdAt: template.createdAt,
   };
+}
+
+function localDateTime(date: string, time: string) {
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  const timeMatch = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+  if (!dateMatch || !timeMatch) {
+    throw new Error("A template requires a valid local date and time.");
+  }
+
+  const value = new Date(
+    Number(dateMatch[1]),
+    Number(dateMatch[2]) - 1,
+    Number(dateMatch[3]),
+    Number(timeMatch[1]),
+    Number(timeMatch[2]),
+  );
+  if (
+    value.getFullYear() !== Number(dateMatch[1]) ||
+    value.getMonth() !== Number(dateMatch[2]) - 1 ||
+    value.getDate() !== Number(dateMatch[3])
+  ) {
+    throw new Error("A template requires a valid local date and time.");
+  }
+  return value.toISOString();
 }
 
 export function searchTaskTemplates(

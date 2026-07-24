@@ -1,5 +1,6 @@
 import {
   formatLocalDate,
+  instantiateTaskTemplate,
   searchTaskTemplates,
   type TaskKind,
   type TaskPriority,
@@ -81,10 +82,7 @@ export function TemplateScreen() {
   }
 
   function useTemplate(template: TaskTemplate) {
-    addTask({
-      ...template.task,
-      plannedFor: formatLocalDate(new Date()),
-    });
+    addTask(instantiateTaskTemplate(template, formatLocalDate(new Date())));
     showNotice(`Added "${template.task.title}" to today.`);
   }
 

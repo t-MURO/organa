@@ -37,6 +37,7 @@ export {
 
 export {
   createTaskTemplate,
+  instantiateTaskTemplate,
   searchTaskTemplates,
   updateTaskTemplate,
 } from "./templates";
