@@ -26,6 +26,12 @@ Core web use requires:
 
 If durable CryptoKey storage is unavailable, Organa keeps the key in memory and
 the user must restore with the recovery code after that browser session.
+Supported browsers also encrypt auth sessions and per-device proof secrets
+with non-extractable wrapping keys in IndexedDB. Existing plaintext
+`localStorage` values migrate on first use. If protected storage is blocked,
+Organa may retain the current session through the browser's complete Storage
+implementation; that degraded path requires explicit release-browser
+acceptance and is not an XSS defense.
 
 ## Capability Matrix
 

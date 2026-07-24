@@ -30,6 +30,7 @@ Committed and verified milestones:
 - Fail-closed native app-lock startup and foreground transitions
 - Explicit controlled-beta OS and browser support boundaries
 - Reproducible internal-preview and store-release packaging boundaries
+- Protected browser session/device-proof persistence and a store-facing data map
 - Deterministic local performance checks against a 2,000-task dataset
 - Fail-closed encrypted-backup domain validation
 - Byte-for-byte encrypted-row preservation across database upgrades
@@ -826,6 +827,37 @@ creation without pretending that credentials or store approval already exist:
 - Expo project linking, signing credentials, real artifacts, privacy
   declarations, security/legal approval, and store submission remain external
   gates.
+
+## Browser Secret Storage And Privacy Map Milestone
+
+This milestone hardens browser account material and replaces generic privacy
+claims with an evidence-based inventory:
+
+- Supabase auth sessions and per-device proof secrets move from plaintext
+  `localStorage` into a shared protected browser vault when IndexedDB and Web
+  Crypto are available.
+- Each value is encrypted with AES-GCM under a fresh non-extractable wrapping
+  key cloned through IndexedDB. The storage key is authenticated as additional
+  data, preventing records from being swapped under another key.
+- Existing local-storage values migrate on first read. A newer fallback value
+  remains authoritative if a prior protected write failed, avoiding rollback
+  to a stale session or device identity.
+- Browser and native legacy-device migration preserves the existing opaque ID
+  and creation time but never lets a missing or empty old proof override the
+  newly generated secret.
+- Restricted browsers retain the existing complete-Storage or memory fallback;
+  documentation is explicit that this is a degraded compatibility path and
+  that protected at-rest storage is not an XSS boundary.
+- Account deletion removes protected device identity through the existing
+  independent cleanup/retry sequence. Supabase sign-out removes protected auth
+  entries through the storage adapter.
+- `docs/PRIVACY_DATA_MAP.md` maps local-only plaintext, end-to-end-encrypted
+  content, server-readable operational metadata, runtime processors, actual
+  retention behavior, user controls, absent data categories, and conservative
+  Apple/Google declaration candidates.
+- The data map leaves E2EE health/mood classification, provider request logs,
+  processor-sharing treatment, operational metadata retention, public policy,
+  and store-account submission for explicit legal/security sign-off.
 
 ## Task Semantics Milestone
 

@@ -103,6 +103,8 @@ controlled-beta checklist. The requirement-by-requirement evidence map is in
 [docs/REQUIREMENTS_TRACEABILITY.md](./docs/REQUIREMENTS_TRACEABILITY.md).
 Artifact profiles, signing handoff, physical checks, and store submission are
 defined in [docs/RELEASE_RUNBOOK.md](./docs/RELEASE_RUNBOOK.md).
+The exact local/cloud data inventory and store-declaration draft are in
+[docs/PRIVACY_DATA_MAP.md](./docs/PRIVACY_DATA_MAP.md).
 
 ## Security
 

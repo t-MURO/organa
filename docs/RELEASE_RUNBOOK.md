@@ -5,6 +5,8 @@ Status prepared on 2026-07-24.
 This runbook turns a reviewed Organa commit into reproducible preview and
 store artifacts. It does not replace the connected-backend, physical-device,
 security, legal, or store review gates in `docs/ACCEPTANCE.md`.
+The engineering disclosure inventory and unresolved declaration decisions are
+in `docs/PRIVACY_DATA_MAP.md`.
 
 ## Release Boundaries
 
@@ -171,6 +173,7 @@ Every candidate must record:
 | Web deployment | Immutable deployment ID and artifact checksum |
 | Backend | EU project reference and migration revision |
 | Review | Security, legal, privacy, and store-review status |
+| Privacy | Reviewed data-map revision, policy URL, and store declaration exports |
 | Devices | Model, OS version, and completed physical checks |
 | Browsers | Browser/version and completed PWA/Web Push checks |
 

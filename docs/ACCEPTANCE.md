@@ -43,6 +43,9 @@ Status recorded on 2026-07-24.
   resume, and cold start with one-time PKCE exchange deduplication
 - [x] Account-scoped content-key readiness and runtime validation for native
   and web key-vault records
+- [x] Browser auth sessions and device proof secrets migrate from plaintext
+  local storage into record-bound AES-GCM IndexedDB entries with
+  non-extractable wrapping keys where supported
 
 Local evidence:
 
@@ -151,6 +154,11 @@ Local evidence:
   strict TypeScript, the production PWA export, both Hermes exports, and the
   production dependency audit pass; no tests were added, changed, or run for
   the release-packaging milestone
+- runtime dependency, logging, endpoint, permission, Push-payload, and schema
+  inspection found no analytics, advertising, session-recording, automatic
+  crash-reporting, or user-content logging path; the engineering privacy map
+  records actual local/cloud data, metadata, retention, processors, user
+  controls, and unresolved store/legal decisions
 - `pnpm verify:platform` passes 19 checks for source and generated target
   values, sensitive Android manifest boundaries, the browser policy, and both
   mobile widget implementations

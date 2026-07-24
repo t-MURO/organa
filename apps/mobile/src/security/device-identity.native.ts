@@ -15,7 +15,11 @@ export async function getDeviceIdentity(): Promise<DeviceIdentity> {
       return parsed as DeviceIdentity;
     }
     if (parsed.id && parsed.createdAt) {
-      const migrated = { ...createDeviceIdentity(), ...parsed };
+      const migrated = {
+        ...createDeviceIdentity(),
+        createdAt: parsed.createdAt,
+        id: parsed.id,
+      };
       await SecureStore.setItemAsync(key, JSON.stringify(migrated));
       return migrated;
     }

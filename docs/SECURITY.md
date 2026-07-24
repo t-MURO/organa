@@ -127,6 +127,15 @@ needed for offline use. They rely on device encryption, OS account security,
 and optional app lock. End-to-end encryption protects synchronized cloud
 payloads; it does not make a compromised unlocked device safe.
 
+Native auth sessions and per-device proof secrets use platform secure storage.
+On supported web clients, auth sessions and device proof secrets migrate out
+of plaintext local storage into AES-GCM records with non-extractable wrapping
+keys cloned through IndexedDB. Record keys are authenticated as additional
+data to prevent record swapping. This is at-rest hardening, not an XSS
+boundary: malicious same-origin script can still act as the signed-in user.
+Browsers that reject durable CryptoKey storage use a memory or legacy Storage
+fallback and require explicit release-browser validation.
+
 ## Server-Readable Metadata
 
 Supabase can read:
@@ -289,6 +298,9 @@ automatic crash telemetry. Do not add logs containing:
 - recovery codes
 - content keys
 - encrypted envelopes paired with keys
+
+The complete engineering data inventory, actual retention boundaries, and
+store-declaration draft are in `docs/PRIVACY_DATA_MAP.md`.
 
 ## Required External Review
 
