@@ -37,6 +37,8 @@ Status recorded on 2026-07-24.
   documented browser and platform capability matrix
 - [x] Native OAuth callback recovery across attached browser sessions, app
   resume, and cold start with one-time PKCE exchange deduplication
+- [x] Account-scoped content-key readiness and runtime validation for native
+  and web key-vault records
 
 Local evidence:
 
@@ -60,6 +62,9 @@ Local evidence:
 - the app-lock integration contract keeps startup loading separate from
   foreground locking, restores the unlock control after thrown native errors,
   and pins every private data provider inside the loading/locked boundary
+- the security provider exposes an in-memory content key only when its atomic
+  owner ID matches the active account or isolated local-preview identity;
+  malformed persisted keys fail closed
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,

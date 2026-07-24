@@ -57,6 +57,9 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
 Native:
 
 - The content key is stored with Expo SecureStore.
+- Parsed key-vault values must contain non-empty content-key identifiers and
+  encoded key material. Malformed values fail closed instead of entering the
+  private application boundary.
 - A random per-device proof secret is stored with the device identity in Expo
   SecureStore.
 - Optional app lock uses platform local authentication and device fallback.
@@ -73,6 +76,8 @@ Web:
 
 - A non-extractable Web Crypto AES-GCM wrapping key and wrapped content key are
   stored in a separate IndexedDB database.
+- Decrypted key-vault values receive the same runtime validation as native
+  values before use.
 - The per-device proof secret is stored with the browser device identity in
   local storage. It is an authorization control, not an encryption key.
 - If durable CryptoKey storage is blocked, the key remains memory-only and the
@@ -84,6 +89,12 @@ Web:
   are sent only through a proof-gated RPC. They are capability-bearing
   operational metadata, not user content, and authenticated clients cannot
   select the stored rows directly.
+
+In-memory content keys are atomically paired with their owning account ID (or
+the isolated local-preview identity). The security context exposes a key only
+when that owner matches the active authentication state, so an account change
+closes encryption, decryption, synchronization, and private providers before
+asynchronous key initialization can finish.
 
 Reminder authorization:
 

@@ -56,13 +56,28 @@ export interface DeviceApprovalRequest {
   requestedAt: string;
 }
 
+interface ScopedContentKey {
+  key: ContentKey;
+  ownerId: string;
+}
+
+const localPreviewOwnerId = "local-preview";
+
 const SecurityContext = createContext<SecurityContextValue | undefined>(
   undefined,
 );
 
 export function SecurityProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
-  const [contentKey, setContentKey] = useState<ContentKey | null>(null);
+  const activeOwnerId = auth.localPreview
+    ? localPreviewOwnerId
+    : (auth.user?.id ?? null);
+  const [scopedContentKey, setScopedContentKey] =
+    useState<ScopedContentKey | null>(null);
+  const contentKey =
+    activeOwnerId && scopedContentKey?.ownerId === activeOwnerId
+      ? scopedContentKey.key
+      : null;
   const [device, setDevice] = useState<DeviceIdentity | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -75,11 +90,13 @@ export function SecurityProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
+    const userId = auth.user?.id;
+    const ownerId = auth.localPreview ? localPreviewOwnerId : userId;
 
     async function initialize() {
       setLoading(true);
       setError("");
-      setContentKey(null);
+      setScopedContentKey(null);
       setRecoveryCode(undefined);
       setRecoveryEnvelope(null);
       setRestoreRequired(false);
@@ -91,20 +108,23 @@ export function SecurityProvider({ children }: PropsWithChildren) {
       if (auth.localPreview) {
         const hierarchy = await createKeyHierarchy();
         if (!active) return;
-        setContentKey(hierarchy.contentKey);
+        setScopedContentKey({
+          key: hierarchy.contentKey,
+          ownerId: localPreviewOwnerId,
+        });
         setLoading(false);
         return;
       }
 
-      if (!auth.user || !supabase) {
+      if (!userId || !ownerId || !supabase) {
         setLoading(false);
         return;
       }
 
-      const storedKey = await contentKeyVault.get(auth.user.id);
+      const storedKey = await contentKeyVault.get(userId);
       if (storedKey) {
         if (!active) return;
-        setContentKey(storedKey);
+        setScopedContentKey({ key: storedKey, ownerId });
         setLoading(false);
         void registerDevice(nextDevice).catch(() => {
           if (active) {
@@ -117,7 +137,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
       const result = await supabase
         .from("account_keys")
         .select("key_id,recovery_key_envelope")
-        .eq("user_id", auth.user.id)
+        .eq("user_id", userId)
         .maybeSingle();
       if (result.error) throw result.error;
       if (!active) return;
@@ -127,7 +147,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
           result.data.recovery_key_envelope as RecoveryKeyEnvelope,
         );
         setApprovalRequest(
-          await loadDeviceApproval(auth.user.id, nextDevice.id),
+          await loadDeviceApproval(userId, nextDevice.id),
         );
         setRestoreRequired(true);
         setLoading(false);
@@ -136,7 +156,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
 
       const hierarchy = await createKeyHierarchy();
       if (!active) return;
-      setContentKey(hierarchy.contentKey);
+      setScopedContentKey({ key: hierarchy.contentKey, ownerId });
       setRecoveryCode(hierarchy.recoveryCode);
       setRecoveryEnvelope(hierarchy.recoveryEnvelope);
       setLoading(false);
@@ -155,7 +175,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [auth.localPreview, auth.user]);
+  }, [auth.localPreview, auth.user?.id]);
 
   useEffect(() => {
     if (
@@ -211,7 +231,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
     const recoveryProof = await createRecoveryEnrollmentProof(code);
     await registerDevice(device, recoveryProof);
     await contentKeyVault.set(auth.user.id, restoredKey);
-    setContentKey(restoredKey);
+    setScopedContentKey({ key: restoredKey, ownerId: auth.user.id });
     setRestoreRequired(false);
   }
 
@@ -275,7 +295,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
       throw completion.error;
     }
 
-    setContentKey(restoredKey);
+    setScopedContentKey({ key: restoredKey, ownerId: auth.user.id });
     setApprovalRequest(null);
     setRestoreRequired(false);
   }

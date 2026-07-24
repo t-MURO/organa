@@ -460,6 +460,9 @@ Implemented user-facing areas:
 - Native sessions and content keys use platform secure storage.
 - Web content keys are wrapped with a non-extractable Web Crypto key stored in
   IndexedDB.
+- In-memory content keys are account-scoped atomically and become unavailable
+  as soon as the active authentication identity changes; malformed native or
+  web key-vault records are rejected before private providers can open.
 - Onboarding generates a recovery code and requires storage confirmation.
 - New devices can restore the content key locally with the recovery code.
 - New devices can alternatively request a 15-minute approval from an existing
@@ -615,6 +618,9 @@ Major implementation commits:
 
 ## Latest Security Hardening
 
+- Account-bound in-memory content keys that close the private-data boundary
+  immediately during account changes
+- Runtime validation for decrypted native and web content-key vault records
 - Recovery-authorized device enrollment and per-device write proofs
 - One-time encrypted trusted-device approval with 15-minute expiry,
   target-binding, explicit rejection, and envelope erasure after claim

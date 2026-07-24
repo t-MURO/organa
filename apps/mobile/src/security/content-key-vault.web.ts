@@ -1,6 +1,7 @@
 import type { ContentKey } from "@organa/crypto";
 
 import type { ContentKeyVault } from "./content-key-vault.types";
+import { parseContentKey } from "./content-key-vault.validation";
 
 interface WrappedContentKey {
   ciphertext: ArrayBuffer;
@@ -22,9 +23,7 @@ export const contentKeyVault: ContentKeyVault = {
         wrapped.wrappingKey,
         wrapped.ciphertext,
       );
-      return JSON.parse(
-        new TextDecoder().decode(plaintext),
-      ) as ContentKey;
+      return parseContentKey(new TextDecoder().decode(plaintext));
     } catch {
       return memoryFallback.get(userId) ?? null;
     }
