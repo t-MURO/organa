@@ -207,6 +207,19 @@ Local evidence:
   acknowledge delivery only after their repository operation succeeds;
   reconciliation does not advance its cursor past a failed local write, and
   the failure remains visible through sync health for a later retry
+- the complete private provider tree is keyed to the authenticated owner and
+  remounts on an account change, so state, repositories, subscriptions,
+  reminder coordinators, and in-flight provider bookkeeping cannot be reused
+  by the next account
+- every synchronized feature captures its local record revision before waiting
+  for startup hydration, rejects a stale remote operation before its repository
+  write, and checks the revision again before UI or reminder effects; a local
+  action in either asynchronous handoff therefore remains authoritative
+- Brain Dump applies local reducer actions to an eager state reference, runs
+  remote bullet and update callbacks through one ordered queue, and retries a
+  merged Yjs projection when typing overlaps a repository write; deletion
+  tombstones reject pre-delete callbacks but can be replaced by a later
+  authoritative restore of the same bullet
 - concurrent initial, realtime, acknowledgement, and reconciliation pulls are
   serialized per record; the highest observed server version wins even when an
   older request finishes later, while each active subscriber independently
@@ -218,6 +231,11 @@ Local evidence:
 - all 151 existing tests pass unchanged, strict TypeScript passes, production
   web/PWA artifact verification passes 18 checks with 22 precached assets, and
   iOS and Android Hermes exports succeed after the atomic persistence changes
+- after provider hydration/realtime ordering hardening, all 151 existing tests,
+  uncached strict TypeScript, the Yjs development-runtime verifier, all four
+  100 ms performance contracts, the 18-check/22-URL production PWA verifier,
+  both native Hermes exports, and all 19 platform checks pass; no test file was
+  changed
 - strict TypeScript, production web/PWA artifact verification, and iOS/Android
   Hermes exports pass after the sync pagination and health changes; no test
   files were changed

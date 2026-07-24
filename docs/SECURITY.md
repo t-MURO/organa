@@ -344,6 +344,14 @@ wipe.
   is withheld while that record has an encrypting or queued local mutation,
   then repulled after the final acknowledgement so an older server snapshot
   cannot replace optimistic offline state.
+- The authenticated account ID keys the complete private provider subtree.
+  Changing owners unmounts feature state, repositories, subscriptions,
+  reminders, and provider-local queues before the next owner's subtree opens.
+- Task, template, Check-In, settings, and Brain Dump listeners capture local
+  revision state before waiting for repository hydration. They reject a stale
+  callback before writing and recheck after each asynchronous write before
+  dispatching UI or reminder effects, so a local action during either window
+  cannot be overwritten by an older remote delivery.
 - User-originated structured changes commit their local record and encrypted
   outbox mutation in one owner-validating IndexedDB transaction or exclusive
   SQLite transaction. A failure rolls back the complete batch; the UI reports
@@ -373,6 +381,12 @@ wipe.
 - Previous encrypted versions are retained for seven days.
 - Mutation IDs make outbox retries idempotent.
 - Yjs updates make Brain Dump edits commutative and conflict-free.
+- Brain Dump remote snapshots, deltas, and deletes share one ordered provider
+  queue. Local actions update an eager reducer reference, and a concurrent
+  local edit causes the remote persistence path to merge the newest Yjs
+  projection and retry before acknowledgement. A delete tombstone blocks
+  callbacks delivered before that delete while allowing a later authoritative
+  server restore to reopen the same bullet ID.
 - Yjs is loaded once, on first CRDT use, rather than during Expo server
   rendering; `pnpm verify:yjs-runtime` guards against duplicate runtime
   evaluation.

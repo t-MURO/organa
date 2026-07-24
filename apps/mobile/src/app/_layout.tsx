@@ -9,7 +9,7 @@ import Head from "expo-router/head";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthBoundary } from "../auth/auth-boundary";
-import { AuthProvider } from "../auth/auth-context";
+import { AuthProvider, useAuth } from "../auth/auth-context";
 import { AppShell } from "../components/app-shell";
 import { BrainDumpProvider } from "../features/brain-dump/brain-dump-context";
 import { CheckInProvider } from "../features/check-in/check-in-context";
@@ -54,40 +54,49 @@ export default function RootLayout() {
         <PwaUpdateCoordinator />
         <AuthProvider>
           <AuthBoundary>
-            <AppLockProvider>
-              <AppLockBoundary>
-                <SecurityProvider>
-                  <SecurityBoundary>
-                    <AccountLifecycleProvider>
-                      <AccountLifecycleBoundary>
-                        <SyncProvider>
-                          <DeviceProvider>
-                            <SettingsProvider>
-                              <InteractionFeedbackProvider>
-                                <TaskProvider>
-                                  <TemplateProvider>
-                                    <BrainDumpProvider>
-                                      <CheckInProvider>
-                                        <NotificationCoordinator />
-                                        <WidgetCoordinator />
-                                        <AppShell />
-                                      </CheckInProvider>
-                                    </BrainDumpProvider>
-                                  </TemplateProvider>
-                                </TaskProvider>
-                              </InteractionFeedbackProvider>
-                            </SettingsProvider>
-                          </DeviceProvider>
-                        </SyncProvider>
-                      </AccountLifecycleBoundary>
-                    </AccountLifecycleProvider>
-                  </SecurityBoundary>
-                </SecurityProvider>
-              </AppLockBoundary>
-            </AppLockProvider>
+            <AccountApp />
           </AuthBoundary>
         </AuthProvider>
       </SafeAreaProvider>
     </>
+  );
+}
+
+function AccountApp() {
+  const auth = useAuth();
+  const ownerId = auth.user?.id ?? "local-preview";
+
+  return (
+    <AppLockProvider key={ownerId}>
+      <AppLockBoundary>
+        <SecurityProvider>
+          <SecurityBoundary>
+            <AccountLifecycleProvider>
+              <AccountLifecycleBoundary>
+                <SyncProvider>
+                  <DeviceProvider>
+                    <SettingsProvider>
+                      <InteractionFeedbackProvider>
+                        <TaskProvider>
+                          <TemplateProvider>
+                            <BrainDumpProvider>
+                              <CheckInProvider>
+                                <NotificationCoordinator />
+                                <WidgetCoordinator />
+                                <AppShell />
+                              </CheckInProvider>
+                            </BrainDumpProvider>
+                          </TemplateProvider>
+                        </TaskProvider>
+                      </InteractionFeedbackProvider>
+                    </SettingsProvider>
+                  </DeviceProvider>
+                </SyncProvider>
+              </AccountLifecycleBoundary>
+            </AccountLifecycleProvider>
+          </SecurityBoundary>
+        </SecurityProvider>
+      </AppLockBoundary>
+    </AppLockProvider>
   );
 }

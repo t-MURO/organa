@@ -203,6 +203,8 @@ export function TaskProvider({ children }: PropsWithChildren) {
     tasks: [],
   });
   const [reminderNotice, setReminderNotice] = useState("");
+  const hydration = useRef<Promise<void>>(Promise.resolve());
+  const localVersions = useRef(new Map<string, number>());
   const reminderAuthorizationRef = useRef({
     allowed: devices.remindersAllowed,
     ready: devices.reminderAuthorizationReady,
@@ -218,6 +220,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
+    localVersions.current.clear();
 
     async function load() {
       await repository.initialize();
@@ -254,7 +257,9 @@ export function TaskProvider({ children }: PropsWithChildren) {
       }
     }
 
-    void load().catch(() => {
+    const loading = load();
+    hydration.current = loading.catch(() => undefined);
+    void loading.catch(() => {
       if (active) sync.reportLocalReadFailure();
     });
     return () => {
@@ -282,29 +287,39 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
   useEffect(
     () =>
-      sync.subscribe<Task>("task", (change) =>
-        reconcileRemoteTaskChange(change, {
+      sync.subscribe<Task>("task", async (change) => {
+        const localVersion =
+          localVersions.current.get(change.recordId) ?? 0;
+        await hydration.current;
+        const isCurrent = () =>
+          (localVersions.current.get(change.recordId) ?? 0) === localVersion;
+        if (!isCurrent()) return;
+        await reconcileRemoteTaskChange(change, {
           cancelNotifications: (id) =>
-            cancelNotifications(id, namespace, setReminderNotice),
+            isCurrent()
+              ? cancelNotifications(id, namespace, setReminderNotice)
+              : undefined,
           remove: async (id) => {
             await repository.remove(id);
-            dispatch({ type: "removed", id });
+            if (isCurrent()) dispatch({ type: "removed", id });
           },
           syncNotifications: (task) =>
-            syncNotifications(
-              task,
-              namespace,
-              false,
-              devices.remindersAllowed,
-              devices.reminderAuthorizationReady,
-              setReminderNotice,
-            ),
+            isCurrent()
+              ? syncNotifications(
+                  task,
+                  namespace,
+                  false,
+                  devices.remindersAllowed,
+                  devices.reminderAuthorizationReady,
+                  setReminderNotice,
+                )
+              : undefined,
           upsert: async (task) => {
             await repository.upsert(task);
-            dispatch({ type: "upserted", task });
+            if (isCurrent()) dispatch({ type: "upserted", task });
           },
-        }),
-      ),
+        });
+      }),
     [
       devices.reminderAuthorizationReady,
       devices.remindersAllowed,
@@ -313,8 +328,16 @@ export function TaskProvider({ children }: PropsWithChildren) {
     ],
   );
 
+  function rememberLocalChange(taskId: string) {
+    localVersions.current.set(
+      taskId,
+      (localVersions.current.get(taskId) ?? 0) + 1,
+    );
+  }
+
   function addTask(input: CreateTaskInput) {
     const task = createTask(input, makeId());
+    rememberLocalChange(task.id);
     dispatch({ type: "upserted", task });
     void sync.commitUpsert("task", task.id, task);
     syncNotifications(
@@ -331,6 +354,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
   function editTask(task: Task, input: CreateTaskInput) {
     const updated = updateTask(task, input);
+    rememberLocalChange(updated.id);
     dispatch({ type: "upserted", task: updated });
     void sync.commitUpsert("task", updated.id, updated, task);
     syncNotifications(
@@ -345,6 +369,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
   }
 
   function removeTask(id: string) {
+    rememberLocalChange(id);
     dispatch({ type: "removed", id });
     void sync.commitDelete("task", id);
     cancelNotifications(id, namespace, setReminderNotice);
@@ -353,6 +378,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
   async function restoreTasks(tasks: Task[]) {
     const current = await repository.list();
     const changes = selectRestoreChanges(current, tasks);
+    changes.forEach(({ value }) => rememberLocalChange(value.id));
     const committed = await sync.commit(
       changes.map(({ previous, value }) => ({
         operation: "upsert",
@@ -381,6 +407,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     const confirmed = confirmMedicationDose(task);
     if (confirmed === task) return;
 
+    rememberLocalChange(confirmed.id);
     dispatch({ type: "upserted", task: confirmed });
     void sync.commitUpsert("task", confirmed.id, confirmed, task);
   }
@@ -393,6 +420,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
           item.previousOccurrenceId === task.id && !item.completedAt,
       );
 
+      rememberLocalChange(reopened.id);
       dispatch({ type: "upserted", task: reopened });
       syncNotifications(
         reopened,
@@ -403,6 +431,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
         setReminderNotice,
       );
       if (generatedOccurrence) {
+        rememberLocalChange(generatedOccurrence.id);
         dispatch({ type: "removed", id: generatedOccurrence.id });
         cancelNotifications(
           generatedOccurrence.id,
@@ -435,6 +464,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
       (item) => item.previousOccurrenceId === task.id,
     );
     const result = completeTaskOccurrence(task, makeId());
+    rememberLocalChange(result.completedTask.id);
     dispatch({ type: "upserted", task: result.completedTask });
     syncNotifications(
       result.completedTask,
@@ -447,6 +477,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     feedback.completed();
 
     if (result.nextTask && !existingOccurrence) {
+      rememberLocalChange(result.nextTask.id);
       dispatch({ type: "upserted", task: result.nextTask });
       syncNotifications(
         result.nextTask,
@@ -482,6 +513,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     const nextTask = toggleSubtaskCompletion(task, subtaskId);
     if (nextTask === task) return;
 
+    rememberLocalChange(nextTask.id);
     dispatch({ type: "upserted", task: nextTask });
     void sync.commitUpsert("task", nextTask.id, nextTask, task);
     syncNotifications(

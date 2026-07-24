@@ -83,6 +83,8 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState(() => createUserSettings());
   const settingsRef = useRef(settings);
+  const hydration = useRef<Promise<void>>(Promise.resolve());
+  const localVersion = useRef(0);
   const [checkInReminderNotice, setCheckInReminderNotice] = useState("");
 
   useEffect(() => {
@@ -91,7 +93,8 @@ export function SettingsProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     let active = true;
-    void repository
+    localVersion.current = 0;
+    const loading = repository
       .initialize()
       .then(async () => {
         const stored = mergeSettingsPatch(
@@ -110,10 +113,11 @@ export function SettingsProvider({ children }: PropsWithChildren) {
             setCheckInReminderNotice,
           );
         }
-      })
-      .catch(() => {
-        if (active) sync.reportLocalReadFailure();
       });
+    hydration.current = loading.catch(() => undefined);
+    void loading.catch(() => {
+      if (active) sync.reportLocalReadFailure();
+    });
     return () => {
       active = false;
     };
@@ -136,9 +140,13 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   useEffect(
     () =>
       sync.subscribe<Partial<UserSettings>>("settings", async (change) => {
+        const observedLocalVersion = localVersion.current;
+        await hydration.current;
         if (change.operation === "delete" || !change.value) return;
+        if (localVersion.current !== observedLocalVersion) return;
         const next = mergeSettingsPatch(settingsRef.current, change.value);
         await repository.upsert(next);
+        if (localVersion.current !== observedLocalVersion) return;
         settingsRef.current = next;
         setSettings(next);
         if (devices.reminderAuthorizationReady) {
@@ -161,6 +169,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   function update(input: UserSettingsInput) {
     const previous = settingsRef.current;
     const next = updateUserSettings(previous, input);
+    localVersion.current += 1;
     settingsRef.current = next;
     setSettings(next);
     void sync.commitUpsert("settings", next.id, next, previous);
@@ -177,6 +186,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
 
   async function restore(next: UserSettings) {
     const previous = settingsRef.current;
+    localVersion.current += 1;
     const committed = await sync.commitUpsert(
       "settings",
       next.id,

@@ -87,9 +87,11 @@ export function CheckInProvider({ children }: PropsWithChildren) {
     entries: [],
   });
   const hydration = useRef<Promise<void>>(Promise.resolve());
+  const localVersions = useRef(new Map<string, number>());
 
   useEffect(() => {
     let active = true;
+    localVersions.current.clear();
 
     async function load() {
       await repository.initialize();
@@ -127,10 +129,21 @@ export function CheckInProvider({ children }: PropsWithChildren) {
   useEffect(
     () =>
       sync.subscribe<CheckInEntry>("check_in", async (change) => {
+        const localVersion =
+          localVersions.current.get(change.recordId) ?? 0;
         await hydration.current;
+        if (
+          (localVersions.current.get(change.recordId) ?? 0) !== localVersion
+        ) {
+          return;
+        }
         if (change.operation === "delete") {
           await repository.remove(change.recordId);
-          dispatch({ type: "removed", id: change.recordId });
+          if (
+            (localVersions.current.get(change.recordId) ?? 0) === localVersion
+          ) {
+            dispatch({ type: "removed", id: change.recordId });
+          }
           return;
         }
         if (!change.value) return;
@@ -138,7 +151,11 @@ export function CheckInProvider({ children }: PropsWithChildren) {
           throw new Error("The synchronized Check-In ID is invalid.");
         }
         await repository.upsert(change.value);
-        dispatch({ type: "upserted", entry: change.value });
+        if (
+          (localVersions.current.get(change.recordId) ?? 0) === localVersion
+        ) {
+          dispatch({ type: "upserted", entry: change.value });
+        }
       }),
     [repository],
   );
@@ -150,6 +167,10 @@ export function CheckInProvider({ children }: PropsWithChildren) {
       ? { ...updateCheckInEntry(existing, input), id }
       : createCheckInEntry(input, id);
 
+    rememberLocalChange(entry.id);
+    if (existing && existing.id !== entry.id) {
+      rememberLocalChange(existing.id);
+    }
     const committed = await sync.commit(replacementChanges(existing, entry));
     if (!committed) {
       throw new Error("This Check-In could not be saved safely.");
@@ -192,6 +213,7 @@ export function CheckInProvider({ children }: PropsWithChildren) {
       if (incomingWins) restoredCount += 1;
     }
 
+    changes.forEach((change) => rememberLocalChange(change.recordId));
     const committed =
       changes.length === 0 || (await sync.commit(changes));
     if (!committed) {
@@ -206,6 +228,13 @@ export function CheckInProvider({ children }: PropsWithChildren) {
   async function normalizeEntryId(entry: CheckInEntry) {
     const id = await security.deriveRecordId("check_in", entry.date);
     return id === entry.id ? entry : { ...entry, id };
+  }
+
+  function rememberLocalChange(recordId: string) {
+    localVersions.current.set(
+      recordId,
+      (localVersions.current.get(recordId) ?? 0) + 1,
+    );
   }
 
   function replacementChanges(

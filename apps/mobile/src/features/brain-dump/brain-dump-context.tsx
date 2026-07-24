@@ -101,6 +101,9 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
     bullets: [],
   });
   const stateRef = useRef(state);
+  const hydration = useRef<Promise<void>>(Promise.resolve());
+  const remoteOperations = useRef<Promise<void>>(Promise.resolve());
+  const localVersions = useRef(new Map<string, number>());
   const pendingUpdates = useRef(
     new Map<string, BrainDumpCrdtUpdate[]>(),
   );
@@ -111,7 +114,64 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
   const syncRef = useRef(sync);
   namespaceRef.current = namespace;
   syncRef.current = sync;
-  stateRef.current = state;
+
+  function applyAction(action: BrainDumpAction) {
+    stateRef.current = brainDumpReducer(stateRef.current, action);
+    dispatch(action);
+  }
+
+  function runRemoteOperation(operation: () => Promise<void>) {
+    const hydrated = hydration.current;
+    const run = () => hydrated.then(operation);
+    const result = remoteOperations.current.then(run, run);
+    remoteOperations.current = result.catch(() => undefined);
+    return result;
+  }
+
+  function rememberLocalChange(bulletId: string) {
+    localVersions.current.set(
+      bulletId,
+      (localVersions.current.get(bulletId) ?? 0) + 1,
+    );
+  }
+
+  function queuePendingUpdate(update: BrainDumpCrdtUpdate) {
+    const queued = pendingUpdates.current.get(update.bulletId) ?? [];
+    if (!queued.some((item) => item.id === update.id)) {
+      queued.push(update);
+    }
+    pendingUpdates.current.set(update.bulletId, queued);
+  }
+
+  async function persistRemoteBullet(
+    previous: BrainDumpBullet | undefined,
+    incoming: BrainDumpBullet,
+  ) {
+    let observedLocalVersion = localVersions.current.get(incoming.id) ?? 0;
+    let merged = mergeCrdtBullets(previous, incoming);
+
+    while (true) {
+      await repository.upsert(merged);
+      if (deletedBulletIds.current.has(incoming.id)) {
+        await repository.remove(incoming.id);
+        return undefined;
+      }
+
+      const currentLocalVersion =
+        localVersions.current.get(incoming.id) ?? 0;
+      if (currentLocalVersion === observedLocalVersion) {
+        applyAction({ type: "upserted", bullet: merged });
+        return merged;
+      }
+
+      const latest = stateRef.current.bullets.find(
+        (bullet) => bullet.id === incoming.id,
+      );
+      if (!latest) return undefined;
+      merged = mergeCrdtBullets(latest, merged);
+      observedLocalVersion = currentLocalVersion;
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -119,6 +179,7 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
     confirmedUpdateIds.current.clear();
     compactingBullets.current.clear();
     deletedBulletIds.current.clear();
+    localVersions.current.clear();
 
     async function load() {
       await repository.initialize();
@@ -128,12 +189,14 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       );
 
       if (active) {
-        dispatch({ type: "loaded", bullets });
+        applyAction({ type: "loaded", bullets });
       }
       await Promise.all(bullets.map((bullet) => repository.upsert(bullet)));
     }
 
-    void load().catch(() => {
+    const loading = load();
+    hydration.current = loading.catch(() => undefined);
+    void loading.catch(() => {
       if (active) sync.reportLocalReadFailure();
     });
     return () => {
@@ -143,31 +206,56 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
 
   useEffect(
     () =>
-      sync.subscribe<BrainDumpBullet>("brain_dump_bullet", async (change) => {
-        if (change.operation === "delete") {
-          await repository.remove(change.recordId);
-          dispatch({ type: "removed", id: change.recordId });
-          deletedBulletIds.current.add(change.recordId);
-          pendingUpdates.current.delete(change.recordId);
-          confirmedUpdateIds.current.delete(change.recordId);
-          compactingBullets.current.delete(change.recordId);
-          return;
-        }
-        if (!change.value) return;
-        if (deletedBulletIds.current.has(change.recordId)) return;
-        const local = stateRef.current.bullets.find(
-          (bullet) => bullet.id === change.recordId,
+      sync.subscribe<BrainDumpBullet>("brain_dump_bullet", (change) => {
+        const observedLocalVersion =
+          localVersions.current.get(change.recordId) ?? 0;
+        const deletedAtDelivery = deletedBulletIds.current.has(
+          change.recordId,
         );
-        let merged = mergeCrdtBullets(local, change.value);
-        const pending = pendingUpdates.current.get(change.recordId) ?? [];
-        for (const update of pending) {
-          merged = applyCrdtUpdate(merged, update);
-        }
-        await repository.upsert(merged);
-        pending.forEach(rememberConfirmedUpdate);
-        pendingUpdates.current.delete(change.recordId);
-        dispatch({ type: "upserted", bullet: merged });
-        maybeCompact(merged);
+        return runRemoteOperation(async () => {
+          if (change.operation === "delete") {
+            if (
+              (localVersions.current.get(change.recordId) ?? 0) !==
+              observedLocalVersion
+            ) {
+              return;
+            }
+            await repository.remove(change.recordId);
+            if (
+              (localVersions.current.get(change.recordId) ?? 0) !==
+              observedLocalVersion
+            ) {
+              return;
+            }
+            applyAction({ type: "removed", id: change.recordId });
+            deletedBulletIds.current.add(change.recordId);
+            pendingUpdates.current.delete(change.recordId);
+            confirmedUpdateIds.current.delete(change.recordId);
+            compactingBullets.current.delete(change.recordId);
+            return;
+          }
+          if (!change.value) return;
+          if (deletedBulletIds.current.has(change.recordId)) {
+            const localChanged =
+              (localVersions.current.get(change.recordId) ?? 0) !==
+              observedLocalVersion;
+            if (!deletedAtDelivery || localChanged) return;
+            deletedBulletIds.current.delete(change.recordId);
+          }
+          const local = stateRef.current.bullets.find(
+            (bullet) => bullet.id === change.recordId,
+          );
+          let incoming = change.value;
+          const pending = pendingUpdates.current.get(change.recordId) ?? [];
+          for (const update of pending) {
+            incoming = applyCrdtUpdate(incoming, update);
+          }
+          const merged = await persistRemoteBullet(local, incoming);
+          if (!merged) return;
+          pending.forEach(rememberConfirmedUpdate);
+          pendingUpdates.current.delete(change.recordId);
+          maybeCompact(merged);
+        });
       }),
     [repository],
   );
@@ -176,30 +264,41 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
     () =>
       sync.subscribe<BrainDumpCrdtUpdate>(
         "brain_dump_update",
-        async (change) => {
-          if (change.operation === "delete") {
-            forgetConfirmedUpdate(change.recordId);
-            return;
-          }
-          if (!change.value) return;
-          if (deletedBulletIds.current.has(change.value.bulletId)) return;
-          const local = stateRef.current.bullets.find(
-            (bullet) => bullet.id === change.value?.bulletId,
-          );
-          if (!local) {
-            const queued =
-              pendingUpdates.current.get(change.value.bulletId) ?? [];
-            if (!queued.some((item) => item.id === change.value?.id)) {
-              queued.push(change.value);
+        (change) => {
+          const bulletId = change.value?.bulletId;
+          const observedLocalVersion = bulletId
+            ? (localVersions.current.get(bulletId) ?? 0)
+            : 0;
+          const deletedAtDelivery = bulletId
+            ? deletedBulletIds.current.has(bulletId)
+            : false;
+          return runRemoteOperation(async () => {
+            if (change.operation === "delete") {
+              forgetConfirmedUpdate(change.recordId);
+              return;
             }
-            pendingUpdates.current.set(change.value.bulletId, queued);
-            return;
-          }
-          const merged = applyCrdtUpdate(local, change.value);
-          await repository.upsert(merged);
-          rememberConfirmedUpdate(change.value);
-          dispatch({ type: "upserted", bullet: merged });
-          maybeCompact(merged);
+            if (!change.value) return;
+            if (deletedBulletIds.current.has(change.value.bulletId)) {
+              const localChanged =
+                (localVersions.current.get(change.value.bulletId) ?? 0) !==
+                observedLocalVersion;
+              if (!deletedAtDelivery || localChanged) return;
+              queuePendingUpdate(change.value);
+              return;
+            }
+            const local = stateRef.current.bullets.find(
+              (bullet) => bullet.id === change.value?.bulletId,
+            );
+            if (!local) {
+              queuePendingUpdate(change.value);
+              return;
+            }
+            const merged = applyCrdtUpdate(local, change.value);
+            const persisted = await persistRemoteBullet(local, merged);
+            if (!persisted) return;
+            rememberConfirmedUpdate(change.value);
+            maybeCompact(persisted);
+          });
         },
       ),
     [repository],
@@ -217,28 +316,32 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       createBrainDumpBullet(
         text,
         makeId(),
-        rankAfterBullet(state.bullets, afterId),
+        rankAfterBullet(stateRef.current.bullets, afterId),
       ),
     );
-    dispatch({ type: "upserted", bullet });
+    rememberLocalChange(bullet.id);
+    applyAction({ type: "upserted", bullet });
     void sync.commitUpsert("brain_dump_bullet", bullet.id, bullet);
     return bullet.id;
   }
 
   function updateBullet(bullet: BrainDumpBullet, text: string) {
-    if (bullet.text === text) return;
+    const current =
+      stateRef.current.bullets.find((item) => item.id === bullet.id) ?? bullet;
+    if (current.text === text) return;
 
     const result = editCrdtBullet(
-      bullet,
+      current,
       text,
       createBrainDumpUpdateId(
-        bullet.id,
+        current.id,
         `${Date.now().toString(36)}-${Math.random()
           .toString(36)
           .slice(2, 9)}`,
       ),
     );
-    dispatch({ type: "upserted", bullet: result.bullet });
+    rememberLocalChange(result.bullet.id);
+    applyAction({ type: "upserted", bullet: result.bullet });
     void sync.commitUpsert(
       "brain_dump_update",
       result.update.id,
@@ -254,8 +357,9 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
   }
 
   function removeBullet(id: string) {
+    rememberLocalChange(id);
     deletedBulletIds.current.add(id);
-    dispatch({ type: "removed", id });
+    applyAction({ type: "removed", id });
     void sync.commitDelete("brain_dump_bullet", id);
     pendingUpdates.current.delete(id);
     confirmedUpdateIds.current.delete(id);
@@ -321,6 +425,15 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       );
       return { local, value: mergeCrdtBullets(local, incoming) };
     });
+    const previouslyDeleted = new Set(
+      restored
+        .map(({ value }) => value.id)
+        .filter((id) => deletedBulletIds.current.has(id)),
+    );
+    for (const { value } of restored) {
+      rememberLocalChange(value.id);
+      deletedBulletIds.current.delete(value.id);
+    }
     const committed = await sync.commit(
       restored.map(({ local, value }) => ({
         operation: "upsert",
@@ -331,10 +444,11 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
       })),
     );
     if (!committed) {
+      previouslyDeleted.forEach((id) => deletedBulletIds.current.add(id));
       throw new Error("The restored Brain Dump could not be saved.");
     }
     for (const { value } of restored) {
-      dispatch({ type: "upserted", bullet: value });
+      applyAction({ type: "upserted", bullet: value });
     }
     return restored.length;
   }

@@ -1723,6 +1723,37 @@ No tests were added, changed, or run for this milestone.
   active legacy rejection, opaque-ID acceptance, complete legacy metadata
   purge, and successful applied-version return through the real mutation RPC.
 
+## Provider Hydration And Realtime Ordering
+
+- The authenticated owner ID now keys the complete private application subtree.
+  An account transition remounts app lock, security, lifecycle, sync, device,
+  settings, task, template, Brain Dump, Check-In, notification, and widget
+  providers instead of reusing account-A provider state for account B.
+- Task, template, settings, Check-In, and Brain Dump remote listeners wait for
+  their account-scoped repositories to finish startup hydration before
+  applying a synchronized row.
+- Each structured provider records a local revision at remote-delivery time,
+  rejects the callback if local intent changed before the repository write,
+  and checks again after that asynchronous write before dispatching state,
+  canceling notifications, or scheduling reminders.
+- Brain Dump local actions update an eager reducer reference so rapid typing
+  never reads a render-old bullet. Snapshot, delta, and delete callbacks run
+  through one remote queue, while a local edit during persistence causes the
+  newest Yjs projection to be merged and written again before acknowledgement.
+- Brain Dump deletion tombstones reject callbacks that were delivered before a
+  local delete. A later authoritative server upsert or explicit backup restore
+  can clear the tombstone and safely restore the same bullet ID; child updates
+  arriving before their restored parent are queued and deduplicated.
+- The unchanged 151-test suite passes: 6 crypto, 43 domain, and 102 app checks.
+  Uncached strict TypeScript, `pnpm verify:yjs-runtime`, all four performance
+  contracts, the 18-check production web verifier with 22 precache URLs, both
+  native Hermes exports, all 19 platform checks, and `git diff --check` pass.
+  No test file was added or modified.
+- A rendered browser smoke attempt was not counted as evidence because the
+  in-app browser session could not reach the temporary localhost server. The
+  production artifact verifier and platform bundles remain the authoritative
+  local evidence for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

@@ -11,6 +11,7 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
 } from "react";
 
 import { useAuth } from "../../auth/auth-context";
@@ -171,15 +172,20 @@ export function TemplateProvider({ children }: PropsWithChildren) {
     loading: true,
     userTemplates: [],
   });
+  const hydration = useRef<Promise<void>>(Promise.resolve());
+  const localVersions = useRef(new Map<string, number>());
 
   useEffect(() => {
     let active = true;
+    localVersions.current.clear();
     async function load() {
       await repository.initialize();
       const templates = await repository.list();
       if (active) dispatch({ type: "loaded", templates });
     }
-    void load().catch(() => {
+    const loading = load();
+    hydration.current = loading.catch(() => undefined);
+    void loading.catch(() => {
       if (active) sync.reportLocalReadFailure();
     });
     return () => {
@@ -190,19 +196,43 @@ export function TemplateProvider({ children }: PropsWithChildren) {
   useEffect(
     () =>
       sync.subscribe<TaskTemplate>("template", async (change) => {
+        const localVersion =
+          localVersions.current.get(change.recordId) ?? 0;
+        await hydration.current;
+        if (
+          (localVersions.current.get(change.recordId) ?? 0) !== localVersion
+        ) {
+          return;
+        }
         if (change.operation === "delete") {
           await repository.remove(change.recordId);
-          dispatch({ type: "removed", id: change.recordId });
+          if (
+            (localVersions.current.get(change.recordId) ?? 0) === localVersion
+          ) {
+            dispatch({ type: "removed", id: change.recordId });
+          }
           return;
         }
         if (!change.value) return;
         await repository.upsert(change.value);
-        dispatch({ type: "upserted", template: change.value });
+        if (
+          (localVersions.current.get(change.recordId) ?? 0) === localVersion
+        ) {
+          dispatch({ type: "upserted", template: change.value });
+        }
       }),
     [repository],
   );
 
+  function rememberLocalChange(templateId: string) {
+    localVersions.current.set(
+      templateId,
+      (localVersions.current.get(templateId) ?? 0) + 1,
+    );
+  }
+
   function persist(template: TaskTemplate, previous?: TaskTemplate) {
+    rememberLocalChange(template.id);
     dispatch({ type: "upserted", template });
     void sync.commitUpsert(
       "template",
@@ -236,6 +266,7 @@ export function TemplateProvider({ children }: PropsWithChildren) {
   }
 
   function removeTemplate(id: string) {
+    rememberLocalChange(id);
     dispatch({ type: "removed", id });
     void sync.commitDelete("template", id);
   }
@@ -243,6 +274,7 @@ export function TemplateProvider({ children }: PropsWithChildren) {
   async function restoreTemplates(templates: TaskTemplate[]) {
     const current = await repository.list();
     const changes = selectRestoreChanges(current, templates);
+    changes.forEach(({ value }) => rememberLocalChange(value.id));
     const committed = await sync.commit(
       changes.map(({ previous, value }) => ({
         operation: "upsert",
