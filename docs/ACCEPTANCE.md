@@ -68,6 +68,9 @@ Local evidence:
 - deletion state and trusted-device lists are hidden unless their fetched
   owner matches the active account; revocation/final-deletion cleanup attempts
   every private store and sign-out, then retries only failed operations once
+- recovery and approval envelopes must match their expected key/device IDs;
+  decrypted approval keys are persisted only after server trust is confirmed,
+  and ambiguous committed RPC responses require matching server state
 - domain tests cover grace-window exhaustion, recurring task-type eligibility,
   multiple selected weekdays, multi-week intervals, monthly short-month
   clamping and anchor recovery, due-time shifting, invalid recurrence rules,

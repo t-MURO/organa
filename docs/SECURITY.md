@@ -16,6 +16,8 @@ storage, and deletion operations.
 - A random 256-bit recovery key encrypts the content key.
 - A one-way SHA-256 verifier derived from the recovery key authorizes enrollment
   of a new or previously revoked device without uploading the recovery key.
+- Recovery envelopes read from Supabase are accepted only when their version,
+  algorithm, ciphertext, and key ID match the account-key row.
 - A new device may instead create a 15-minute approval request for an existing
   trusted device. The trusted device encrypts the content key with a fresh
   256-bit one-time AES key and displays that key as a checked approval code.
@@ -23,6 +25,8 @@ storage, and deletion operations.
   key ID. Supabase stores only this encrypted envelope; the one-time approval
   code is transferred directly by the user and is erased from app state after
   use.
+- Approval envelopes are structurally validated and must be bound to the
+  current pending device before decryption.
 - The displayed recovery code contains the recovery key plus a short checksum
   for detecting transcription mistakes.
 - The recovery key is never uploaded. Supabase stores only its encrypted
@@ -174,6 +178,9 @@ user-entered content.
   unchanged after every later timestamped migration.
 - Initial account-key and device enrollment is atomic. Authenticated clients
   cannot insert or replace account-key rows directly.
+- A retry after an ambiguous first-enrollment response may continue only when
+  the server already contains the same key ID and the same active trusted
+  device.
 - New or revoked devices must present the recovery-derived enrollment proof.
 - A non-revoked new device may request approval from another trusted device.
   Pending devices remain untrusted until they decrypt the target-bound
@@ -181,6 +188,9 @@ user-entered content.
 - Approval requests expire after 15 minutes. A trusted device can reject them,
   claimed envelopes are erased, and revoked devices cannot use approval to
   bypass recovery-key enrollment.
+- A pending device persists the decrypted content key only after the server
+  confirms trust and envelope claim. If an RPC response is lost after commit,
+  the client verifies that exact resulting server state before proceeding.
 - Active devices must present their per-device proof secret for encrypted
   mutations, reminder-device changes, revocation, and account deletion.
 - Promoting a new primary reminder device atomically disables reminder delivery

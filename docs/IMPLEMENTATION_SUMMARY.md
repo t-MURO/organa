@@ -464,10 +464,16 @@ Implemented user-facing areas:
   as soon as the active authentication identity changes; malformed native or
   web key-vault records are rejected before private providers can open.
 - Onboarding generates a recovery code and requires storage confirmation.
+- Recovery and approval envelopes are validated against their expected key or
+  device identifiers before cryptographic use.
 - New devices can restore the content key locally with the recovery code.
 - New devices can alternatively request a 15-minute approval from an existing
   trusted device. The approving device creates a target-bound AES-GCM envelope
   and displays a one-time code that never reaches Supabase.
+- Trusted-device restore completes server trust and one-time-envelope claim
+  before persisting the decrypted content key. Ambiguous enrollment/approval
+  responses are accepted only after the exact committed server state is
+  confirmed.
 - Encrypted backup imports validate every nested record and Brain Dump CRDT
   payload before writing, reject files over 20 MB, preserve newer local
   records, and re-encrypt restored data for the current account.
@@ -628,6 +634,8 @@ Major implementation commits:
 - Runtime validation for decrypted native and web content-key vault records
 - Account-bound deletion/device state and non-fail-fast local erasure on
   revocation or final deletion
+- Server-first key enrollment/approval persistence with exact envelope and
+  ambiguous-commit validation
 - Recovery-authorized device enrollment and per-device write proofs
 - One-time encrypted trusted-device approval with 15-minute expiry,
   target-binding, explicit rejection, and envelope erasure after claim

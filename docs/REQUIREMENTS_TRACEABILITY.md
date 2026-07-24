@@ -56,6 +56,9 @@ Status meanings:
 - content keys, deletion state, and trusted-device lists are account-scoped;
   revocation and final deletion close local auth immediately, attempt every
   private-store cleanup independently, and retry failed operations once
+- recovery/device envelopes are validated against expected identifiers, and
+  content keys are persisted only after matching server enrollment or approval
+  state is confirmed
 - `pnpm typecheck`: all strict TypeScript packages pass
 - `pnpm verify:migrations`: 6 isolated-schema upgrade checks preserve every
   seeded encrypted/account row while installing later protected objects

@@ -1,5 +1,4 @@
 import {
-  type DeviceApprovalEnvelope,
   createKeyHierarchy,
   createRecoveryEnrollmentProof,
   decryptJson,
@@ -23,6 +22,10 @@ import { useAuth } from "../auth/auth-context";
 import { supabase } from "../auth/supabase";
 import { contentKeyVault } from "./content-key-vault";
 import { getDeviceIdentity, type DeviceIdentity } from "./device-identity";
+import {
+  parseDeviceApprovalEnvelope,
+  parseRecoveryKeyEnvelope,
+} from "./security-envelope-validation";
 
 interface SecurityContextValue {
   approvalRequest: DeviceApprovalRequest | null;
@@ -144,7 +147,10 @@ export function SecurityProvider({ children }: PropsWithChildren) {
 
       if (result.data) {
         setRecoveryEnvelope(
-          result.data.recovery_key_envelope as RecoveryKeyEnvelope,
+          parseRecoveryKeyEnvelope(
+            result.data.recovery_key_envelope,
+            result.data.key_id,
+          ),
         );
         setApprovalRequest(
           await loadDeviceApproval(userId, nextDevice.id),
@@ -217,7 +223,16 @@ export function SecurityProvider({ children }: PropsWithChildren) {
       p_recovery_key_envelope: recoveryEnvelope,
       p_recovery_proof: recoveryProof,
     });
-    if (result.error) throw result.error;
+    if (
+      result.error &&
+      !(await accountEnrollmentCompleted(
+        auth.user.id,
+        contentKey.id,
+        device.id,
+      ))
+    ) {
+      throw result.error;
+    }
     await contentKeyVault.set(auth.user.id, contentKey);
     setRecoveryCode(undefined);
   }
@@ -282,19 +297,24 @@ export function SecurityProvider({ children }: PropsWithChildren) {
 
     const restoredKey = await unwrapDeviceApproval(
       code,
-      result.data.encrypted_content_key as DeviceApprovalEnvelope,
+      parseDeviceApprovalEnvelope(
+        result.data.encrypted_content_key,
+        device.id,
+      ),
       device.id,
     );
-    await contentKeyVault.set(auth.user.id, restoredKey);
     const completion = await supabase.rpc("complete_device_approval", {
       p_device_id: device.id,
       p_device_proof: device.secret,
     });
-    if (completion.error) {
-      await contentKeyVault.remove(auth.user.id);
+    if (
+      completion.error &&
+      !(await deviceApprovalCompleted(auth.user.id, device.id))
+    ) {
       throw completion.error;
     }
 
+    await contentKeyVault.set(auth.user.id, restoredKey);
     setScopedContentKey({ key: restoredKey, ownerId: auth.user.id });
     setApprovalRequest(null);
     setRestoreRequired(false);
@@ -379,6 +399,60 @@ async function loadDeviceApproval(userId: string, deviceId: string) {
     expiresAt: result.data.expires_at,
     requestedAt: result.data.requested_at,
   };
+}
+
+async function accountEnrollmentCompleted(
+  userId: string,
+  keyId: string,
+  deviceId: string,
+) {
+  if (!supabase) return false;
+  const [keyResult, deviceResult] = await Promise.all([
+    supabase
+      .from("account_keys")
+      .select("key_id")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("devices")
+      .select("trusted_at,revoked_at")
+      .eq("user_id", userId)
+      .eq("id", deviceId)
+      .maybeSingle(),
+  ]);
+  return Boolean(
+    !keyResult.error &&
+      !deviceResult.error &&
+      keyResult.data?.key_id === keyId &&
+      deviceResult.data?.trusted_at &&
+      !deviceResult.data.revoked_at,
+  );
+}
+
+async function deviceApprovalCompleted(userId: string, deviceId: string) {
+  if (!supabase) return false;
+  const [deviceResult, approvalResult] = await Promise.all([
+    supabase
+      .from("devices")
+      .select("trusted_at,revoked_at")
+      .eq("user_id", userId)
+      .eq("id", deviceId)
+      .maybeSingle(),
+    supabase
+      .from("device_approvals")
+      .select("encrypted_content_key,claimed_at")
+      .eq("user_id", userId)
+      .eq("device_id", deviceId)
+      .maybeSingle(),
+  ]);
+  return Boolean(
+    !deviceResult.error &&
+      !approvalResult.error &&
+      deviceResult.data?.trusted_at &&
+      !deviceResult.data.revoked_at &&
+      approvalResult.data?.claimed_at &&
+      !approvalResult.data.encrypted_content_key,
+  );
 }
 
 function deviceName() {
