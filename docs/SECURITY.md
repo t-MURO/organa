@@ -144,6 +144,10 @@ user-entered content.
 - Clients can directly read only their own rows.
 - Encrypted mutation, device configuration, and deletion writes use validated
   RPCs.
+- A local isolated-schema upgrade verifier seeds the original schema with
+  synthetic account keys, device metadata, ciphertext records/history, outbox
+  state, and deletion state, then requires every row to remain byte-for-byte
+  unchanged after every later timestamped migration.
 - Initial account-key and device enrollment is atomic. Authenticated clients
   cannot insert or replace account-key rows directly.
 - New or revoked devices must present the recovery-derived enrollment proof.

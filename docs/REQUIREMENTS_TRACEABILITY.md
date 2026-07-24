@@ -50,9 +50,11 @@ Status meanings:
   verification host; release-device timing remains a physical gate
 - `pnpm test`: 146 tests (43 domain, 6 cryptography, 97 application)
 - `pnpm typecheck`: all strict TypeScript packages pass
+- `pnpm verify:migrations`: 6 isolated-schema upgrade checks preserve every
+  seeded encrypted/account row while installing later protected objects
 - `pnpm verify:web-push`: VAPID authorization and encrypted payload pass
-- `pnpm verify:supabase`: 54 database, 13 deletion-function, and 15 Web Push
-  function checks pass
+- `pnpm verify:supabase`: 6 migration-preservation, 54 database, 13
+  deletion-function, and 15 Web Push function checks pass
 - `pnpm build:web`: 18 production artifact checks and 22 precache URLs pass
 - `pnpm build:native`: iOS and Android Hermes exports pass
 - `pnpm audit --prod`: no known production vulnerabilities

@@ -26,6 +26,7 @@ Committed and verified milestones:
 - Explicit controlled-beta OS and browser support boundaries
 - Deterministic local performance checks against a 2,000-task dataset
 - Fail-closed encrypted-backup domain validation
+- Byte-for-byte encrypted-row preservation across database upgrades
 - A 20-item controlled-beta traceability matrix that separates locally
   verified behavior from connected-provider, physical-device, and external
   review gates
@@ -146,6 +147,29 @@ Latest verified task-type work:
 - Validation still completes before any local repository write, preserving the
   fail-closed restore boundary.
 - Eighteen export/restore tests and the full 126-test suite pass.
+
+## Database Migration Preservation Milestone
+
+- Adds a reproducible `pnpm verify:migrations` upgrade-path drill.
+- Creates a disposable Auth user and isolated PostgreSQL schema without
+  changing the live local `public` schema.
+- Applies the original encrypted-sync migration, then seeds synthetic account
+  keys, trusted-device metadata, encrypted records, encrypted history, applied
+  outbox mutations, and cancellation-state data.
+- Snapshots every seeded row before applying all later timestamped migrations
+  in order.
+- Requires the complete post-upgrade snapshot to remain byte-for-byte
+  identical.
+- Confirms later approval and Web Push tables exist with RLS, the final
+  reminder-device replacement function is installed, and all Web Push
+  scheduling functions exist.
+- Automatically discovers future timestamped migrations so new schema changes
+  cannot silently bypass this upgrade drill.
+- Removes the temporary Realtime policy, isolated schema, and Auth user after
+  both successful and failed runs.
+- The standalone verifier passes 6 checks. `pnpm verify:supabase` now passes
+  those checks before its existing 54 authenticated database, 13 deletion
+  function, and 15 Web Push function checks.
 
 ## Task-Type Invariant Milestone
 
@@ -472,8 +496,11 @@ Latest verified repository checks:
   - 97 application integration tests
 - All five migrations apply cleanly from scratch to local
   Supabase/PostgreSQL.
+- The isolated migration-upgrade verifier passes 6 checks and preserves all
+  seeded encrypted/account rows byte-for-byte.
 - Local Supabase database lint reports no errors or warnings.
-- `pnpm verify:supabase` passes 54 authenticated database checks for RLS,
+- `pnpm verify:supabase` includes the 6 migration checks and passes 54
+  authenticated database checks for RLS,
   proof-gated approval, claim, rejection, revocation, and deletion read-only
   behavior, including primary-device demotion and Web Push scheduling/removal.
 - The same command passes 13 live account-deletion Edge Function checks,

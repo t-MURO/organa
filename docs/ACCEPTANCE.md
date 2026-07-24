@@ -64,7 +64,12 @@ Local evidence:
   proofless privileged RPC signatures
 - all five migrations apply from scratch to local Supabase/PostgreSQL and
   `db lint --local --level warning` reports no schema errors or warnings
-- `pnpm verify:supabase` passes 54 authenticated database checks covering
+- `pnpm verify:migrations` passes 6 upgrade checks after seeding the original
+  schema with synthetic account keys, devices, encrypted records, encrypted
+  history, outbox mutations, and deletion state; every seeded row remains
+  byte-for-byte unchanged after all later migrations
+- `pnpm verify:supabase` includes those 6 migration checks and passes 54
+  authenticated database checks covering
   cross-account RLS, direct-write denial, invalid proofs, encrypted
   trusted-device approval and claim, envelope erasure, request rejection,
   revocation, anonymous denial, deletion read-only enforcement,
