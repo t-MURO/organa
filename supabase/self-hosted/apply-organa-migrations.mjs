@@ -1,12 +1,11 @@
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
-  existsSync,
+  lstatSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
-  statSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -30,16 +29,32 @@ if (mode !== "plan" && mode !== "apply") {
   );
 }
 
-if (!existsSync(credentialPath)) {
-  fail(`Credential file is missing: ${credentialPath}`);
+let credentialStats;
+try {
+  credentialStats = lstatSync(credentialPath);
+} catch {
+  fail(`Credential file is missing or unreadable: ${credentialPath}`);
 }
 
-const credentialMode = statSync(credentialPath).mode & 0o777;
+if (!credentialStats.isFile() || credentialStats.isSymbolicLink()) {
+  fail("Credential path must be a regular file, not a symlink.");
+}
+const credentialMode = credentialStats.mode & 0o777;
 if (credentialMode !== 0o600 && credentialMode !== 0o400) {
   fail("Credential file must have mode 600 or 400.");
 }
 
-const rawCredential = readFileSync(credentialPath, "utf8");
+let rawCredential;
+try {
+  rawCredential = readFileSync(credentialPath, "utf8");
+} catch {
+  fail("Credential file could not be read.");
+}
+try {
+  unlinkSync(credentialPath);
+} catch {
+  fail("Unable to remove the one-time credential file after reading it.");
+}
 const lines = rawCredential.replace(/\r?\n$/, "").split(/\r?\n/);
 if (lines.length !== 1 || !lines[0] || lines[0].trim() !== lines[0]) {
   fail("Credential file must contain exactly one PostgreSQL URL.");
@@ -135,12 +150,6 @@ writeFileSync(
   { mode: 0o600 },
 );
 chmodSync(passfilePath, 0o600);
-try {
-  unlinkSync(credentialPath);
-} catch {
-  cleanup();
-  fail("Unable to remove the one-time credential file.");
-}
 
 const childEnvironment = { ...process.env, PGPASSFILE: passfilePath };
 delete childEnvironment.DATABASE_URL;

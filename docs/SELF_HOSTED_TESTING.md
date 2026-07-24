@@ -251,10 +251,13 @@ chmod 600 .organa-self-hosted-db-url
 node supabase/self-hosted/apply-organa-migrations.mjs plan
 ```
 
-The helper immediately deletes the credential file after parsing it. It passes
-only a passwordless URL to the pinned Supabase CLI and supplies the decoded
-password through a mode-600 temporary libpq password file. The `plan` command
-lists pending migrations without applying them.
+After confirming a regular non-symlink file with mode 600 or 400, the helper
+reads and immediately deletes it before parsing or running any Git/CLI
+preflight. A malformed credential is therefore still consumed; a wrong-mode,
+symlinked, or unreadable path is rejected without reading or deleting it. The
+helper passes only a passwordless URL to the pinned Supabase CLI and supplies
+the decoded password through a mode-600 temporary libpq password file. The
+`plan` command lists pending migrations without applying them.
 
 After reviewing that output, recreate the same one-line credential file and
 run the explicit mutating mode:

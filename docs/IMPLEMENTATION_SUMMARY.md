@@ -1436,6 +1436,24 @@ No tests were added, changed, or run for this milestone.
   home-server URL, TLS, SMTP/OAuth, functions, schedulers, migrations, and
   connected verifier remain separate gates.
 
+## One-Time Migration Credential Hardening
+
+- The self-hosted migration helper now accepts only a regular, non-symlink
+  credential file with mode 600 or 400.
+- After a successful protected read, it removes that source file before URL
+  parsing, Git inspection, temporary passfile creation, or any Supabase CLI
+  process starts. Malformed content can no longer leave a database password
+  behind contrary to the operator runbook.
+- Wrong-mode, symlinked, missing, and unreadable paths fail before reading and
+  remain available for the operator to correct deliberately.
+- The CLI still receives only a passwordless URL; the decoded password remains
+  confined to the mode-600 temporary libpq passfile that is removed on normal
+  exit or interruption.
+- Direct synthetic boundary drills confirmed a malformed mode-600 URL was
+  consumed before its parse error, a mode-644 URL remained after rejection,
+  and both a symlink and its target remained after the symlink rejection. All
+  temporary inputs were removed afterward.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
