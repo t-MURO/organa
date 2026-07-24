@@ -1070,6 +1070,12 @@ silently creating an authentication client:
   or empty keys, public secret-file modes, invalid connected URLs, an inactive
   Organa override, missing core services, and invalid Compose resolution
   without printing any credential value.
+- Adds a once-per-minute dual-function runner with non-overlapping execution,
+  strict HTTPS-origin and scheduler-secret validation, stdin-only curl
+  authorization, independent failure handling, and a secret-free cron entry.
+- POSIX syntax validation passes, and both preflight stages resolve
+  successfully in a disposable Linux Docker CLI environment against the
+  upstream stack and host Docker daemon.
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.

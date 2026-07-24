@@ -49,6 +49,29 @@ require_generated_value() {
   fi
 }
 
+require_hex_secret() {
+  file="$1"
+  key="$2"
+  value=$(value_from "$file" "$key")
+  [ "${#value}" -eq 64 ] ||
+    fail "$key must be a 64-character lowercase hexadecimal value"
+  case "$value" in
+    *[!0-9a-f]*) fail "$key must contain only lowercase hexadecimal characters" ;;
+  esac
+}
+
+require_vapid_key() {
+  file="$1"
+  key="$2"
+  expected_length="$3"
+  value=$(value_from "$file" "$key")
+  [ "${#value}" -eq "$expected_length" ] ||
+    fail "$key has an invalid length"
+  case "$value" in
+    *[!A-Za-z0-9_-]*) fail "$key is not URL-safe base64" ;;
+  esac
+}
+
 case "$stage" in
   keys|full) ;;
   *) fail "usage: sh validate-self-hosted.sh [keys|full]" ;;
@@ -97,6 +120,11 @@ if [ "$stage" = "keys" ]; then
   exit 0
 fi
 
+for command in crontab curl flock; do
+  command -v "$command" >/dev/null 2>&1 ||
+    fail "$command is required for the Organa schedulers but not installed"
+done
+
 supabase_url=$(value_from .env SUPABASE_PUBLIC_URL)
 api_url=$(value_from .env API_EXTERNAL_URL)
 site_url=$(value_from .env SITE_URL)
@@ -136,6 +164,7 @@ esac
 
 for file in \
   docker-compose.organa.yml \
+  run-organa-schedulers.sh \
   volumes/functions/finalize-account-deletions/index.ts \
   volumes/functions/dispatch-web-push/index.ts; do
   [ -f "$file" ] || fail "$file is missing"
@@ -150,6 +179,16 @@ for key in \
   WEB_PUSH_SCHEDULER_SECRET; do
   require_generated_value .env.functions .env.functions.example "$key"
 done
+
+require_hex_secret .env.functions ACCOUNT_DELETION_SCHEDULER_SECRET
+require_hex_secret .env.functions WEB_PUSH_SCHEDULER_SECRET
+require_vapid_key .env.functions WEB_PUSH_VAPID_PUBLIC_KEY 87
+require_vapid_key .env.functions WEB_PUSH_VAPID_PRIVATE_KEY 43
+vapid_subject=$(value_from .env.functions WEB_PUSH_VAPID_SUBJECT)
+case "$vapid_subject" in
+  mailto:*@*|https://*) ;;
+  *) fail "WEB_PUSH_VAPID_SUBJECT must use mailto: or HTTPS" ;;
+esac
 
 docker compose config --quiet >/dev/null 2>&1 ||
   fail "the merged Docker Compose configuration is invalid"

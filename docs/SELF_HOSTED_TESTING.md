@@ -223,6 +223,8 @@ scp supabase/self-hosted/.env.functions.example \
   SERVER:~/organa-supabase/
 scp supabase/self-hosted/validate-self-hosted.sh \
   SERVER:~/organa-supabase/
+scp supabase/self-hosted/run-organa-schedulers.sh \
+  SERVER:~/organa-supabase/
 ```
 
 Generate the VAPID pair on the development machine. This command prints both
@@ -295,10 +297,31 @@ environment:
 sh run.sh recreate functions
 ```
 
-For initial testing, invoke each function manually with its independent
-scheduler secret. Before a multi-day beta drill, configure a monitored
-once-per-minute server-side scheduler for both POST requests. Keep secrets in a
-root-readable file rather than placing them directly in crontab or logs.
+Run both scheduler-authenticated functions once. Success is silent; failures
+name only the failed function and never print its bearer value:
+
+```sh
+sh run-organa-schedulers.sh
+```
+
+Then open the current user's crontab:
+
+```sh
+crontab -e
+```
+
+Add exactly one once-per-minute entry:
+
+```text
+* * * * * /bin/sh "$HOME/organa-supabase/run-organa-schedulers.sh"
+```
+
+The runner uses an advisory file lock, so a slow invocation cannot overlap the
+next minute. It attempts both functions even if one fails and emits output only
+on failure. Configure the server's cron failure/output monitoring and observe
+at least two consecutive successful minute runs before checking the scheduler
+acceptance row. Keep secrets in `.env.functions`; they never belong directly
+in crontab or logs.
 
 ## 6. Configure Organa
 
