@@ -57,6 +57,22 @@ sh utils/generate-keys.sh
 sh utils/add-new-auth-keys.sh
 ```
 
+If `add-new-auth-keys.sh` reports that `.env` is missing, stop and verify the
+current directory before rerunning either key script:
+
+```sh
+pwd
+ls -la .env.example docker-compose.yml utils/generate-keys.sh
+[ -f .env ] || cp .env.example .env
+chmod 600 .env
+sh utils/generate-keys.sh
+sh utils/add-new-auth-keys.sh
+```
+
+All three paths in the `ls` command must exist. If they do not, return to
+`$HOME/organa-supabase` or the directory where the official Docker files were
+copied. Do not print or share the generated `.env`.
+
 Record the printed Git revision outside the server's secret files. Review the
 generated `.env`; never run the example passwords or keys. The second script
 enables the current asymmetric signing keys plus:

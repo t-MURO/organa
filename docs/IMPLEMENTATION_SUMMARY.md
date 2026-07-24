@@ -1053,6 +1053,8 @@ silently creating an authentication client:
   scheduler setup, and the exact public client environment.
 - Corrects the monorepo setup path to `apps/mobile/.env.local`, where Expo
   actually loads the untracked public client environment.
+- Initializes the copied self-hosted `.env` before key generation and includes
+  a non-secret-leaking recovery path for missing-environment errors.
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.
