@@ -3,9 +3,8 @@
 Status recorded on 2026-07-23.
 
 This is the structured pause checkpoint requested after the implementation
-work. The committed implementation is complete through `ec65a20`. The reminder
-authorization work described below is implemented and fully verified in the
-current working tree but has not yet been committed.
+work. The committed implementation is complete through `babc42d`, including
+the fully verified reminder-authorization work described below.
 
 ## Current Checkpoint
 
@@ -20,7 +19,7 @@ Committed and verified milestones:
 - Independent date-only deadlines
 - Stable single-runtime Yjs loading for Brain Dump
 
-Implemented but uncommitted at this pause:
+Latest committed milestone:
 
 - Cached per-user reminder-device authorization for offline startup
 - A fail-closed but non-destructive unresolved authorization state
@@ -31,7 +30,7 @@ Implemented but uncommitted at this pause:
 - Seven focused tests covering authorization resolution, web cache behavior,
   scheduler guards, web ownership, and cleanup contracts
 
-Verification completed for the uncommitted reminder-authorization work:
+Verification completed for the reminder-authorization work:
 
 - Strict TypeScript passes.
 - All 98 automated tests pass: 39 domain, 6 cryptography, and 53 application
@@ -40,7 +39,7 @@ Verification completed for the uncommitted reminder-authorization work:
 - All 12 production web artifact checks pass.
 - `git diff --check` passes.
 
-Both iOS and Android Hermes exports pass with the current uncommitted native
+Both iOS and Android Hermes exports pass with the reminder-authorization
 changes.
 
 ## Product Implemented
@@ -238,6 +237,7 @@ Major implementation commits:
 - `70ec45a` - complete recurring task semantics
 - `ca0bdbb` - support date-only task deadlines
 - `72ed273` - load Yjs once for Brain Dump
+- `babc42d` - preserve reminder authorization offline
 
 ## Latest Security Hardening
 
