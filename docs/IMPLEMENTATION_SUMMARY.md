@@ -1076,6 +1076,10 @@ silently creating an authentication client:
 - POSIX syntax validation passes, and both preflight stages resolve
   successfully in a disposable Linux Docker CLI environment against the
   upstream stack and host Docker daemon.
+- Replaces the password-bearing inline migration command with a one-use
+  credential helper that pins Supabase CLI `2.109.1`, exposes only a
+  passwordless process argument, uses a private temporary libpq password file,
+  separates plan/apply intent, and cleans credentials on completion or signal.
 - Provides a two-client connected validation sequence and separates evidence
   that a home server can produce from production operations, regional/legal,
   physical-device, independent-review, signing, and store gates.

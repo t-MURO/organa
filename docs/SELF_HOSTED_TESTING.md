@@ -179,27 +179,37 @@ stack's session-mode PostgreSQL/Supavisor endpoint. Obtain the exact
 session-mode connection string from the self-hosted stack and percent-encode
 special characters in it.
 
-From this repository on the development machine:
+From this repository on the development machine, create a mode-600 one-line
+credential file with a local editor. The line must be the complete
+percent-encoded session-mode PostgreSQL URL:
 
 ```sh
-export ORGANA_SELF_HOSTED_DB_URL='postgresql://REPLACE_VIA_PRIVATE_TUNNEL'
-pnpm dlx supabase@latest --version
-pnpm dlx supabase@latest db push \
-  --db-url "$ORGANA_SELF_HOSTED_DB_URL" \
-  --dry-run
-pnpm dlx supabase@latest db push \
-  --db-url "$ORGANA_SELF_HOSTED_DB_URL"
-pnpm dlx supabase@latest db lint \
-  --db-url "$ORGANA_SELF_HOSTED_DB_URL" \
-  --level warning \
-  --fail-on error
-unset ORGANA_SELF_HOSTED_DB_URL
+umask 077
+${EDITOR:-vi} .organa-self-hosted-db-url
+chmod 600 .organa-self-hosted-db-url
+node supabase/self-hosted/apply-organa-migrations.mjs plan
 ```
 
-Record the CLI version, migration revision, dry-run output, push output, and
-lint output. Never put the database URL in shell history, source control, a
-client environment variable, or release evidence. Prefer a temporary
-root-readable environment file over an inline command on a shared machine.
+The helper immediately deletes the credential file after parsing it. It passes
+only a passwordless URL to the pinned Supabase CLI and supplies the decoded
+password through a mode-600 temporary libpq password file. The `plan` command
+lists pending migrations without applying them.
+
+After reviewing that output, recreate the same one-line credential file and
+run the explicit mutating mode:
+
+```sh
+umask 077
+${EDITOR:-vi} .organa-self-hosted-db-url
+chmod 600 .organa-self-hosted-db-url
+node supabase/self-hosted/apply-organa-migrations.mjs apply
+```
+
+`apply` repeats the dry run, pushes the migrations with pinned Supabase CLI
+`2.109.1`, and runs database lint at warning level while failing on errors.
+Record the printed CLI version, Git revision, migration count, plan/push
+output, and lint output. Never put the database URL in shell history, source
+control, a client environment variable, or release evidence.
 
 ## 5. Install Organa Edge Functions
 
