@@ -573,14 +573,27 @@ async function verifyDeviceApprovalContract() {
     "account deletion cancelled",
   );
 
-  noError(
-    await client1.rpc("revoke_trusted_device", {
-      p_current_device_id: trustedDeviceId,
-      p_current_device_proof: trustedProof,
-      p_target_device_id: approvedDeviceId,
-    }),
-    "approved device revoked",
-  );
+  if (verificationEnvironment.connected) {
+    await verifyConnectedReminderDeviceSessions({
+      client: client1,
+      currentDeviceId: trustedDeviceId,
+      currentDeviceProof: trustedProof,
+      email: users[0].email,
+      password,
+      targetDeviceId: approvedDeviceId,
+      targetDeviceProof: approvedProof,
+      userId: users[0].id,
+    });
+  } else {
+    noError(
+      await client1.rpc("revoke_trusted_device", {
+        p_current_device_id: trustedDeviceId,
+        p_current_device_proof: trustedProof,
+        p_target_device_id: approvedDeviceId,
+      }),
+      "approved device revoked",
+    );
+  }
   expectedError(
     await client1.rpc("request_device_approval", {
       p_device_id: approvedDeviceId,
@@ -603,6 +616,295 @@ async function verifyDeviceApprovalContract() {
     /Authentication is required|permission denied/i,
     "anonymous approval request is rejected",
   );
+}
+
+async function verifyConnectedReminderDeviceSessions({
+  client,
+  currentDeviceId,
+  currentDeviceProof,
+  email,
+  password,
+  targetDeviceId,
+  targetDeviceProof,
+  userId,
+}) {
+  const peer = createClient(apiUrl, publishableKey, clientOptions);
+  const queuedSignals = [];
+  const signalWaiters = [];
+  let channel;
+
+  try {
+    const authentication = noError(
+      await peer.auth.signInWithPassword({ email, password }),
+      "live reminder-device session authenticated",
+    );
+    const refreshToken = authentication?.session?.refresh_token;
+    ok(
+      typeof refreshToken === "string",
+      "live reminder-device refresh session established",
+    );
+    await peer.realtime.setAuth();
+
+    let resolveSubscription;
+    let rejectSubscription;
+    const subscriptionPromise = new Promise((resolve, reject) => {
+      resolveSubscription = resolve;
+      rejectSubscription = reject;
+    });
+    let subscriptionSettled = false;
+
+    channel = peer
+      .channel(`organa:${userId}:devices`, {
+        config: { private: true },
+      })
+      .on("broadcast", { event: "changed" }, ({ payload }) => {
+        const signal = { payload, receivedAt: performance.now() };
+        const waiterIndex = signalWaiters.findIndex(
+          (waiter) =>
+            waiter.deviceId === payload?.deviceId &&
+            signal.receivedAt >= waiter.after,
+        );
+        if (waiterIndex >= 0) {
+          const [waiter] = signalWaiters.splice(waiterIndex, 1);
+          waiter.resolve(signal);
+          return;
+        }
+        queuedSignals.push(signal);
+        if (queuedSignals.length > 20) queuedSignals.shift();
+      })
+      .subscribe((status) => {
+        if (subscriptionSettled) return;
+        if (status === "SUBSCRIBED") {
+          subscriptionSettled = true;
+          resolveSubscription();
+        } else if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT" ||
+          status === "CLOSED"
+        ) {
+          subscriptionSettled = true;
+          rejectSubscription(
+            new Error(
+              "The private reminder-device channel could not subscribe.",
+            ),
+          );
+        }
+      });
+
+    await withTimeout(
+      subscriptionPromise,
+      15_000,
+      "The private reminder-device channel did not subscribe within 15 seconds.",
+    );
+    ok(true, "private reminder-device channel subscribed");
+
+    await expectDeviceSignals({
+      deviceIds: [currentDeviceId, targetDeviceId],
+      label: "primary reminder promotion",
+      operation: async () =>
+        noError(
+          await client.rpc("configure_reminder_device", {
+            p_current_device_id: currentDeviceId,
+            p_current_device_proof: currentDeviceProof,
+            p_device_id: targetDeviceId,
+            p_make_primary: true,
+            p_notifications_enabled: true,
+          }),
+          "connected target promoted to primary reminder",
+        ),
+    });
+    const promotedDevices = noError(
+      await peer
+        .from("devices")
+        .select("id,primary_reminder,notifications_enabled,revoked_at")
+        .in("id", [currentDeviceId, targetDeviceId]),
+      "live peer loaded promoted reminder ownership",
+    );
+    const promotedCurrent = promotedDevices.find(
+      (device) => device.id === currentDeviceId,
+    );
+    const promotedTarget = promotedDevices.find(
+      (device) => device.id === targetDeviceId,
+    );
+    ok(
+      promotedTarget?.primary_reminder &&
+        promotedTarget.notifications_enabled &&
+        !promotedTarget.revoked_at &&
+        !promotedCurrent?.primary_reminder &&
+        !promotedCurrent?.notifications_enabled,
+      "live peer observes atomic primary ownership and quiet demotion",
+    );
+
+    await expectDeviceSignals({
+      deviceIds: [currentDeviceId, targetDeviceId],
+      label: "primary reminder restoration",
+      operation: async () =>
+        noError(
+          await peer.rpc("configure_reminder_device", {
+            p_current_device_id: targetDeviceId,
+            p_current_device_proof: targetDeviceProof,
+            p_device_id: currentDeviceId,
+            p_make_primary: true,
+            p_notifications_enabled: true,
+          }),
+          "live target session restored the original primary reminder",
+        ),
+    });
+    const restoredDevices = noError(
+      await peer
+        .from("devices")
+        .select("id,primary_reminder,notifications_enabled,revoked_at")
+        .in("id", [currentDeviceId, targetDeviceId]),
+      "live peer loaded restored reminder ownership",
+    );
+    const restoredCurrent = restoredDevices.find(
+      (device) => device.id === currentDeviceId,
+    );
+    const restoredTarget = restoredDevices.find(
+      (device) => device.id === targetDeviceId,
+    );
+    ok(
+      restoredCurrent?.primary_reminder &&
+        restoredCurrent.notifications_enabled &&
+        !restoredCurrent.revoked_at &&
+        !restoredTarget?.primary_reminder &&
+        !restoredTarget?.notifications_enabled,
+      "live target operation restores one primary and a quiet secondary",
+    );
+
+    await expectDeviceSignals({
+      deviceIds: [targetDeviceId],
+      label: "secondary reminder opt-in",
+      operation: async () =>
+        noError(
+          await client.rpc("configure_reminder_device", {
+            p_current_device_id: currentDeviceId,
+            p_current_device_proof: currentDeviceProof,
+            p_device_id: targetDeviceId,
+            p_make_primary: false,
+            p_notifications_enabled: true,
+          }),
+          "connected secondary reminders explicitly enabled",
+        ),
+    });
+    const enabledTarget = noError(
+      await peer
+        .from("devices")
+        .select("primary_reminder,notifications_enabled,revoked_at")
+        .eq("id", targetDeviceId)
+        .single(),
+      "live peer loaded secondary reminder opt-in",
+    );
+    ok(
+      !enabledTarget.primary_reminder &&
+        enabledTarget.notifications_enabled &&
+        !enabledTarget.revoked_at,
+      "live peer observes explicit secondary reminder opt-in",
+    );
+
+    await expectDeviceSignals({
+      deviceIds: [targetDeviceId],
+      label: "target device revocation",
+      operation: async () =>
+        noError(
+          await client.rpc("revoke_trusted_device", {
+            p_current_device_id: currentDeviceId,
+            p_current_device_proof: currentDeviceProof,
+            p_target_device_id: targetDeviceId,
+          }),
+          "connected target device revoked",
+        ),
+    });
+    const revokedTarget = noError(
+      await peer
+        .from("devices")
+        .select("primary_reminder,notifications_enabled,revoked_at")
+        .eq("id", targetDeviceId)
+        .single(),
+      "live target session loaded its revoked device state",
+    );
+    ok(
+      Boolean(revokedTarget.revoked_at) &&
+        !revokedTarget.primary_reminder &&
+        !revokedTarget.notifications_enabled,
+      "live target session observes revocation and reminder removal",
+    );
+    // Access JWTs remain valid until expiry, so device-proof denial is the
+    // immediate revocation boundary; refresh revocation closes the session.
+    expectedError(
+      await peer.rpc("configure_reminder_device", {
+        p_current_device_id: targetDeviceId,
+        p_current_device_proof: targetDeviceProof,
+        p_device_id: currentDeviceId,
+        p_make_primary: false,
+        p_notifications_enabled: true,
+      }),
+      /proof is invalid/i,
+      "revoked live device proof loses privileged access",
+    );
+
+    noError(
+      await client.auth.signOut({ scope: "others" }),
+      "revoker invalidated other account refresh sessions",
+    );
+    const refresh = await peer.auth.refreshSession({
+      refresh_token: refreshToken,
+    });
+    throwIfInterrupted();
+    ok(
+      Boolean(refresh.error) && !refresh.data.session,
+      "revoked live session cannot refresh",
+    );
+  } finally {
+    if (channel) {
+      await peer.removeChannel(channel).catch(() => undefined);
+    }
+    await peer.realtime.disconnect().catch(() => undefined);
+  }
+
+  function waitForDeviceSignal(deviceId, after) {
+    const queuedIndex = queuedSignals.findIndex(
+      (signal) =>
+        signal.payload?.deviceId === deviceId &&
+        signal.receivedAt >= after,
+    );
+    if (queuedIndex >= 0) {
+      return Promise.resolve(queuedSignals.splice(queuedIndex, 1)[0]);
+    }
+    return new Promise((resolve) => {
+      signalWaiters.push({ after, deviceId, resolve });
+    });
+  }
+
+  async function expectDeviceSignals({ deviceIds, label, operation }) {
+    const expectedDeviceIds = [...new Set(deviceIds)];
+    const operationStartedAt = performance.now();
+    const signalPromises = expectedDeviceIds.map((deviceId) =>
+      waitForDeviceSignal(deviceId, operationStartedAt),
+    );
+    await operation();
+    const signals = await withTimeout(
+      Promise.all(signalPromises),
+      10_000,
+      `The ${label} broadcasts were not received within 10 seconds.`,
+    );
+    ok(
+      signals.every(
+        (signal) =>
+          expectedDeviceIds.includes(signal.payload?.deviceId) &&
+          sameJson(Object.keys(signal.payload ?? {}).sort(), ["deviceId"]),
+      ),
+      `${label} broadcasts expose only device identifiers`,
+    );
+    const latencyMilliseconds = Math.round(
+      Math.max(...signals.map((signal) => signal.receivedAt)) -
+        operationStartedAt,
+    );
+    ok(
+      latencyMilliseconds <= 1_000,
+      `${label} reached the live peer in ${latencyMilliseconds} ms`,
+    );
+  }
 }
 
 async function verifyRealtimeAndDurableReconciliation({

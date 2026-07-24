@@ -1107,6 +1107,18 @@ silently creating an authentication client:
   content-free record hint, enforces the one-second mutation-to-peer target,
   verifies durable ciphertext, disconnects the peer, and recovers a later
   missed record through the app's overlapping timestamp cursor strategy.
+- Extends guarded connected verification with a live target-device session on
+  the private device channel. It observes both sides of primary ownership
+  changes, performs a proof-gated restoration as the target, observes explicit
+  secondary opt-in and revocation, rejects the revoked proof, and requires the
+  target refresh token to fail after `signOut({ scope: "others" })`.
+- Every device broadcast is constrained to one opaque `deviceId` and the
+  connected verifier applies the same one-second peer target used for encrypted
+  record changes. Rendered-client local erasure and actual notification
+  delivery remain separate unclaimed drills.
+- Script syntax, strict TypeScript, and the production web/PWA build with all
+  18 artifact checks pass after this extension. No tests were added, changed,
+  or run.
 - Extracts the mode-600 connected URL and modern publishable/secret-key
   validation into one operator-config module so destructive connected commands
   cannot drift to weaker credential handling.

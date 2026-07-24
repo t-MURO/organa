@@ -284,6 +284,10 @@ Local evidence:
 - `pnpm verify:connected:deletion` is prepared to capture the real one-hour
   scheduler and cascade evidence. It has not been run against a connected
   backend in this workspace, so the corresponding row remains unchecked.
+- `pnpm verify:connected:supabase` now prepares direct private-channel evidence
+  for primary ownership, explicit secondary opt-in, target revocation, proof
+  denial, and refresh-session invalidation. It remains unclaimed until the
+  connected command and rendered-client cleanup drill pass.
 - [ ] Google, Apple, GitHub, and email OTP against configured connected
   providers
 - [ ] Apply and lint the proven migrations against the self-hosted test

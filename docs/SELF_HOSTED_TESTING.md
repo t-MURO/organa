@@ -463,10 +463,21 @@ Passing this command is evidence for the connected Auth configuration and
 backend authorization contract. It also proves one raw encrypted-record
 broadcast reaches a separate same-account session within the one-second target
 and that an unsubscribed session can recover a later ciphertext row with the
-app's overlapping durable cursor. It does not prove decrypted UI propagation,
-structured-field or Yjs merging, real provider redirects, SMTP delivery, Edge
-Function scheduling, browser Push, or physical-device behavior; perform the
-remaining drills below.
+app's overlapping durable cursor.
+
+The same command creates a separate live target-device session on the private
+device channel. It verifies content-free primary-switch, restoration,
+secondary-opt-in, and revocation broadcasts within the one-second target; the
+peer reads the resulting atomic ownership state, performs a proof-gated
+operation as the target device, then observes its own revocation. Finally, the
+revoked proof is rejected and the target refresh token fails after the revoker
+invalidates other account sessions, matching the app's revocation sequence.
+
+This is direct backend/live-session evidence, not a rendered-app walkthrough.
+It does not prove decrypted UI propagation, local erasure on a real target
+client, structured-field or Yjs merging, real provider redirects, SMTP
+delivery, Edge Function scheduling, browser Push, or physical-device behavior;
+perform the remaining drills below.
 
 After the account-deletion function and its once-per-minute scheduler are
 deployed, use the separate long-running drill to verify the real one-hour
@@ -516,8 +527,8 @@ restore on a separate clean device.
    broadcast through durable reconciliation.
 6. Disconnect one client, mutate both sides, reconnect, and inspect the merged
    structured records and Yjs result.
-7. Promote and revoke reminder devices and confirm duplicate reminders remain
-   suppressed.
+7. Repeat reminder promotion/revocation in two rendered clients and confirm the
+   target client erases local data while duplicate reminders remain suppressed.
 8. Exercise permission-granted Web Push, replacement, cancellation, deep
    links, sign-out cleanup, and the active-tab fallback.
 9. Restore an encrypted export on a separate clean client.
