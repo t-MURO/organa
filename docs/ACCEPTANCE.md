@@ -449,6 +449,15 @@ Local evidence:
   and observe a real cron-authorized claim and retry through a VAPID-validated
   dispatcher. It has not been run against a connected backend, so
   function/scheduler and browser-delivery rows remain unchecked.
+- Connected phases record each exact synthetic email before account creation,
+  reconcile transport-ambiguous creations for 20 seconds, verify exact-email
+  absence after cleanup, and fail rather than printing success when cleanup or
+  interruption occurs.
+- Passing evidence also requires the same clean Organa commit and exact
+  operator configuration before every phase and at the end of the run.
+  Evidence records sanitized interruption/process outcomes and input-state
+  confirmations without keys, key-derived digests, sessions, proofs, payloads,
+  or user content.
 - The dispatcher now fails closed on a missing/malformed trusted Push-host
   allowlist and removes unlisted subscriptions before network access. Actual
   release-browser endpoint compatibility remains part of the browser-delivery

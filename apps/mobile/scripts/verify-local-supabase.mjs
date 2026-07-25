@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import * as Y from "yjs";
 
 import { readConnectedSupabaseConfig } from "./connected-supabase-config.mjs";
+import { createSyntheticAccountTracker } from "./synthetic-account-tracker.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const verificationEnvironment = readVerificationEnvironment();
@@ -30,28 +31,60 @@ const clientOptions = {
   auth: { autoRefreshToken: false, persistSession: false },
   global: { fetch: verificationFetch },
 };
+const syntheticAccounts = createSyntheticAccountTracker({
+  emailPrefix: "approval-",
+});
 const users = [];
 const checks = [];
 let interruptedSignal;
+const handledSignals =
+  process.platform === "win32"
+    ? ["SIGINT", "SIGTERM"]
+    : ["SIGHUP", "SIGINT", "SIGTERM"];
 
-for (const signal of ["SIGINT", "SIGTERM"]) {
-  process.once(signal, () => {
+for (const signal of handledSignals) {
+  process.on(signal, () => {
     interruptedSignal ??= signal;
     interruptionController.abort();
   });
 }
 
+let runFailure;
 try {
   if (verificationEnvironment.connected) {
     await verifyConnectedAuthSettings();
   }
   await verifyDeviceApprovalContract();
-  console.log(
-    `${verificationEnvironment.label} Supabase verification passed (${checks.length} checks).`,
-  );
-} finally {
-  await deleteSyntheticUsers();
+} catch (error) {
+  runFailure =
+    error instanceof Error
+      ? error
+      : new Error("Supabase verification failed.");
 }
+
+let cleanupFailure;
+try {
+  await deleteSyntheticUsers();
+} catch {
+  cleanupFailure = new Error(
+    "Synthetic account cleanup failed; inspect Auth users with the approval- prefix.",
+  );
+}
+
+if (interruptedSignal && !runFailure) {
+  runFailure = new Error(
+    `Supabase verification was interrupted by ${interruptedSignal}.`,
+  );
+}
+if (runFailure) {
+  if (cleanupFailure) console.error(cleanupFailure.message);
+  throw runFailure;
+}
+if (cleanupFailure) throw cleanupFailure;
+
+console.log(
+  `${verificationEnvironment.label} Supabase verification passed (${checks.length} checks).`,
+);
 
 async function verifyConnectedAuthSettings() {
   let response;
@@ -90,11 +123,14 @@ async function verifyDeviceApprovalContract() {
   const suffix = randomUUID().slice(0, 8);
   const password = `Organa-${randomUUID()}-Aa1!`;
   for (const index of [1, 2]) {
+    const email = `approval-${suffix}-${index}@example.test`;
+    syntheticAccounts.recordAttempt(email);
     const created = await admin.auth.admin.createUser({
-      email: `approval-${suffix}-${index}@example.test`,
+      email,
       email_confirm: true,
       password,
     });
+    syntheticAccounts.recordCreationResult(email, created);
     if (created.error || !created.data.user) {
       throw created.error ?? new Error("User creation failed.");
     }
@@ -1856,15 +1892,8 @@ function expectedError(result, pattern, label) {
 }
 
 async function deleteSyntheticUsers() {
-  const pendingUsers = users.splice(0);
-  const results = await Promise.all(
-    pendingUsers.map((user) => cleanupAdmin.auth.admin.deleteUser(user.id)),
-  );
-  if (results.some((result) => result.error)) {
-    throw new Error(
-      "Synthetic account cleanup failed; inspect Auth users with the approval- prefix.",
-    );
-  }
+  await syntheticAccounts.cleanup(cleanupAdmin);
+  users.splice(0);
 }
 
 function throwIfInterrupted() {

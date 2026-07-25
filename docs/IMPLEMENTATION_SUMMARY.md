@@ -1769,6 +1769,36 @@ No tests were added, changed, or run for this milestone.
 - POSIX shell syntax validation passes for both the initializer and full
   self-hosted preflight.
 
+## Connected Acceptance Evidence Safety
+
+- The connected credential reader now opens a current-user-owned regular file
+  without following symlinks, compares the path and opened inode, checks mode
+  `400` or `600` before reading, enforces a 16 KiB bound and exact field set,
+  and rejects additional reserved placeholder hostnames.
+- Baseline, Web Push, and one-hour deletion phases register every exact random
+  email before account creation. One shared cleanup path deletes known IDs,
+  searches paginated Auth users for only the exact generated addresses,
+  reconciles an ambiguous creation response for 20 seconds, and verifies no
+  tracked account remains.
+- A cleanup failure can no longer be hidden behind an earlier success message.
+  Persistent signal handlers allow duplicate process-group/parent forwarding
+  without terminating cleanup, and every phase fails if interruption occurred
+  at any point through cleanup.
+- The parent runner now awaits each child asynchronously, forwards the first
+  Unix `SIGHUP`, `SIGINT`, or `SIGTERM`, stops later phases, and writes failed
+  evidence after child cleanup. Version-3 evidence includes only a sanitized
+  spawn code, interruption signal, and confirmation that the same clean Organa
+  commit and exact operator configuration were present before every phase and
+  after the final phase. Secret equality is checked only in memory; no
+  key-derived digest is recorded.
+- All six touched operator scripts pass `node --check`; an in-memory dry run
+  proves exact-email cleanup preserves an unrelated account; and the committed
+  placeholder config fails closed on its non-private mode before Git or network
+  work. Strict TypeScript, the unchanged 151-test suite, the 18-check
+  production web build with 22 precache URLs, all 19 platform checks, and
+  `git diff --check` pass.
+- No test file was added or changed for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

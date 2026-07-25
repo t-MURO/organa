@@ -8,6 +8,7 @@ import { performance } from "node:perf_hooks";
 import { createClient } from "@supabase/supabase-js";
 
 import { readConnectedSupabaseConfig } from "./connected-supabase-config.mjs";
+import { createSyntheticAccountTracker } from "./synthetic-account-tracker.mjs";
 
 const POLL_INTERVAL_MS = 5_000;
 const PROGRESS_INTERVAL_MS = 60_000;
@@ -43,13 +44,20 @@ const client = createClient(config.supabaseUrl, config.publishableKey, {
   auth: { autoRefreshToken: false, persistSession: false },
   global: { fetch: verificationFetch },
 });
+const syntheticAccounts = createSyntheticAccountTracker({
+  emailPrefix: "web-push-live-",
+});
 const checks = [];
 const drillStartedAt = performance.now();
 let createdUser;
 let interruptedSignal;
+const handledSignals =
+  process.platform === "win32"
+    ? ["SIGINT", "SIGTERM"]
+    : ["SIGHUP", "SIGINT", "SIGTERM"];
 
-for (const signal of ["SIGINT", "SIGTERM"]) {
-  process.once(signal, () => {
+for (const signal of handledSignals) {
+  process.on(signal, () => {
     interruptedSignal ??= signal;
     interruptionController.abort();
   });
@@ -74,6 +82,11 @@ try {
   );
 }
 
+if (interruptedSignal && !runFailure) {
+  runFailure = new Error(
+    `Connected Web Push verification was interrupted by ${interruptedSignal}.`,
+  );
+}
 if (runFailure) {
   if (cleanupFailure) console.error(cleanupFailure.message);
   throw runFailure;
@@ -94,11 +107,13 @@ async function runWebPushSchedulerDrill() {
 
   const email = `web-push-live-${randomUUID()}@example.test`;
   const password = `Organa-${randomUUID()}-Aa1!`;
+  syntheticAccounts.recordAttempt(email);
   const creation = await admin.auth.admin.createUser({
     email,
     email_confirm: true,
     password,
   });
+  syntheticAccounts.recordCreationResult(email, creation);
   throwIfInterrupted();
   if (creation.error || !creation.data.user) {
     throw new Error(
@@ -278,26 +293,7 @@ async function waitForRetryState(reminderId, fireAtMs) {
 }
 
 async function cleanupSyntheticUser() {
-  if (!createdUser) return;
-
-  let result;
-  try {
-    result = await cleanupAdmin.auth.admin.deleteUser(createdUser.id);
-  } catch {
-    throw new Error("Connected Web Push cleanup request failed.");
-  }
-  if (result.error && !isMissingUserError(result.error)) {
-    throw new Error("Connected Web Push cleanup request was rejected.");
-  }
-}
-
-function isMissingUserError(error) {
-  if (!error) return false;
-  return (
-    error.status === 404 ||
-    error.code === "user_not_found" ||
-    /not found|does not exist/i.test(error.message ?? "")
-  );
+  await syntheticAccounts.cleanup(cleanupAdmin);
 }
 
 function ok(condition, label) {

@@ -490,20 +490,35 @@ pnpm verify:connected:acceptance
 ```
 
 The runner requires a clean Organa commit and a recorded Supabase revision. It
-refuses placeholder/insecure URLs, legacy or swapped key types, symlinked or
-non-private credential files, and missing destructive-test consent. Before
-creating users it confirms email, Google, Apple, and GitHub are enabled and
-phone Auth is disabled through the public settings endpoint. Its output
-contains check labels and counts only, never keys, sessions, proofs, or
-payloads. Do not interrupt the run; if cleanup reports a failure, inspect and
-remove only synthetic Auth users whose addresses begin with `approval-`.
+refuses placeholder/insecure URLs, legacy or swapped key types, unsupported
+configuration fields, oversized files, credential files not owned by the
+current operator, symlinked or non-private credential files, and missing
+destructive-test consent. Before creating users it confirms email, Google,
+Apple, and GitHub are enabled and phone Auth is disabled through the public
+settings endpoint. Its output contains check labels and counts only, never
+keys, sessions, proofs, or payloads.
+
+Avoid interrupting a connected run. If `SIGHUP` on Unix, `SIGINT`, or
+`SIGTERM` is received, the parent records a failed run, forwards the signal to
+the active phase, and waits for its cleanup instead of abandoning it. Each
+phase records the exact random email before requesting account creation.
+Cleanup deletes every known user, searches Auth users for only those exact
+generated emails, retries that reconciliation for 20 seconds when creation had
+an ambiguous response, and verifies absence before a phase can pass. It never
+deletes by prefix. If cleanup still reports a failure, inspect and remove only
+synthetic Auth users whose addresses use the prefix named in the error.
 
 Every run that clears preflight writes a mode-600 JSON result below the ignored
-`.organa-connected-evidence/` directory. The evidence records the exact Organa
-commit, declared Supabase source revision, public origin, runtime, timestamps,
-duration, and pass/fail status for each completed phase. It never records
-credentials, sessions, proofs, ciphertext, Push capabilities, scheduler
-secrets, or user content.
+and current-user-owned `.organa-connected-evidence/` directory. The evidence
+records the exact Organa commit, confirmation that the same clean commit was
+still present before every phase and after all phases, confirmation that the
+same private operator configuration remained in use, declared Supabase source
+revision, public origin, runtime, timestamps, duration, interruption signal,
+sanitized process error code, and pass/fail status for each completed phase.
+A source/config change, spawn failure, interruption, failed cleanup, or failed
+phase prevents passing evidence. Config equality is checked in memory; no key
+or key-derived digest is written. The file never records credentials, sessions,
+proofs, ciphertext, Push capabilities, scheduler secrets, or user content.
 
 The lower-level verifier files are runner internals. Only the guarded
 `verify:connected:acceptance*` commands produce acceptance evidence; do not use

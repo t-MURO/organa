@@ -1,4 +1,4 @@
-import { execFileSync, spawnSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import {
   chmodSync,
   lstatSync,
@@ -22,6 +22,25 @@ const evidenceDirectory = resolve(
   ".organa-connected-evidence",
 );
 const config = readConnectedSupabaseConfig(configPath);
+let activeChild;
+let interruptedSignal;
+const signalHandlers = new Map();
+const handledSignals =
+  process.platform === "win32"
+    ? ["SIGINT", "SIGTERM"]
+    : ["SIGHUP", "SIGINT", "SIGTERM"];
+
+for (const signal of handledSignals) {
+  const handler = () => {
+    const firstInterruption = !interruptedSignal;
+    interruptedSignal ??= signal;
+    if (firstInterruption && activeChild) {
+      activeChild.kill(signal);
+    }
+  };
+  signalHandlers.set(signal, handler);
+  process.on(signal, handler);
+}
 
 if (options.includeWebPush && !config.allowWebPushSchedulerDrill) {
   throw new Error(
@@ -62,20 +81,34 @@ const phaseEvidence = [];
 let runFailure;
 
 for (const phase of phases) {
+  if (interruptedSignal) {
+    runFailure = new Error(
+      `Connected acceptance was interrupted by ${interruptedSignal}; later phases were not started.`,
+    );
+    break;
+  }
+  try {
+    requireUnchangedRunInputs();
+  } catch (error) {
+    runFailure =
+      error instanceof Error
+        ? error
+        : new Error("Connected acceptance inputs changed.");
+    break;
+  }
+
   const phaseStartedAt = new Date();
   console.log(`Starting ${phase.name} acceptance phase.`);
-  const result = spawnSync(
-    process.execPath,
-    [resolve(scriptDirectory, phase.script), ...phase.arguments],
-    {
-      cwd: repositoryRoot,
-      stdio: "inherit",
-    },
-  );
+  const result = await runPhase(phase);
   const phaseFinishedAt = new Date();
-  const passed = result.status === 0 && !result.error && !result.signal;
+  const passed =
+    result.status === 0 &&
+    !result.errorCode &&
+    !result.signal &&
+    !interruptedSignal;
   phaseEvidence.push({
     durationMs: phaseFinishedAt.getTime() - phaseStartedAt.getTime(),
+    errorCode: result.errorCode,
     exitCode: result.status,
     finishedAt: phaseFinishedAt.toISOString(),
     name: phase.name,
@@ -85,24 +118,71 @@ for (const phase of phases) {
   });
 
   if (!passed) {
-    runFailure = new Error(
-      `${phase.name} failed; later connected phases were not started.`,
-    );
+    runFailure = interruptedSignal
+      ? new Error(
+          `${phase.name} was interrupted by ${interruptedSignal}; later connected phases were not started.`,
+        )
+      : new Error(
+          `${phase.name} failed; later connected phases were not started.`,
+        );
     break;
   }
+}
+
+if (interruptedSignal && !runFailure) {
+  runFailure = new Error(
+    `Connected acceptance was interrupted by ${interruptedSignal}.`,
+  );
+}
+
+let organaCommitConfirmedAtFinish = false;
+let connectedConfigConfirmedAtFinish = false;
+try {
+  organaCommitConfirmedAtFinish =
+    readCleanCommit() === organaCommit;
+} catch {
+  organaCommitConfirmedAtFinish = false;
+}
+if (!organaCommitConfirmedAtFinish && !runFailure) {
+  runFailure = new Error(
+    "The Organa source state changed during connected acceptance.",
+  );
+}
+try {
+  connectedConfigConfirmedAtFinish = connectedConfigsMatch(
+    readConnectedSupabaseConfig(configPath),
+    config,
+  );
+} catch {
+  connectedConfigConfirmedAtFinish = false;
+}
+if (!connectedConfigConfirmedAtFinish && !runFailure) {
+  runFailure = new Error(
+    "The connected Supabase operator config changed during acceptance.",
+  );
+}
+
+stopHandlingSignals();
+if (interruptedSignal && !runFailure) {
+  runFailure = new Error(
+    `Connected acceptance was interrupted by ${interruptedSignal}.`,
+  );
 }
 
 const finishedAt = new Date();
 const evidencePath = writeEvidence({
   evidenceDirectory,
   evidence: {
+    connectedConfigConfirmedAtFinish,
     durationMs: finishedAt.getTime() - startedAt.getTime(),
     finishedAt: finishedAt.toISOString(),
+    interruptedBy: interruptedSignal ?? null,
     node: process.version,
     organaCommit,
+    organaCommitConfirmedAtFinish,
     phases: phaseEvidence,
     platform: `${process.platform}-${process.arch}`,
-    runnerVersion: 1,
+    runnerVersion: 3,
     startedAt: startedAt.toISOString(),
     status: runFailure ? "failed" : "passed",
     supabaseOrigin: config.supabaseUrl,
@@ -118,6 +198,93 @@ if (runFailure) throw runFailure;
 console.log(
   `Connected acceptance run passed (${phaseEvidence.length} phases).`,
 );
+
+function runPhase(phase) {
+  return new Promise((resolvePhase) => {
+    let child;
+    try {
+      child = spawn(
+        process.execPath,
+        [resolve(scriptDirectory, phase.script), ...phase.arguments],
+        {
+          cwd: repositoryRoot,
+          stdio: "inherit",
+        },
+      );
+    } catch (error) {
+      resolvePhase({
+        errorCode: sanitizeSpawnErrorCode(error),
+        signal: null,
+        status: null,
+      });
+      return;
+    }
+
+    activeChild = child;
+    let errorCode = null;
+    child.once("error", (error) => {
+      errorCode = sanitizeSpawnErrorCode(error);
+    });
+    child.once("close", (status, signal) => {
+      if (activeChild === child) activeChild = undefined;
+      resolvePhase({
+        errorCode,
+        signal: signal ?? null,
+        status,
+      });
+    });
+
+    if (interruptedSignal) {
+      child.kill(interruptedSignal);
+    }
+  });
+}
+
+function sanitizeSpawnErrorCode(error) {
+  return typeof error?.code === "string" &&
+    /^[A-Z0-9_]+$/.test(error.code)
+    ? error.code
+    : "UNKNOWN";
+}
+
+function stopHandlingSignals() {
+  for (const [signal, handler] of signalHandlers) {
+    process.removeListener(signal, handler);
+  }
+  signalHandlers.clear();
+}
+
+function requireUnchangedRunInputs() {
+  if (readCleanCommit() !== organaCommit) {
+    throw new Error(
+      "The Organa source state changed before a connected phase.",
+    );
+  }
+  let currentConfig;
+  try {
+    currentConfig = readConnectedSupabaseConfig(configPath);
+  } catch {
+    throw new Error(
+      "The connected Supabase operator config changed before a phase.",
+    );
+  }
+  if (!connectedConfigsMatch(currentConfig, config)) {
+    throw new Error(
+      "The connected Supabase operator config changed before a phase.",
+    );
+  }
+}
+
+function connectedConfigsMatch(left, right) {
+  return (
+    left.allowOneHourDeletionDrill === right.allowOneHourDeletionDrill &&
+    left.allowWebPushSchedulerDrill === right.allowWebPushSchedulerDrill &&
+    left.publishableKey === right.publishableKey &&
+    left.secretKey === right.secretKey &&
+    left.supabaseSourceRevision === right.supabaseSourceRevision &&
+    left.supabaseUrl === right.supabaseUrl
+  );
+}
 
 function parseArguments(argumentsList) {
   const parsed = {
@@ -203,8 +370,9 @@ function writeEvidence({
 }
 
 function ensurePrivateDirectory(directory) {
+  let stats;
   try {
-    const stats = lstatSync(directory);
+    stats = lstatSync(directory);
     if (!stats.isDirectory() || stats.isSymbolicLink()) {
       throw new Error(
         "The connected evidence path must be a real directory.",
@@ -213,6 +381,15 @@ function ensurePrivateDirectory(directory) {
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
     mkdirSync(directory, { mode: 0o700, recursive: true });
+    stats = lstatSync(directory);
+  }
+  if (
+    typeof process.getuid === "function" &&
+    stats.uid !== process.getuid()
+  ) {
+    throw new Error(
+      "The connected evidence directory must be owned by the current user.",
+    );
   }
   chmodSync(directory, 0o700);
 }

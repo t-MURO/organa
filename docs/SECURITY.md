@@ -206,6 +206,19 @@ example placeholders, secret keys, service-role keys, and arbitrary non-empty
 strings do not create a Supabase client. Setup feedback never echoes a supplied
 URL or key.
 
+Connected acceptance credentials remain in one ignored operator file. The
+runner opens that file without following symlinks, confirms the opened inode,
+current-user ownership, mode `400` or `600`, a small size bound, an exact
+configuration schema, explicit destructive-test consent, and distinct modern
+publishable/secret key types. Keys are never placed in child arguments,
+evidence, or check output. Synthetic account cleanup tracks exact randomized
+emails before creation, reconciles ambiguous create responses through the
+administrator list API, deletes exact matches only, and verifies their absence.
+Interruptions remain failed runs and are allowed to finish cleanup before the
+parent writes sanitized evidence. The same clean source commit and exact
+operator configuration are rechecked before every child phase and at finish;
+only non-secret confirmation booleans enter evidence.
+
 Field names and record types are operational metadata. They should not contain
 user-entered content.
 
