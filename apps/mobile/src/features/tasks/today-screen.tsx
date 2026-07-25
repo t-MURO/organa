@@ -195,7 +195,7 @@ export function TodayScreen() {
           <Text style={styles.eyebrow}>
             {formatFriendlyDate(parseLocalDate(selectedDate))}
           </Text>
-          <Text style={styles.title}>
+          <Text role="heading" style={styles.title}>
             {selectedDate === actualToday
               ? "Make room for today."
               : "Plan with a little room."}

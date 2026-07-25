@@ -145,7 +145,9 @@ export function TemplateScreen() {
         >
           <View style={styles.heroCopy}>
             <Text style={styles.eyebrow}>TASK LIBRARY</Text>
-            <Text style={styles.title}>Start from something steady.</Text>
+            <Text role="heading" style={styles.title}>
+              Start from something steady.
+            </Text>
             <Text style={styles.subtitle}>
               Use an official preset as-is, or shape a private template around
               the way your day actually works.

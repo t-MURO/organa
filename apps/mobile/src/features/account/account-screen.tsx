@@ -349,7 +349,9 @@ export function AccountScreen() {
       ]}
     >
       <Text style={styles.eyebrow}>ACCOUNT & PRIVACY</Text>
-      <Text style={styles.title}>Your space, your devices.</Text>
+      <Text role="heading" style={styles.title}>
+        Your space, your devices.
+      </Text>
       <Text style={styles.subtitle}>
         Review how you signed in and where Organa keeps this account available.
       </Text>

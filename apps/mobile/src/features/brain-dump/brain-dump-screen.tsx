@@ -77,7 +77,9 @@ export function BrainDumpScreen() {
       >
         <View style={styles.heroCopy}>
           <Text style={styles.eyebrow}>BRAIN DUMP</Text>
-          <Text style={styles.title}>Put it somewhere safe.</Text>
+          <Text role="heading" style={styles.title}>
+            Put it somewhere safe.
+          </Text>
           <Text style={styles.subtitle}>
             Loose thoughts belong here. They do not need to become tasks.
           </Text>

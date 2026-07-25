@@ -176,7 +176,9 @@ export function FocusScreen() {
   if (!task) {
     return (
       <View style={styles.center}>
-        <Text style={styles.missingTitle}>That task is no longer here.</Text>
+        <Text role="heading" style={styles.missingTitle}>
+          That task is no longer here.
+        </Text>
         <Text style={styles.missingText}>
           It may have been removed on another screen.
         </Text>
@@ -219,6 +221,7 @@ export function FocusScreen() {
             : formatTaskKind(task.kind)}
         </Text>
         <Text
+          role="heading"
           style={[
             styles.taskTitle,
             task.completedAt ? styles.taskTitleCompleted : undefined,

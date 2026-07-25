@@ -363,6 +363,10 @@ Local evidence:
 - a fresh-origin production setup-required render exposes one `main`
   landmark, an H1 page title, an H2 setup title, a semantic promise list, and
   a labeled setup region; the browser console contains no warning or error
+- a fresh development-preview browser session exposes exactly one `main`
+  landmark and one H1 across Today, Check-In, Brain Dump, Library, Account,
+  and Focus; the five standard routes expose exactly one labeled primary
+  navigation landmark, while Focus intentionally removes global navigation
 - the last production dependency audit reported no known vulnerabilities
   before the opaque-ID crypto dependency was added; the current lockfile's
   online advisory audit remains a release gate because the npm audit endpoint

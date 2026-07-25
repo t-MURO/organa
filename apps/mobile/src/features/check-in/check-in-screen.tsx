@@ -131,7 +131,9 @@ export function CheckInScreen() {
       >
         <View style={styles.heroCopy}>
           <Text style={styles.eyebrow}>CHECK-IN</Text>
-          <Text style={styles.title}>A quiet moment, if you want it.</Text>
+          <Text role="heading" style={styles.title}>
+            A quiet moment, if you want it.
+          </Text>
           <Text style={styles.subtitle}>
             Notice how today feels. A number is enough; words are optional.
           </Text>

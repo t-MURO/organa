@@ -61,7 +61,7 @@ export function AppShell() {
   if (sync.localReadFailed) {
     return (
       <AppShellThemeContext.Provider value={{ theme }}>
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView role="main" style={styles.safeArea}>
           <StatusBar style={effectiveMode === "dark" ? "light" : "dark"} />
           <View
             accessibilityLiveRegion="assertive"
@@ -71,7 +71,7 @@ export function AppShell() {
             <View style={styles.localReadCard}>
               <BrandMark />
               <Text style={styles.localReadEyebrow}>LOCAL DATA PAUSED</Text>
-              <Text style={styles.localReadTitle}>
+              <Text role="heading" style={styles.localReadTitle}>
                 Your saved space did not open safely.
               </Text>
               <Text style={styles.localReadText}>
@@ -135,7 +135,7 @@ export function AppShell() {
           </View>
         ) : null}
         {pathname === "/focus" ? (
-          <View style={styles.focusShell}>
+          <View role="main" style={styles.focusShell}>
             <Slot />
           </View>
         ) : (
@@ -157,7 +157,7 @@ export function AppShell() {
                 onCycleTheme={cycleTheme}
               />
             )}
-            <View style={styles.content}>
+            <View role="main" style={styles.content}>
               <Slot />
             </View>
             {!isWide ? <MobileNavigation styles={styles} /> : null}
@@ -185,7 +185,7 @@ export function useAppTheme() {
 function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
     <View style={brandStyles.row}>
-      <View style={brandStyles.mark}>
+      <View aria-hidden={true} style={brandStyles.mark}>
         <View style={[brandStyles.bar, brandStyles.barTop]} />
         <View style={[brandStyles.bar, brandStyles.barMiddle]} />
         <View style={[brandStyles.bar, brandStyles.barBottom]} />
@@ -215,12 +215,17 @@ function Sidebar({
     <View style={styles.sidebar}>
       <BrandMark />
       <Text style={styles.navEyebrow}>YOUR SPACE</Text>
-      <View style={styles.desktopNav}>
+      <View
+        accessibilityLabel="Primary"
+        role="navigation"
+        style={styles.desktopNav}
+      >
         {navigation.map((item) => {
           const active = pathname === item.href;
           return (
             <Pressable
               key={item.href}
+              accessibilityLabel={item.label}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               aria-selected={active}
@@ -231,6 +236,7 @@ function Sidebar({
               onPress={() => router.push(item.href)}
             >
               <View
+                aria-hidden={true}
                 style={[
                   styles.navGlyph,
                   active ? { backgroundColor: theme.accent } : undefined,
@@ -252,6 +258,7 @@ function Sidebar({
       </View>
       <View style={styles.sidebarSpacer} />
       <Pressable
+        accessibilityLabel={`Theme is ${themeMode}. Change theme.`}
         accessibilityRole="button"
         style={styles.themeButton}
         onPress={onCycleTheme}
@@ -293,7 +300,7 @@ function MobileHeader({
 }) {
   const showSync = syncStatus !== "synced" && syncStatus !== "local";
   return (
-    <View style={styles.mobileHeader}>
+    <View role="banner" style={styles.mobileHeader}>
       <BrandMark />
       <View style={styles.mobileHeaderActions}>
         {showSync ? (
@@ -329,12 +336,17 @@ function MobileNavigation({
   const router = useRouter();
 
   return (
-    <View style={styles.mobileNav}>
+    <View
+      accessibilityLabel="Primary"
+      role="navigation"
+      style={styles.mobileNav}
+    >
       {navigation.map((item) => {
         const active = pathname === item.href;
         return (
           <Pressable
             key={item.href}
+            accessibilityLabel={item.label}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
             aria-selected={active}
@@ -342,6 +354,7 @@ function MobileNavigation({
             onPress={() => router.push(item.href)}
           >
             <Text
+              aria-hidden={true}
               style={[
                 styles.mobileNavGlyph,
                 active ? styles.mobileNavGlyphActive : undefined,

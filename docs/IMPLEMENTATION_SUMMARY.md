@@ -1816,6 +1816,27 @@ No tests were added, changed, or run for this milestone.
   build with 22 precache URLs, all 19 platform checks, and
   `git diff --check` pass. No test file was added or changed.
 
+## Authenticated Route Semantics
+
+- The standard application shell now exposes exactly one route-content
+  `main`, a labeled primary navigation landmark, and a mobile `banner`.
+  Navigation controls have explicit names, so decorative one-letter glyphs do
+  not become the control label.
+- Today, Check-In, Brain Dump, Library, and Account expose their visible page
+  title as the H1. Focus exposes the active task or missing-task message as its
+  H1 while retaining its intentionally distraction-free shell without global
+  navigation.
+- The fail-closed local-data boundary also exposes a `main` and a heading.
+- A fresh development-preview browser session directly verified one `main`,
+  one labeled primary navigation, and one expected H1 on all five standard
+  routes. Focus directly verified one `main`, no primary navigation, and the
+  active task as its H1.
+- Physical VoiceOver, TalkBack, dynamic-type, and touch-target walkthroughs
+  remain release gates; this milestone does not claim those checks.
+- Strict TypeScript, the unchanged 151-test suite, the 18-check production web
+  build with eight static routes and 22 precache URLs, and all 19 platform
+  checks pass. No test file was added or changed for this milestone.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
