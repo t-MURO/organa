@@ -6,6 +6,13 @@ import {
   useFonts,
 } from "@expo-google-fonts/manrope";
 import Head from "expo-router/head";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  View,
+} from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthBoundary } from "../auth/auth-boundary";
@@ -28,20 +35,41 @@ import { SecurityProvider } from "../security/security-context";
 import { AppLockBoundary } from "../security/app-lock-boundary";
 import { AppLockProvider } from "../security/app-lock-context";
 import { SyncProvider } from "../sync/sync-context";
+import { darkTheme, lightTheme } from "../theme";
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const colorScheme = useColorScheme();
+  const [fontsLoaded, fontError] = useFonts({
     Manrope_400Regular,
     Manrope_600SemiBold,
     Manrope_700Bold,
     Manrope_800ExtraBold,
   });
+  const loadingTheme = colorScheme === "dark" ? darkTheme : lightTheme;
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && !fontError) {
     return (
-      <Head>
-        <title>Organa</title>
-      </Head>
+      <>
+        <Head>
+          <title>Organa</title>
+        </Head>
+        <View
+          accessibilityLabel="Opening Organa"
+          role="main"
+          style={[
+            styles.loadingPage,
+            { backgroundColor: loadingTheme.background },
+          ]}
+        >
+          <ActivityIndicator color={loadingTheme.accentStrong} />
+          <Text
+            role="status"
+            style={[styles.loadingText, { color: loadingTheme.textMuted }]}
+          >
+            Opening Organa...
+          </Text>
+        </View>
+      </>
     );
   }
 
@@ -61,6 +89,19 @@ export default function RootLayout() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingPage: {
+    alignItems: "center",
+    flex: 1,
+    gap: 12,
+    justifyContent: "center",
+  },
+  loadingText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+});
 
 function AccountApp() {
   const auth = useAuth();

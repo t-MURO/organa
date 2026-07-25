@@ -373,6 +373,8 @@ Local evidence:
 - recovery setup/restore, app lock, and deletion safety screens expose a main
   landmark, a heading, and non-interruptive loading status; the deletion
   countdown remains readable on demand without announcing every second
+- root font startup now renders a themed `main` and status instead of an empty
+  body, and a font-loader error no longer keeps the application blank
 - optional interaction audio now stays silent until a fail-closed audio mode
   is ready, explicitly respects silent mode, does not play in the background,
   and mixes rather than interrupting other audio; a live preview with sounds

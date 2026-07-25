@@ -1865,6 +1865,18 @@ No tests were added, changed, or run for this milestone.
   sandboxed npm registry lookup failed, and unsandboxed disclosure of the
   dependency graph was not authorized. No workaround was used.
 
+## Accessible Startup Fallback
+
+- Root startup no longer returns only document metadata while bundled Manrope
+  fonts initialize. It renders a light/dark-aware main landmark, progress
+  indicator, and status copy on web, iOS, and Android.
+- A font-loader error no longer leaves the app in an indefinite blank state.
+  Organa proceeds so the platform can use its font fallback rather than making
+  an optional visual asset a reliability gate.
+- Strict TypeScript, all 151 unchanged tests, the 18-check production web
+  build with eight static routes and 22 precache URLs, and both iOS/Android
+  Hermes exports pass. No test file was added or changed.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
