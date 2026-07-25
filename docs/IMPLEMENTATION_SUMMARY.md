@@ -1837,6 +1837,34 @@ No tests were added, changed, or run for this milestone.
   build with eight static routes and 22 precache URLs, and all 19 platform
   checks pass. No test file was added or changed for this milestone.
 
+## Requirements Fidelity And Critical Boundaries
+
+- Corrected Home's information hierarchy to match the product requirement:
+  calendar planning and the Priority/Time task lanes now precede Quick Capture,
+  with completed work and the full inbox still available below.
+- A fresh development-preview accessibility snapshot directly verified the
+  order `PRIORITY LANE`, `TIME LANE`, `QUICK CAPTURE`, `TASK INBOX`, while
+  retaining one `main` and the expected H1.
+- Interaction audio now fails silent until Expo's global audio mode is ready.
+  The mode explicitly disables playback in silent/vibrate mode and in the
+  background, and uses `mixWithOthers` so a gentle task sound does not seize
+  exclusive audio focus.
+- A live preview enabled task sounds, created a task, and completed it without
+  a runtime failure. Physical silent-switch/ringer and haptic behavior remains
+  a release-device gate.
+- Recovery setup/restore, app-lock, and account-deletion safety screens now
+  expose main landmarks, headings, and status copy. Route loading copy also
+  uses status semantics.
+- Removed the once-per-second live-region behavior from the account-deletion
+  countdown. Its exact remaining time stays accessible on demand without
+  repeatedly interrupting assistive technology.
+- Strict TypeScript, the unchanged 151-test suite, the 18-check production web
+  build with eight static routes and 22 precache URLs, both native Hermes
+  exports, and all 19 platform checks pass. No test file was added or changed.
+- A current production dependency advisory audit remains unresolved:
+  sandboxed npm registry lookup failed, and unsandboxed disclosure of the
+  dependency graph was not authorized. No workaround was used.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

@@ -113,7 +113,9 @@ export function CheckInScreen() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={theme.accentStrong} />
-        <Text style={styles.loadingText}>Making a little room...</Text>
+        <Text role="status" style={styles.loadingText}>
+          Making a little room...
+        </Text>
       </View>
     );
   }

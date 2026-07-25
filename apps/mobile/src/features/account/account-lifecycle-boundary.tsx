@@ -46,9 +46,15 @@ export function AccountLifecycleBoundary({ children }: PropsWithChildren) {
 
   if (lifecycle.loading) {
     return (
-      <View style={styles.center}>
+      <View
+        accessibilityLabel="Checking account status"
+        role="main"
+        style={styles.center}
+      >
         <ActivityIndicator color={theme.accentStrong} />
-        <Text style={styles.status}>Checking account status...</Text>
+        <Text role="status" style={styles.status}>
+          Checking account status...
+        </Text>
       </View>
     );
   }
@@ -87,10 +93,10 @@ export function AccountLifecycleBoundary({ children }: PropsWithChildren) {
   }
 
   return (
-    <View style={styles.page}>
+    <View role="main" style={styles.page}>
       <View style={styles.card}>
         <Text style={styles.eyebrow}>ACCOUNT DELETION</Text>
-        <Text style={styles.title}>
+        <Text role="heading" style={styles.title}>
           {cancellable
             ? "Your account is read-only."
             : confirmationPending
@@ -106,7 +112,10 @@ export function AccountLifecycleBoundary({ children }: PropsWithChildren) {
         </Text>
         {cancellable ? (
           <>
-            <Text accessibilityLiveRegion="polite" style={styles.timer}>
+            <Text
+              accessibilityLabel={`${formatDuration(seconds)} remaining`}
+              style={styles.timer}
+            >
               {formatDuration(seconds)} remaining
             </Text>
             <Pressable

@@ -59,7 +59,9 @@ export function BrainDumpScreen() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={theme.accentStrong} />
-        <Text style={styles.loadingText}>Opening a quiet page...</Text>
+        <Text role="status" style={styles.loadingText}>
+          Opening a quiet page...
+        </Text>
       </View>
     );
   }

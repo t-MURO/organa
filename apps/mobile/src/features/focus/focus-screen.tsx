@@ -168,7 +168,9 @@ export function FocusScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <Text style={styles.loadingText}>Clearing a little space...</Text>
+        <Text role="status" style={styles.loadingText}>
+          Clearing a little space...
+        </Text>
       </View>
     );
   }

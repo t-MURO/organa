@@ -177,7 +177,9 @@ export function TodayScreen() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={theme.accentStrong} />
-        <Text style={styles.loadingText}>Making space for today...</Text>
+        <Text role="status" style={styles.loadingText}>
+          Making space for today...
+        </Text>
       </View>
     );
   }
@@ -209,18 +211,6 @@ export function TodayScreen() {
           <Text style={styles.progressLabel}>gentle wins</Text>
         </View>
       </View>
-
-      <QuickAdd
-        compact={isCompact}
-        priority={priority}
-        styles={styles}
-        theme={theme}
-        title={title}
-        onChangePriority={setPriority}
-        onChangeTitle={setTitle}
-        onOpenEditor={openNewTask}
-        onSubmit={submitTask}
-      />
 
       <PlanningCalendar
         selectedDate={selectedDate}
@@ -297,6 +287,18 @@ export function TodayScreen() {
           </View>
         </View>
       </View>
+
+      <QuickAdd
+        compact={isCompact}
+        priority={priority}
+        styles={styles}
+        theme={theme}
+        title={title}
+        onChangePriority={setPriority}
+        onChangeTitle={setTitle}
+        onOpenEditor={openNewTask}
+        onSubmit={submitTask}
+      />
 
       <View style={styles.completedWrap}>
         <Pressable

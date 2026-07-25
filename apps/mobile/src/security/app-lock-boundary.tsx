@@ -19,8 +19,15 @@ export function AppLockBoundary({ children }: PropsWithChildren) {
 
   if (appLock.loading) {
     return (
-      <View style={styles.page}>
+      <View
+        accessibilityLabel="Opening app lock"
+        role="main"
+        style={styles.page}
+      >
         <ActivityIndicator color={theme.accentStrong} />
+        <Text role="status" style={styles.visuallyHidden}>
+          Checking app lock...
+        </Text>
       </View>
     );
   }
@@ -36,13 +43,15 @@ export function AppLockBoundary({ children }: PropsWithChildren) {
   }
 
   return (
-    <View style={styles.page}>
-      <View style={styles.mark}>
+    <View role="main" style={styles.page}>
+      <View aria-hidden={true} style={styles.mark}>
         <View style={styles.markLine} />
         <View style={styles.markLine} />
         <View style={styles.markLine} />
       </View>
-      <Text style={styles.title}>Organa is locked</Text>
+      <Text role="heading" style={styles.title}>
+        Organa is locked
+      </Text>
       <Text style={styles.body}>
         Use your device authentication to return to your private space.
       </Text>
@@ -117,6 +126,12 @@ function createStyles(theme: typeof lightTheme) {
       fontFamily: "Manrope_800ExtraBold",
       fontSize: 30,
       letterSpacing: -1,
+    },
+    visuallyHidden: {
+      height: 1,
+      opacity: 0,
+      position: "absolute",
+      width: 1,
     },
   });
 }

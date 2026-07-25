@@ -1,9 +1,11 @@
 import * as Haptics from "expo-haptics";
-import { useAudioPlayer } from "expo-audio";
+import { setAudioModeAsync, useAudioPlayer } from "expo-audio";
 import {
   createContext,
   type PropsWithChildren,
   useContext,
+  useEffect,
+  useRef,
 } from "react";
 import { Platform } from "react-native";
 
@@ -21,6 +23,7 @@ const InteractionFeedbackContext = createContext<
 
 export function InteractionFeedbackProvider({ children }: PropsWithChildren) {
   const { settings } = useSettings();
+  const audioModeReady = useRef(false);
   const createPlayer = useAudioPlayer(
     require("../../../assets/audio/create.wav"),
   );
@@ -30,8 +33,27 @@ export function InteractionFeedbackProvider({ children }: PropsWithChildren) {
   createPlayer.volume = 0.2;
   completePlayer.volume = 0.22;
 
+  useEffect(() => {
+    let active = true;
+    void setAudioModeAsync({
+      interruptionMode: "mixWithOthers",
+      playsInSilentMode: false,
+      shouldPlayInBackground: false,
+    })
+      .then(() => {
+        if (active) audioModeReady.current = true;
+      })
+      .catch(() => {
+        audioModeReady.current = false;
+      });
+    return () => {
+      active = false;
+      audioModeReady.current = false;
+    };
+  }, []);
+
   function play(player: typeof createPlayer) {
-    if (!settings.appSoundsEnabled) return;
+    if (!settings.appSoundsEnabled || !audioModeReady.current) return;
     void player
       .seekTo(0)
       .then(() => player.play())

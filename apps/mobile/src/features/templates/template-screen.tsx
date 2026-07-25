@@ -126,7 +126,9 @@ export function TemplateScreen() {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={theme.accentStrong} />
-        <Text style={styles.loadingText}>Opening your library...</Text>
+        <Text role="status" style={styles.loadingText}>
+          Opening your library...
+        </Text>
       </View>
     );
   }

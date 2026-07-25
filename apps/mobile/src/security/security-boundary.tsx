@@ -123,9 +123,15 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
 
   if (security.loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, styles.center]}>
+      <SafeAreaView
+        accessibilityLabel="Opening encrypted space"
+        role="main"
+        style={[styles.safeArea, styles.center]}
+      >
         <ActivityIndicator color={theme.accentStrong} />
-        <Text style={styles.loadingText}>Unlocking your private space...</Text>
+        <Text role="status" style={styles.loadingText}>
+          Unlocking your private space...
+        </Text>
       </SafeAreaView>
     );
   }
@@ -140,13 +146,17 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.page}>
+      <ScrollView contentContainerStyle={styles.page} role="main">
         <View style={styles.card}>
-          <Text style={styles.brand}>organa</Text>
+          <Text aria-hidden={true} style={styles.brand}>
+            organa
+          </Text>
           {security.recoveryCode ? (
             <>
               <Text style={styles.eyebrow}>ONE-TIME RECOVERY SETUP</Text>
-              <Text style={styles.title}>Keep the key to your space.</Text>
+              <Text role="heading" style={styles.title}>
+                Keep the key to your space.
+              </Text>
               <Text style={styles.description}>
                 This recovery key is the only way to restore your encrypted
                 content if every trusted device is lost. Organa cannot recover
@@ -199,7 +209,9 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
           ) : security.restoreRequired ? (
             <>
               <Text style={styles.eyebrow}>NEW DEVICE</Text>
-              <Text style={styles.title}>Unlock your encrypted content.</Text>
+              <Text role="heading" style={styles.title}>
+                Unlock your encrypted content.
+              </Text>
               <Text style={styles.description}>
                 Enter the recovery key you stored when this account was created.
                 It is processed on this device and is never sent to Organa.
@@ -313,7 +325,9 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
           ) : (
             <>
               <Text style={styles.eyebrow}>ENCRYPTION SETUP PAUSED</Text>
-              <Text style={styles.title}>Your data stayed closed.</Text>
+              <Text role="heading" style={styles.title}>
+                Your data stayed closed.
+              </Text>
               <Text style={styles.description}>
                 {security.error ||
                   "Organa could not prepare the account encryption key."}

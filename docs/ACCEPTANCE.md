@@ -367,11 +367,21 @@ Local evidence:
   landmark and one H1 across Today, Check-In, Brain Dump, Library, Account,
   and Focus; the five standard routes expose exactly one labeled primary
   navigation landmark, while Focus intentionally removes global navigation
+- a separate fresh preview directly proves Home's source and accessibility
+  order is Priority lane, Time lane, Quick Capture, then Task Inbox, keeping
+  today's active work ahead of capture as required
+- recovery setup/restore, app lock, and deletion safety screens expose a main
+  landmark, a heading, and non-interruptive loading status; the deletion
+  countdown remains readable on demand without announcing every second
+- optional interaction audio now stays silent until a fail-closed audio mode
+  is ready, explicitly respects silent mode, does not play in the background,
+  and mixes rather than interrupting other audio; a live preview with sounds
+  enabled created and completed a task without a runtime failure
 - the last production dependency audit reported no known vulnerabilities
   before the opaque-ID crypto dependency was added; the current lockfile's
-  online advisory audit remains a release gate because the npm audit endpoint
-  was unavailable in the sandbox and external dependency-graph egress was not
-  authorized
+  online advisory audit remains a release gate because sandboxed npm audit
+  could not resolve the registry and unsandboxed dependency-graph disclosure
+  was not authorized
 - the installed `@noble/hashes` `2.2.0` manifest and lock entry identify one
   integrity-pinned MIT package with no runtime dependencies; this targeted
   inspection does not replace the pending full production audit
