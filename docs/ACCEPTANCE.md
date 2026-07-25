@@ -375,6 +375,11 @@ Local evidence:
   countdown remains readable on demand without announcing every second
 - root font startup now renders a themed `main` and status instead of an empty
   body, and a font-loader error no longer keeps the application blank
+- stale notification, widget, or PWA routes now render Organa's calm custom
+  recovery screen instead of Expo's generic unmatched-route UI; a fresh
+  authenticated preview directly exposed one shared `main`, one labeled
+  primary navigation, one recovery H1, and one return control, then replaced
+  the stale route with Today successfully
 - optional interaction audio now stays silent until a fail-closed audio mode
   is ready, explicitly respects silent mode, does not play in the background,
   and mixes rather than interrupting other audio; a live preview with sounds

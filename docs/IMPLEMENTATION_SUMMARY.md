@@ -1877,6 +1877,22 @@ No tests were added, changed, or run for this milestone.
   build with eight static routes and 22 precache URLs, and both iOS/Android
   Hermes exports pass. No test file was added or changed.
 
+## Safe Unmatched-Route Recovery
+
+- Organa now owns its unmatched route instead of exposing Expo's generic
+  fallback when a notification, widget, bookmark, or installed PWA opens an
+  obsolete path.
+- The recovery copy explicitly says saved data was not changed and offers one
+  calm action that replaces the stale route with Today, avoiding a back-stack
+  loop.
+- The screen reuses the authenticated AppShell rather than introducing another
+  page landmark or navigation surface. A fresh development-preview drill
+  directly verified one `main`, one labeled primary navigation landmark, one
+  recovery H1, and one return button; activating it restored Today's H1 at `/`.
+- Strict TypeScript, all 151 unchanged tests, the 18-check production web
+  build with eight static routes and 22 precache URLs, both iOS/Android Hermes
+  exports, and all 19 platform checks pass. No test file was added or changed.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
