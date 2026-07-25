@@ -360,6 +360,9 @@ Local evidence:
   then activated a marked third version with one reload and no stale prompt
 - production Lighthouse scores 100% for accessibility and 100% for best
   practices on the configured sign-in screen
+- a fresh-origin production setup-required render exposes one `main`
+  landmark, an H1 page title, an H2 setup title, a semantic promise list, and
+  a labeled setup region; the browser console contains no warning or error
 - the last production dependency audit reported no known vulnerabilities
   before the opaque-ID crypto dependency was added; the current lockfile's
   online advisory audit remains a release gate because the npm audit endpoint

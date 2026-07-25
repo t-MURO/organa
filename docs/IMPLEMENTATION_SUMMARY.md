@@ -1799,6 +1799,23 @@ No tests were added, changed, or run for this milestone.
   `git diff --check` pass.
 - No test file was added or changed for this milestone.
 
+## Authentication Shell Semantics
+
+- The loading and setup/sign-in shells now expose a main landmark instead of a
+  generic container. Loading copy is a status, decorative ambient/brand marks
+  are hidden from assistive technology, and the three product promises use
+  list/list-item semantics.
+- The visual introduction is the H1. The actionable sign-in or setup card is a
+  labeled region with an H2, using React Native's shared role contract and a
+  web-only ARIA level without changing native visuals.
+- A fresh localhost origin loaded the rebuilt production export rather than a
+  previously installed service worker. Its browser accessibility tree directly
+  showed `main`, H1, H2, list/list-item, and labeled-region semantics with no
+  warning or error.
+- Strict TypeScript, the unchanged 151-test suite, the 18-check production web
+  build with 22 precache URLs, all 19 platform checks, and
+  `git diff --check` pass. No test file was added or changed.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

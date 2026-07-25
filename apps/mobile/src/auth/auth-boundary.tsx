@@ -23,9 +23,15 @@ export function AuthBoundary({ children }: PropsWithChildren) {
 
   if (auth.loading) {
     return (
-      <SafeAreaView style={[stylesFor(theme).safeArea, stylesFor(theme).center]}>
+      <SafeAreaView
+        accessibilityLabel="Opening Organa"
+        role="main"
+        style={[stylesFor(theme).safeArea, stylesFor(theme).center]}
+      >
         <ActivityIndicator color={theme.accentStrong} />
-        <Text style={stylesFor(theme).loadingText}>Opening your space...</Text>
+        <Text role="status" style={stylesFor(theme).loadingText}>
+          Opening your space...
+        </Text>
       </SafeAreaView>
     );
   }
@@ -44,6 +50,8 @@ function SignInScreen() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const displayedError = error || auth.callbackError;
+  const secondaryHeadingProps =
+    Platform.OS === "web" ? { "aria-level": 2 as const } : {};
 
   async function run(label: string, action: () => Promise<void>) {
     setBusy(label);
@@ -89,13 +97,13 @@ function SignInScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.safeArea}
       >
-        <ScrollView contentContainerStyle={styles.authPage}>
-          <View style={styles.ambientOne} />
-          <View style={styles.ambientTwo} />
+        <ScrollView contentContainerStyle={styles.authPage} role="main">
+          <View aria-hidden style={styles.ambientOne} />
+          <View aria-hidden style={styles.ambientTwo} />
           <View style={styles.authLayout}>
             <View style={styles.authIntro}>
               <View style={styles.brandRow}>
-                <View style={styles.brandMark}>
+                <View aria-hidden style={styles.brandMark}>
                   <View style={[styles.brandBar, styles.brandBarOne]} />
                   <View style={[styles.brandBar, styles.brandBarTwo]} />
                   <View style={[styles.brandBar, styles.brandBarThree]} />
@@ -103,23 +111,35 @@ function SignInScreen() {
                 <Text style={styles.brand}>organa</Text>
               </View>
               <Text style={styles.introEyebrow}>CALM CONTROL FOR REAL DAYS</Text>
-              <Text style={styles.introTitle}>A little more room to think.</Text>
+              <Text role="heading" style={styles.introTitle}>
+                A little more room to think.
+              </Text>
               <Text style={styles.introText}>
                 Keep tasks, routines, reminders, and loose thoughts together
                 without turning your life into a performance dashboard.
               </Text>
-              <View style={styles.promiseList}>
+              <View role="list" style={styles.promiseList}>
                 <Promise styles={styles} text="Offline after your first sign-in" />
                 <Promise styles={styles} text="Private, encrypted sync" />
                 <Promise styles={styles} text="No streak pressure or tracking" />
               </View>
             </View>
 
-            <View style={styles.authCard}>
+            <View
+              accessibilityLabel={
+                auth.configured ? "Sign in to Organa" : "Backend setup required"
+              }
+              role="region"
+              style={styles.authCard}
+            >
               <Text style={styles.cardEyebrow}>
                 {auth.configured ? "YOUR PRIVATE SPACE" : "SETUP REQUIRED"}
               </Text>
-              <Text style={styles.cardTitle}>
+              <Text
+                {...secondaryHeadingProps}
+                role="heading"
+                style={styles.cardTitle}
+              >
                 {auth.configured ? "Come in gently." : "Connect the backend."}
               </Text>
               <Text style={styles.cardText}>
@@ -269,8 +289,8 @@ function Promise({
   text: string;
 }) {
   return (
-    <View style={styles.promise}>
-      <View style={styles.promiseDot} />
+    <View role="listitem" style={styles.promise}>
+      <View aria-hidden style={styles.promiseDot} />
       <Text style={styles.promiseText}>{text}</Text>
     </View>
   );
