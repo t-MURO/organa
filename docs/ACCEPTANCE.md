@@ -1,6 +1,6 @@
 # Controlled-Beta Acceptance
 
-Status recorded on 2026-07-25.
+Status recorded on 2026-07-26.
 
 The criterion-by-criterion status and evidence boundary is recorded in
 `docs/MVP_TRACEABILITY.md`.
@@ -9,6 +9,8 @@ The criterion-by-criterion status and evidence boundary is recorded in
 
 - [x] Task creation, editing, scheduling, recurrence, completion, Undo, search,
   priority/time lanes, week/month calendar, inbox, and history
+- [x] Completion grace keeps the task, subtasks, Undo controls, duplicate time
+  lane entry, and matching Inbox row stable before a measured smooth collapse
 - [x] One-off, routine, medication, dose confirmation, subtasks, and
   independently configurable optional subtask reminders
 - [x] Multiple reminder stages and per-task snooze presets, with every saved
@@ -395,6 +397,16 @@ Local evidence:
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks
+- a focused completion-layout drill measured the Quick Capture anchor and
+  scroll content before and after completing a scheduled medication task:
+  both remained unchanged immediately and through the grace period, then
+  decreased progressively during the final collapse and reached their settled
+  values before unmount; both visible task copies exposed Undo, the Inbox row
+  remained present during grace, and Undo prevented removal after the full
+  timeout
+- strict TypeScript, the 18-check production web build, both iOS and Android
+  Hermes exports, all 19 platform checks, and `git diff --check` pass after
+  completion-layout stabilization; no tests were added, changed, or run
 - a focused Brain Dump browser drill started with one editable bullet, pressed
   Enter once, observed exactly two editors and a count of two thoughts, and
   confirmed focus moved to the single new blank bullet; temporary bullets were

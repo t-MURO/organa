@@ -1893,6 +1893,29 @@ No tests were added, changed, or run for this milestone.
   build with eight static routes and 22 precache URLs, both iOS/Android Hermes
   exports, and all 19 platform checks pass. No test file was added or changed.
 
+## Stable Task Completion Layout
+
+- Completing a task now preserves its measured row height throughout the Undo
+  grace period instead of changing the board immediately and removing a
+  full-height row in one frame.
+- The shared transition covers Priority lanes, duplicate scheduled entries in
+  the Time lane, and the matching Task Inbox row. Complex-task subtasks remain
+  visible but disabled during grace, while Undo stays available.
+- The final 900 milliseconds collapse the measured space with restrained
+  easing and finish before the five-second removal timer. Rows that first mount
+  while already completed measure themselves before starting the transition,
+  covering filter changes and responsive remounts.
+- A browser drill measured a scheduled medication task at a `1039px` Quick
+  Capture content position and `1803px` scroll height before completion. Both
+  values were unchanged at 100 milliseconds and 3.5 seconds; the final values
+  were reached progressively before unmount rather than through the previous
+  last-frame jump. Undo canceled removal and the task remained active after
+  the full timeout.
+- Strict TypeScript, the 18-check production PWA export with eight static
+  routes and 22 precache URLs, both iOS and Android Hermes exports, all 19
+  platform checks, and `git diff --check` pass. No tests were added, changed,
+  or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
