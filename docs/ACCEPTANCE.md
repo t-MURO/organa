@@ -632,8 +632,10 @@ Local evidence:
   supported release browser; iOS/iPadOS uses an installed Home Screen PWA
 - [x] The stable managed-test EAS preview and its immutable deployment pass
   all 17 live web response checks
-- [ ] The selected HTTPS web deployment passes
-  `pnpm verify:web-deployment -- https://<production-origin>`
+- [x] The selected stable production HTTPS origin and its immutable deployment
+  pass all 17 checks from
+  `pnpm verify:web-deployment -- https://organa.expo.app`; exact candidate
+  identity is recorded in the private release manifest
 - [x] Run the one-hour scheduled deletion finalizer drill against the managed
   connected-test backend
 - [ ] Repeat the scheduled deletion finalizer drill against production

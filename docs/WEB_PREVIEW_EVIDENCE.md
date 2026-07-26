@@ -140,8 +140,9 @@ remain available for a deliberate post-beta release.
 
 ## Remaining Gates
 
-- Promote a reviewed export through the `production` EAS environment and run
-  the same live verifier against the production origin.
+- The selected production EAS environment, stable origin, and immutable
+  deployment now pass the same live verifier; see
+  `docs/WEB_PRODUCTION_EVIDENCE.md`.
 - Exercise install, offline restart, service-worker replacement, and
   permission-granted Web Push in every supported release browser.
 - Repeat the confirmed Maileroo email-code flow against production.

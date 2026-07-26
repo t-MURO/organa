@@ -2659,3 +2659,22 @@ must have direct evidence before production launch.
   field remains an explicit placeholder until direct evidence exists. The
   strict readiness verifier continues to fail closed while any placeholder is
   present.
+
+## Production Web Deployment Milestone
+
+- The production EAS environment passes the redacting three-variable client
+  preflight. The export ran inside that environment without replacing the
+  developer's ignored `.env.local`.
+- The production web export passes all 28 artifact, CSP, response-header,
+  cache, and PWA checks with 23 precached URLs. Its EAS dry-run archive
+  contains only `assets.json`, `manifest.json`, and `routes.json`.
+- The candidate was promoted through EAS Hosting's production path. Both
+  `https://organa.expo.app` and the candidate's immutable origin pass all 17
+  live deployment checks and serve the same fingerprinted bundle.
+- The exact final source commit, immutable deployment ID, and archive checksum
+  stay in the ignored mode-600 release manifest so checked evidence does not
+  create a source-binding cycle.
+- This completes the selected HTTPS deployment gate only. Release-browser PWA
+  and Push checks, production backend repetition, physical devices, store
+  signing, and external reviews remain mandatory.
+- No tests were added, changed, or run.
