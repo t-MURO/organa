@@ -442,6 +442,10 @@ Local evidence:
   one-off recurrence, invalid grace-day placement or limits, non-medication
   dose confirmation, and empty, padded, or multi-word Check-In feeling labels
   before any repository write
+- full-backup restore now processes tasks, templates, Check-In, Brain Dump,
+  and settings in a deterministic order; if a later category cannot be saved,
+  the message names every completed section and explains that choosing the same
+  backup again safely resumes the newest-record merge without duplicates
 - Check-In save now waits for the atomic local/encrypted-outbox commit before
   claiming success, preserves edits made during an in-flight save as unsaved,
   and reports a pressure-free retry message when derivation or persistence

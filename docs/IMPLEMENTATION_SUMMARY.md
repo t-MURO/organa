@@ -1956,6 +1956,23 @@ No tests were added, changed, or run for this milestone.
   routes and 22 precache URLs, and `git diff --check` pass. No tests were
   added, changed, or run.
 
+## Resumable Full-Backup Restore
+
+- The encrypted payload and fail-closed validator cover tasks, user templates,
+  settings, Check-In entries, and Brain Dump bullets. Nested task validation
+  preserves completion, dose-confirmation, recurrence, reminder, subtask,
+  snooze, and grace-day semantics.
+- Backup sections now restore in a deterministic order instead of launching
+  independent category commits concurrently. Each category remains one atomic
+  local/encrypted-outbox transaction and uses its existing newest-record merge.
+- If storage fails after an earlier section commits, Organa names the completed
+  sections and tells the user to choose the same backup and recovery code
+  again. Retrying safely continues the merge without duplicate records rather
+  than presenting an ambiguous all-or-nothing failure.
+- Strict TypeScript, the 18-check production PWA export with eight static
+  routes and 22 precache URLs, and `git diff --check` pass. No tests were
+  added, changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

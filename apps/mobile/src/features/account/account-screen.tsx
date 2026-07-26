@@ -201,6 +201,9 @@ export function AccountScreen() {
       return;
     }
 
+    const completedSections: string[] = [];
+    let restoreStarted = false;
+    let restoredRecordCount = 0;
     setRestoringBackup(true);
     setError("");
     setMessage("");
@@ -209,26 +212,37 @@ export function AccountScreen() {
       if (contents === null) return;
 
       const data = await restoreEncryptedBackup(contents, recoveryCode);
-      const restored = await Promise.all([
-        tasks.restoreTasks(data.tasks),
-        templates.restoreTemplates(data.templates),
-        checkIns.restoreEntries(data.checkIns),
-        brainDump.restoreBullets(data.brainDump),
-      ]);
+      restoreStarted = true;
+      const sections: [string, () => Promise<number>][] = [
+        ["tasks", () => tasks.restoreTasks(data.tasks)],
+        ["templates", () => templates.restoreTemplates(data.templates)],
+        ["Check-In", () => checkIns.restoreEntries(data.checkIns)],
+        ["Brain Dump", () => brainDump.restoreBullets(data.brainDump)],
+      ];
+      for (const [name, restore] of sections) {
+        restoredRecordCount += await restore();
+        completedSections.push(name);
+      }
       await restoreSettings(data.settings);
+      completedSections.push("settings");
 
-      const recordCount = restored.reduce((total, count) => total + count, 0);
       setRecoveryCode("");
       setMessage(
-        `Backup restored. ${recordCount} ${
-          recordCount === 1 ? "record was" : "records were"
+        `Backup restored. ${restoredRecordCount} ${
+          restoredRecordCount === 1 ? "record was" : "records were"
         } merged and settings were applied.`,
       );
     } catch (nextError) {
-      setError(
+      const detail =
         nextError instanceof Error
           ? nextError.message
-          : "The backup could not be restored.",
+          : "The backup could not be restored.";
+      setError(
+        restoreStarted && completedSections.length > 0
+          ? `Restore paused after ${completedSections.join(
+              ", ",
+            )}. Any merged data is safe. Choose the same backup and recovery code again to continue without duplicate records. ${detail}`
+          : detail,
       );
     } finally {
       setRestoringBackup(false);
