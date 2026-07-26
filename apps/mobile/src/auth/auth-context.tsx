@@ -11,7 +11,10 @@ import {
 import { AppState, Platform } from "react-native";
 
 import { clearPrivatePlatformState } from "../data/clear-private-platform-state";
-import { createOAuthCallbackCoordinator } from "./oauth-callback";
+import {
+  createOAuthCallbackCoordinator,
+  parseOAuthCallback,
+} from "./oauth-callback";
 import {
   isSupabaseConfigured,
   supabase,
@@ -57,6 +60,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
   });
 
   useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const callback = parseOAuthCallback(
+      window.location.href,
+      authRedirectUrl,
+    );
+    if (callback.type !== "error") return;
+
+    setCallbackError(callback.message);
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${window.location.search}`,
+    );
+  }, [authRedirectUrl]);
+
+  useEffect(() => {
     const client = supabase;
     if (!client) {
       setLoading(false);
@@ -70,7 +89,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       .then(({ data, error }) => {
         if (!active || authStateChanged) return;
         if (error) {
-          setCallbackError(initialSessionErrorMessage);
+          setCallbackError((current) => current || initialSessionErrorMessage);
           setSession(null);
         } else {
           setSession(data.session);
@@ -79,7 +98,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       })
       .catch(() => {
         if (!active || authStateChanged) return;
-        setCallbackError(initialSessionErrorMessage);
+        setCallbackError((current) => current || initialSessionErrorMessage);
         setSession(null);
         setLoading(false);
       });

@@ -24,10 +24,7 @@ export function parseOAuthCallback(
   const errorCode = parameters.get("error_code") ?? parameters.get("error");
   if (errorCode) {
     return {
-      message:
-        errorCode === "access_denied"
-          ? "Sign-in was cancelled."
-          : "Sign-in could not be completed. Please try again.",
+      message: callbackErrorMessage(errorCode),
       type: "error",
     };
   }
@@ -71,6 +68,14 @@ export function createOAuthCallbackCoordinator(
       return true;
     },
   };
+}
+
+function callbackErrorMessage(errorCode: string) {
+  if (errorCode === "access_denied") return "Sign-in was cancelled.";
+  if (errorCode === "otp_expired") {
+    return "That sign-in link was already used or is no longer valid. Request a new verification code and enter it here.";
+  }
+  return "Sign-in could not be completed. Please try again.";
 }
 
 function matchesRedirect(callback: URL, expected: URL) {
