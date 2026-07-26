@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { randomBytes, randomUUID, webcrypto } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 import { createClient } from "@supabase/supabase-js";
 import * as Y from "yjs";
@@ -1862,7 +1863,7 @@ function overlapSyncCursor(cursor) {
 }
 
 function sameJson(left, right) {
-  return JSON.stringify(left) === JSON.stringify(right);
+  return isDeepStrictEqual(left, right);
 }
 
 function hasOnlyBroadcastHint(payload, applicationKeys, messageId) {
