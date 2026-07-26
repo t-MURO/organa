@@ -12,12 +12,12 @@ Push behavior, independent security review, or legal approval.
 | --- | --- |
 | EAS project | `@t-muro/organa` |
 | EAS project ID | `ae92cff5-050e-4972-808d-a393be8d67e3` |
-| Source commit | `37cadba0c3f4ad403dc2c8c14ee9ec363efaab65` |
+| Source commit | `718808e4bc528bcc70dd9a0d03ed687bdd76748f` |
 | EAS environment | `preview` |
-| Deployment ID | `jb7yxy8v38` |
-| Immutable URL | `https://organa--jb7yxy8v38.expo.app` |
+| Deployment ID | `ev1dwjy9lx` |
+| Immutable URL | `https://organa--ev1dwjy9lx.expo.app` |
 | Stable alias | `https://organa--preview.expo.app` |
-| Fingerprinted bundle | `entry-034efbbeac43e7170457296e92149419.js` |
+| Fingerprinted bundle | `entry-4defd423140da69cd39741f89b3f20ad.js` |
 
 The clean source commit was pushed before deployment. The deployment command
 used the locally verified `apps/mobile/dist` export, disabled deployment source
@@ -44,7 +44,7 @@ Both of these commands pass all 16 checks:
 
 ```sh
 pnpm verify:web-deployment -- https://organa--preview.expo.app
-pnpm verify:web-deployment -- https://organa--jb7yxy8v38.expo.app
+pnpm verify:web-deployment -- https://organa--ev1dwjy9lx.expo.app
 ```
 
 Direct live evidence covers:
@@ -62,6 +62,8 @@ Direct live evidence covers:
   behavior used by email sign-in
 - the live fingerprinted bundle maps Supabase `otp_expired` callbacks to a
   fixed recovery message instead of silently returning to the login form
+- the live fingerprinted bundle reads managed Auth provider availability and
+  contains the email-only copy shown while Google and GitHub are disabled
 
 [Expo Router server headers](https://docs.expo.dev/router/web/server-headers/)
 are encoded into `_expo/.routes.json` for EAS Hosting. EAS documents that it
@@ -105,6 +107,12 @@ address bar. Supabase and Maileroo both document that external tracking or
 inbox security prefetch can consume or rewrite one-time links; Maileroo tracking
 must therefore be disabled for the Auth sending domain before link-based
 security flows are accepted.
+
+A production-build browser walkthrough against the managed Auth settings
+proved that disabled Google and GitHub providers do not render broken controls
+or the social/email divider. Email remains available with provider-specific
+copy. Provider discovery validates the settings response, fails closed within
+five seconds, and does not delay an already authenticated offline session.
 
 ## Remaining Gates
 

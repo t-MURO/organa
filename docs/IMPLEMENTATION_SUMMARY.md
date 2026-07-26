@@ -2310,9 +2310,9 @@ No tests were added, changed, or run for this milestone.
 - Worker registration now uses `updateViaCache: "none"`, ensuring that
   service-worker and imported-worker update checks bypass EAS's bounded static
   HTTP cache.
-- Clean app commit `37cadba0c3f4ad403dc2c8c14ee9ec363efaab65`
+- Clean app commit `718808e4bc528bcc70dd9a0d03ed687bdd76748f`
   was deployed with the `preview` environment as immutable deployment
-  `jb7yxy8v38` and assigned the stable
+  `ev1dwjy9lx` and assigned the stable
   `https://organa--preview.expo.app` alias.
 - The stable alias and immutable URL both pass all 16 live deployment checks.
   EAS omits the converted legacy frame header while retaining the exact
@@ -2333,6 +2333,14 @@ No tests were added, changed, or run for this milestone.
   six-digit code and completed sign-in successfully. Managed-test email OTP is
   therefore accepted; Google, GitHub, and the production provider repeat
   remain open.
+- Auth now reads the public managed settings endpoint before presenting a
+  signed-out provider choice. The response is shape-validated and bounded to
+  five seconds; failures hide OAuth controls while preserving email, and an
+  existing offline session never waits for provider discovery. A
+  production-build browser walkthrough proved the current managed state omits
+  disabled Google/GitHub controls and their divider without disturbing email.
+  The stable and immutable deployments pass all 16 live checks, and the live
+  bundle contains the provider-aware email-only copy.
 - Managed Supabase now uses the stable alias for its Site URL and exact web
   redirect. The old immutable callback was removed, and both the provisioning
   command and immediate read-only repeat pass.
