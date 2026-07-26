@@ -45,6 +45,15 @@ The reviewed source state passed:
 - managed Supabase migration `20260726120000` applied successfully; linked
   schema lint returned no errors, and the local/remote migration list matches
   all ten migrations
+- clean commit `8948614388815f2a8a71dabe940e0a3fded2d6f8` passed the
+  managed backend-only acceptance phase with all 119 checks, including
+  cross-account RLS, proof-gated RPCs, trusted-device lifecycle, encrypted
+  Realtime delivery, durable reconciliation, and exact synthetic-user cleanup
+
+The first connected attempt reached the encrypted Realtime probe but missed
+its 10-second broadcast deadline. Its RPC had succeeded, cleanup completed,
+and the immediate clean rerun passed all 119 checks. The failed and passing
+sanitized phase records remain in the ignored evidence directory.
 
 `pnpm verify:migrations` was attempted but Docker was unavailable. Its
 isolated-schema preservation result is therefore not claimed for this source

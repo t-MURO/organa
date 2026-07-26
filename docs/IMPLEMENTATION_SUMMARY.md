@@ -2351,6 +2351,11 @@ No tests were added, changed, or run for this milestone.
   TypeScript, all 22 platform checks, the 27-check production web export with
   eight routes and 23 precache URLs, and both native Hermes exports pass. The
   live production dependency audit reports zero findings at every severity.
+- Clean commit `8948614388815f2a8a71dabe940e0a3fded2d6f8` passes all 119
+  managed backend checks at migration head `20260726120000`. An initial run
+  missed one Realtime broadcast deadline after the mutation RPC succeeded;
+  cleanup completed, and the immediate clean rerun passed. Both sanitized
+  phase records remain private.
 - The Docker-backed migration-preservation verifier was attempted but Docker
   was unavailable, so that isolated-schema result remains unclaimed. No test
   file was added, changed, or run. Full details and remaining physical,

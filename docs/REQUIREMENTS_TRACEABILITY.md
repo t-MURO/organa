@@ -71,10 +71,11 @@ Status meanings:
   encrypted-payload-bound checks pass
 - `pnpm verify:supabase`: 6 migration-preservation, 75 database, 13
   deletion-function, and 15 Web Push function checks pass
-- `pnpm verify:connected:acceptance:backend:web-push`: the managed test project
-  passes 119 backend checks plus the real cron/egress-rejection phase from
-  clean commit `eb13fe3430c2471b7fb1ca97a6693d98609de5b3`; its sanitized evidence
-  remains private and provider-qualified release evidence is still pending
+- `pnpm verify:connected:acceptance:backend`: migration head `20260726120000`
+  passes all 119 managed backend checks from clean commit
+  `8948614388815f2a8a71dabe940e0a3fded2d6f8`; the earlier commit-bound Web
+  Push cron/egress-rejection phase also remains passed. Sanitized evidence is
+  private and provider-qualified release evidence is still pending
 - `pnpm build:web`: 27 production artifact/CSP/header checks and 23 precache
   URLs pass
 - `pnpm build:native`: iOS and Android Hermes exports pass
