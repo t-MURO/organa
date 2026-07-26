@@ -26,6 +26,12 @@ const evidenceDirectory = resolve(
 const config = readOperatorInput(() =>
   readConnectedSupabaseConfig(configPath),
 );
+if (options.configOnly) {
+  console.log(
+    "Connected Supabase operator config passed private-file and value validation.",
+  );
+  process.exit(0);
+}
 let activeChild;
 let interruptedSignal;
 const signalHandlers = new Map();
@@ -44,7 +50,7 @@ function readOperatorInput(read) {
         : "Connected acceptance configuration is invalid.";
     console.error(`Connected acceptance cannot start: ${message}`);
     console.error(
-      "Prepare .organa-connected-supabase.json from the checked-in example, set mode 600, and follow docs/SELF_HOSTED_TESTING.md.",
+      "Prepare the private config with supabase/self-hosted/prepare-connected-acceptance-config.sh and follow docs/SELF_HOSTED_TESTING.md.",
     );
     process.exit(1);
   }
@@ -309,6 +315,7 @@ function connectedConfigsMatch(left, right) {
 function parseArguments(argumentsList) {
   const parsed = {
     configPath: undefined,
+    configOnly: false,
     includeDeletion: false,
     includeWebPush: false,
   };
@@ -319,13 +326,24 @@ function parseArguments(argumentsList) {
       parsed.includeDeletion = true;
     } else if (argument === "--include-web-push") {
       parsed.includeWebPush = true;
+    } else if (argument === "--config-only") {
+      parsed.configOnly = true;
     } else if (argument === "--config") {
       parsed.configPath = requireOptionValue(argumentsList, ++index, argument);
     } else {
       throw new Error(
-        "Usage: node verify-connected-acceptance.mjs [--config path] [--include-web-push] [--include-deletion]",
+        "Usage: node verify-connected-acceptance.mjs [--config path] [--config-only | --include-web-push | --include-deletion]",
       );
     }
+  }
+
+  if (
+    parsed.configOnly &&
+    (parsed.includeDeletion || parsed.includeWebPush)
+  ) {
+    throw new Error(
+      "--config-only cannot be combined with a connected acceptance phase.",
+    );
   }
 
   return parsed;

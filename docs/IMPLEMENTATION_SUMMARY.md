@@ -1,6 +1,6 @@
 # Organa Implementation Summary
 
-Status recorded on 2026-07-24.
+Status recorded on 2026-07-26.
 
 This is the structured pause checkpoint requested after the implementation
 work. The locally verified implementation is complete through the Brain Dump
@@ -1771,6 +1771,24 @@ No tests were added, changed, or run for this milestone.
 
 ## Connected Acceptance Evidence Safety
 
+- Adds a server-side connected-config preparer that reads only the public
+  origin and modern publishable/administrator keys from the already-private
+  self-hosted environment. It requires the exact recorded Supabase revision
+  and an explicit synthetic-account creation/deletion consent flag.
+- The preparer writes a mode-600 JSON file through a private temporary file,
+  refuses existing outputs and placeholder origins, mirrors the verifier's
+  key-shape boundary, removes partial output on conventional termination
+  signals, and never prints credential values.
+- The self-hosted full preflight now requires the preparer, and the runbook
+  replaces manual secret JSON editing with a secure server-generation,
+  transfer, local parser preflight, and server-copy removal sequence.
+- The network-free `pnpm verify:connected:config` command validates the local
+  private file before its extra server copy is removed, without requiring a
+  clean Git tree or starting any connected acceptance phase.
+- A synthetic non-secret drill directly produced mode `600`, passed the real
+  connected-config parser with both optional destructive phases disabled,
+  rejected missing consent, and refused overwrite. POSIX syntax and patch
+  hygiene pass; no test file was added or changed.
 - The connected credential reader now opens a current-user-owned regular file
   without following symlinks, compares the path and opened inode, checks mode
   `400` or `600` before reading, enforces a 16 KiB bound and exact field set,

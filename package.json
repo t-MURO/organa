@@ -17,6 +17,7 @@
     "verify:connected:acceptance": "pnpm --filter @organa/app verify:connected:acceptance",
     "verify:connected:acceptance:deletion": "pnpm --filter @organa/app verify:connected:acceptance:deletion",
     "verify:connected:acceptance:web-push": "pnpm --filter @organa/app verify:connected:acceptance:web-push",
+    "verify:connected:config": "pnpm --filter @organa/app verify:connected:config",
     "verify:web-push": "pnpm --filter @organa/app verify:web-push",
     "verify:supabase": "pnpm --filter @organa/app verify:supabase"
   },

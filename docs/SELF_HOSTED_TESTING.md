@@ -1,6 +1,6 @@
 # Self-Hosted Supabase Testing
 
-Status prepared on 2026-07-24.
+Status prepared on 2026-07-26.
 
 This runbook connects Organa to a Docker-based Supabase instance on a home
 server for connected testing. It does not make a home server a production
@@ -82,6 +82,8 @@ fresh stack:
 scp supabase/self-hosted/initialize-official-supabase.sh \
   SERVER:~/organa-supabase/
 scp supabase/self-hosted/validate-self-hosted.sh \
+  SERVER:~/organa-supabase/
+scp supabase/self-hosted/prepare-connected-acceptance-config.sh \
   SERVER:~/organa-supabase/
 ```
 
@@ -364,7 +366,8 @@ sh validate-self-hosted.sh full
 
 The script reports only missing or invalid key names, files, permissions,
 URLs, SMTP/provider configuration, Auth callback/template wiring, Compose
-services, and daemon access. It never prints credential values.
+services, the connected-acceptance preparer, and daemon access. It never
+prints credential values.
 To recheck only initial key generation, run:
 
 ```sh
@@ -469,21 +472,40 @@ local verification, measures a two-session private Realtime mutation, recovers
 a deliberately missed event from durable ciphertext, and deletes both accounts
 in a `finally` cleanup.
 
-Create its ignored mode-600 configuration with a local editor:
+Create its ignored mode-600 configuration from the initialized server
+environment. On the server, pass the exact revision recorded when the official
+Supabase repository was copied:
 
 ```sh
-cp .organa-connected-supabase.example.json .organa-connected-supabase.json
-chmod 600 .organa-connected-supabase.json
-${EDITOR:-vi} .organa-connected-supabase.json
+cd "$HOME/organa-supabase"
+sh prepare-connected-acceptance-config.sh \
+  --source-revision RECORDED_40_CHARACTER_LOWERCASE_GIT_REVISION \
+  --allow-synthetic-account-creation-and-deletion
 ```
 
-Set `supabaseUrl` to the public HTTPS origin without `/auth/v1`. Use
-`SUPABASE_PUBLISHABLE_KEY` for `publishableKey` and `SUPABASE_SECRET_KEY` for
-`secretKey`. Set `supabaseSourceRevision` to the exact lowercase 40-character
-revision printed when the official Docker stack was copied. Keep the secret
-key only in this ignored operator file. Change
-`allowSyntheticAccountCreationAndDeletion` to `true` only for the isolated
-controlled-beta test deployment, then run the guarded baseline:
+The preparer requires the explicit destructive-test consent flag, reads only
+`SUPABASE_PUBLIC_URL`, `SUPABASE_PUBLISHABLE_KEY`, and
+`SUPABASE_SECRET_KEY` from the private `.env`, refuses to overwrite an
+existing output, and writes a mode-600 file without printing any value.
+
+Transfer that file to the repository root on the development machine, confirm
+its permissions, and remove the extra server copy:
+
+```sh
+scp SERVER:~/organa-supabase/.organa-connected-supabase.json \
+  .organa-connected-supabase.json
+chmod 600 .organa-connected-supabase.json
+pnpm verify:connected:config
+ssh SERVER 'rm "$HOME/organa-supabase/.organa-connected-supabase.json"'
+```
+
+The local preflight performs no network operation. It checks that the file is
+regular, current-user-owned, mode `600` or `400`, bounded, exact-schema, and
+free from rejected URL/key placeholders before the extra server copy is
+removed. Keep the secret key only in this ignored operator file. The generated
+configuration leaves the optional Web Push scheduler and one-hour deletion
+drills disabled; enable each consent only immediately before its dedicated
+drill. Then run the guarded baseline:
 
 ```sh
 pnpm verify:connected:acceptance

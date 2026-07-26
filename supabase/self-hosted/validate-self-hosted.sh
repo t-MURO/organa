@@ -345,6 +345,7 @@ esac
 
 for file in \
   docker-compose.organa.yml \
+  prepare-connected-acceptance-config.sh \
   run-organa-schedulers.sh \
   volumes/templates/email-code.html \
   volumes/functions/finalize-account-deletions/index.ts \
