@@ -2310,9 +2310,9 @@ No tests were added, changed, or run for this milestone.
 - Worker registration now uses `updateViaCache: "none"`, ensuring that
   service-worker and imported-worker update checks bypass EAS's bounded static
   HTTP cache.
-- Clean app commit `97e964980b1c1cee6739a7f6e485505a6a6eab19`
+- Clean app commit `37cadba0c3f4ad403dc2c8c14ee9ec363efaab65`
   was deployed with the `preview` environment as immutable deployment
-  `bbchcanwav` and assigned the stable
+  `jb7yxy8v38` and assigned the stable
   `https://organa--preview.expo.app` alias.
 - The stable alias and immutable URL both pass all 16 live deployment checks.
   EAS omits the converted legacy frame header while retaining the exact
@@ -2322,6 +2322,13 @@ No tests were added, changed, or run for this milestone.
   instead of relying on a project fallback. The live fingerprinted bundle
   contains this `emailRedirectTo` behavior, so newly issued preview links
   return to the live Organa origin while native links use `organa://`.
+- A reported sub-minute one-time link returned Supabase `otp_expired`, which
+  can also mean an external tracker or inbox scanner consumed the single-use
+  URL. Organa now presents a fixed recovery message, directs the person to
+  request and enter a fresh code, and removes the stale callback fragment. An
+  exact production-build browser replay passes, and the live bundle contains
+  the recovery behavior. Maileroo tracking remains a provider-side setting to
+  disable before accepting link-based security flows.
 - Managed Supabase now uses the stable alias for its Site URL and exact web
   redirect. The old immutable callback was removed, and both the provisioning
   command and immediate read-only repeat pass.

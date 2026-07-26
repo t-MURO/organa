@@ -583,6 +583,8 @@ Local evidence:
   drill.
 - [x] Configure managed Maileroo SMTP and six-digit/15-minute code-only
   confirmation and returning-user email templates
+- [ ] Disable Maileroo click/open tracking for the Auth sending domain before
+  accepting any link-based security email flow
 - [ ] Google, GitHub, and end-to-end email OTP delivery/sign-in against
   configured connected providers
 - [x] Apply all ten migrations and pass linked database lint against the
