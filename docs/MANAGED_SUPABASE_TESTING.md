@@ -197,6 +197,30 @@ Brain Dump convergence, reminder ownership, and revocation contracts. Its
 phase and evidence scope are explicitly `backend-only`; it does not claim
 post-beta provider acceptance.
 
+## Current Managed Schema Hardening
+
+Migration `20260726221031` is applied to the managed test project and is the
+head of the same twelve-migration chain checked into this repository.
+
+- Seven ownership policies use statement-cached `(select auth.uid())` checks
+  while preserving Organa's existing trusted-device write requirements.
+- The platform `rls_auto_enable()` event-trigger helper is not executable by
+  `public`, `anon`, or `authenticated`.
+- Composite indexes cover the encrypted-record updater and sync-mutation
+  device foreign keys.
+- The two RPC-only Web Push tables have restrictive deny policies for Data API
+  client roles.
+- Live security and performance advisors report zero remaining
+  `rls_enabled_no_policy`, `auth_rls_initplan`, exposed-`rls_auto_enable`, or
+  unindexed-foreign-key findings.
+
+The remaining advisor notices are an explicit review inventory, not a blanket
+clean bill of health: fifteen authenticated security-definer RPCs implement
+Organa's proof-checked privileged API, password leak protection is not used by
+the passwordless-only controlled beta, and three scheduler/supporting indexes
+are currently reported unused. The connected acceptance verifier remains the
+behavioral boundary check for the intentional RPCs.
+
 ## Captured Backend Evidence
 
 On 2026-07-26, the managed test project passed

@@ -468,11 +468,18 @@ Local evidence:
   byte-boundaries with 18 static checks
 - managed migration `20260726120000` applies encrypted payload and field
   metadata bounds; migration `20260726180000` adds target-bound approval
-  exchange keys; the linked project matches all eleven local migrations and
-  linked schema lint reports no errors
+  exchange keys; migration `20260726221031` keeps the platform RLS event
+  helper out of client roles, optimizes all seven ownership policies, adds
+  both missing composite foreign-key indexes, and makes the two RPC-only Push
+  tables explicitly inaccessible through the Data API
+- the linked project matches all twelve local migrations; live Supabase
+  advisors report none of the targeted missing-policy, exposed-helper,
+  per-row-auth, or missing-foreign-key-index findings. The remaining security
+  notices cover the intentional authenticated security-definer RPC boundary
+  and password leak protection in a passwordless-only controlled beta
 - with Docker `28.5.2` healthy, the Docker-backed migration-preservation
   verifier passes all six isolated-schema upgrade checks across the complete
-  eleven-migration chain
+  twelve-migration chain
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks
@@ -605,7 +612,8 @@ Local evidence:
   provider discovery, controls, divider, or programmatic OAuth start
 - Deferred post-beta: configure and exercise Google and GitHub before enabling
   the retained social OAuth path
-- [x] Apply all eleven migrations and pass linked database lint against the
+- [x] Apply all twelve migrations and pass linked database lint and targeted
+  security/performance advisor checks against the
   managed EU connected-test project
 - [ ] Repeat migration application and lint against the selected production
   deployment

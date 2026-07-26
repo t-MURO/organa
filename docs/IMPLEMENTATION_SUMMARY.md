@@ -2691,3 +2691,29 @@ must have direct evidence before production launch.
   describe itself as a full connected acceptance run.
 - Connected-run summaries now use correct singular/plural phase wording.
 - No tests were added, changed, or run.
+
+## Managed Supabase Advisor Hardening Milestone
+
+- Supabase MCP access confirmed one healthy managed Organa project with the
+  expected eleven-migration baseline before this change.
+- Migration `20260726221031` is now the twelfth local and managed migration.
+  It preserves the existing trusted-device write checks while changing all
+  seven ownership policies to statement-cached `(select auth.uid())` lookups.
+- Client roles can no longer execute the platform `rls_auto_enable()` event
+  trigger helper. The event trigger itself remains available for its DDL
+  purpose.
+- Composite indexes now cover both previously unindexed foreign-key pairs:
+  encrypted-record updater ownership and sync-mutation device ownership.
+- Restrictive deny policies make direct Data API access to the two RPC-only
+  Web Push tables explicit without changing their privileged function paths.
+- Read-only live-schema checks confirm seven optimized ownership policies, two
+  restrictive Push policies, both indexes, and no helper execution privilege
+  for `public`, `anon`, or `authenticated`.
+- Post-migration Supabase advisors report zero targeted missing-policy,
+  exposed-helper, per-row-auth, or unindexed-foreign-key findings. Remaining
+  notices are explicitly retained for fifteen intentional authenticated
+  security-definer RPCs, password leak protection in the passwordless-only
+  beta, and three currently unused scheduler/supporting indexes.
+- The six migration-preservation checks, 75 local Supabase checks, 13 deletion
+  function checks, 15 Web Push checks, 18 security checks, strict TypeScript,
+  and `git diff --check` pass. No tests were added, changed, or run.
