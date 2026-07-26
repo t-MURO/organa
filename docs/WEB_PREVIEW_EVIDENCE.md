@@ -12,12 +12,12 @@ Push behavior, independent security review, or legal approval.
 | --- | --- |
 | EAS project | `@t-muro/organa` |
 | EAS project ID | `ae92cff5-050e-4972-808d-a393be8d67e3` |
-| Source commit | `d8d46fe40834a0ae3a0475c2010a2a61a87b8e26` |
+| Source commit | `97e964980b1c1cee6739a7f6e485505a6a6eab19` |
 | EAS environment | `preview` |
-| Deployment ID | `qx4eh5f2zq` |
-| Immutable URL | `https://organa--qx4eh5f2zq.expo.app` |
+| Deployment ID | `bbchcanwav` |
+| Immutable URL | `https://organa--bbchcanwav.expo.app` |
 | Stable alias | `https://organa--preview.expo.app` |
-| Fingerprinted bundle | `entry-e30549a6478d0bbd6d2d325103d54781.js` |
+| Fingerprinted bundle | `entry-2bbad1a20b615030b8ea9caaeaefe756.js` |
 
 The clean source commit was pushed before deployment. The deployment command
 used the locally verified `apps/mobile/dist` export, disabled deployment source
@@ -44,7 +44,7 @@ Both of these commands pass all 16 checks:
 
 ```sh
 pnpm verify:web-deployment -- https://organa--preview.expo.app
-pnpm verify:web-deployment -- https://organa--qx4eh5f2zq.expo.app
+pnpm verify:web-deployment -- https://organa--bbchcanwav.expo.app
 ```
 
 Direct live evidence covers:
@@ -58,6 +58,8 @@ Direct live evidence covers:
 - a content-addressed application bundle
 - bounded EAS static-asset caching at one hour
 - service-worker and imported-worker update checks that bypass the HTTP cache
+- the live fingerprinted bundle contains the explicit `emailRedirectTo`
+  behavior used by email sign-in
 
 [Expo Router server headers](https://docs.expo.dev/router/web/server-headers/)
 are encoded into `_expo/.routes.json` for EAS Hosting. EAS documents that it
@@ -88,7 +90,11 @@ http://localhost:4173/**
 
 The guarded provisioning command and its immediate read-only repeat both
 passed. The previous immutable preview URL was removed instead of retained as
-a stale redirect.
+a stale redirect. Each email sign-in request now also supplies its own
+platform callback: the active HTTPS origin on web and the allowlisted
+`organa://` callback on native. Previously issued email links retain their
+original signed redirect and must not be used to assess the corrected
+deployment.
 
 ## Remaining Gates
 

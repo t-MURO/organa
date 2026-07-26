@@ -2309,14 +2309,18 @@ No tests were added, changed, or run for this milestone.
 - Worker registration now uses `updateViaCache: "none"`, ensuring that
   service-worker and imported-worker update checks bypass EAS's bounded static
   HTTP cache.
-- Clean commit `d8d46fe40834a0ae3a0475c2010a2a61a87b8e26`
+- Clean app commit `97e964980b1c1cee6739a7f6e485505a6a6eab19`
   was deployed with the `preview` environment as immutable deployment
-  `qx4eh5f2zq` and assigned the stable
+  `bbchcanwav` and assigned the stable
   `https://organa--preview.expo.app` alias.
 - The stable alias and immutable URL both pass all 16 live deployment checks.
   EAS omits the converted legacy frame header while retaining the exact
   response-level `frame-ancestors 'none'` CSP, and serves static assets with
   the required one-hour provider profile.
+- Email sign-in now sends an explicit platform callback on every request
+  instead of relying on a project fallback. The live fingerprinted bundle
+  contains this `emailRedirectTo` behavior, so newly issued preview links
+  return to the live Organa origin while native links use `organa://`.
 - Managed Supabase now uses the stable alias for its Site URL and exact web
   redirect. The old immutable callback was removed, and both the provisioning
   command and immediate read-only repeat pass.
