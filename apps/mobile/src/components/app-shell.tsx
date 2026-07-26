@@ -16,6 +16,7 @@ import { useSync } from "../sync/sync-context";
 import { useSettings } from "../features/settings/settings-context";
 import { useTasks } from "../features/tasks/task-context";
 import { StyleSheet } from "../typography";
+import { KeyboardAvoidingView } from "./keyboard";
 
 interface NavItem {
   href: "/" | "/check-in" | "/brain-dump" | "/templates" | "/account";
@@ -169,9 +170,9 @@ export function AppShell() {
                 onCycleTheme={cycleTheme}
               />
             )}
-            <View role="main" style={styles.content}>
+            <KeyboardAvoidingView role="main" style={styles.content}>
               <Slot />
-            </View>
+            </KeyboardAvoidingView>
             {!isWide ? <MobileNavigation styles={styles} /> : null}
           </View>
         )}
@@ -192,6 +193,10 @@ export function useAppTheme() {
   }
 
   return context.theme;
+}
+
+export function useOptionalAppTheme() {
+  return useContext(AppShellThemeContext)?.theme;
 }
 
 function BrandMark({ compact = false }: { compact?: boolean }) {

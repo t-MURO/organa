@@ -17,6 +17,7 @@
       "package": "app.organa.mobile",
       "versionCode": 1,
       "allowBackup": false,
+      "softwareKeyboardLayoutMode": "resize",
       "permissions": [
         "SCHEDULE_EXACT_ALARM"
       ],

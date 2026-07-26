@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   ScrollView,
   Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -22,6 +21,8 @@ import { useSecurity } from "../../security/security-context";
 import { useAppLock } from "../../security/app-lock-context";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
+import { keyboardAwareScrollProps } from "../../components/keyboard";
+import { TextInput } from "../../components/themed-text-input";
 import { useAccountLifecycle } from "./account-lifecycle-context";
 import { useDevices } from "./device-context";
 import {
@@ -312,6 +313,7 @@ export function AccountScreen() {
 
   return (
     <ScrollView
+      {...keyboardAwareScrollProps}
       contentContainerStyle={[
         styles.page,
         compact ? styles.pageCompact : undefined,

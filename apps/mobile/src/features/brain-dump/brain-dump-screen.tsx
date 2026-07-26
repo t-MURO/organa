@@ -8,13 +8,15 @@ import {
   Platform,
   ScrollView,
   Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
+import type { TextInput as NativeTextInput } from "react-native";
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
+import { keyboardAwareScrollProps } from "../../components/keyboard";
+import { TextInput } from "../../components/themed-text-input";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
 import { useBrainDump } from "./brain-dump-context";
@@ -28,7 +30,7 @@ export function BrainDumpScreen() {
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [pendingFocusId, setPendingFocusId] = useState<string>();
-  const inputRefs = useRef(new Map<string, TextInput | null>());
+  const inputRefs = useRef(new Map<string, NativeTextInput | null>());
   const visibleBullets = searchBrainDumpBullets(bullets, query);
   const isCompact = width < 680;
 
@@ -68,11 +70,11 @@ export function BrainDumpScreen() {
 
   return (
     <ScrollView
+      {...keyboardAwareScrollProps}
       contentContainerStyle={[
         styles.page,
         isCompact ? styles.pageCompact : undefined,
       ]}
-      keyboardShouldPersistTaps="handled"
     >
       <View
         style={[styles.hero, isCompact ? styles.heroCompact : undefined]}
@@ -238,7 +240,7 @@ function BulletEditor({
   isLast: boolean;
   styles: ReturnType<typeof createStyles>;
   theme: OrganaTheme;
-  setInputRef(input: TextInput | null): void;
+  setInputRef(input: NativeTextInput | null): void;
   onChange(text: string): void;
   onCreateNext(): void;
   onRemove(): void;

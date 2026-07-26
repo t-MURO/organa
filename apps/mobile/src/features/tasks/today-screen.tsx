@@ -12,7 +12,6 @@ import {
   Easing,
   ScrollView,
   Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -21,6 +20,8 @@ import { useRouter } from "expo-router";
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
+import { keyboardAwareScrollProps } from "../../components/keyboard";
+import { TextInput } from "../../components/themed-text-input";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
 import { PlanningCalendar } from "./planning-calendar";
@@ -188,11 +189,11 @@ export function TodayScreen() {
 
   return (
     <ScrollView
+      {...keyboardAwareScrollProps}
       contentContainerStyle={[
         styles.page,
         isCompact ? styles.pageCompact : undefined,
       ]}
-      keyboardShouldPersistTaps="handled"
     >
       <View style={[styles.hero, isCompact ? styles.heroCompact : undefined]}>
         <View style={styles.heroCopy}>
@@ -1248,8 +1249,7 @@ function createStyles(theme: OrganaTheme) {
       width: 23,
     },
     taskCheckPressed: {
-      opacity: 0.6,
-      transform: [{ scale: 0.92 }],
+      opacity: 0.72,
     },
     taskCheckText: {
       color: theme.background,
@@ -1289,10 +1289,16 @@ function createStyles(theme: OrganaTheme) {
     taskActions: {
       alignItems: "flex-end",
       gap: 6,
+      justifyContent: "center",
+      minHeight: 70,
+      minWidth: 64,
     },
     completedActions: {
       alignItems: "flex-end",
       gap: 6,
+      justifyContent: "center",
+      minHeight: 70,
+      minWidth: 64,
     },
     doseButton: {
       backgroundColor: theme.mustSoft,

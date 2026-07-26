@@ -47,6 +47,14 @@ const accessibilityCss = `
     outline: 3px solid #327061 !important;
     outline-offset: 3px !important;
   }
+  :where(input, textarea):focus-visible {
+    outline-width: 2px !important;
+    outline-offset: 1px !important;
+  }
+  :where(input, textarea)::selection {
+    background-color: #327061;
+    color: #f4f0e7;
+  }
   @media (pointer: coarse) {
     :where(button, a[href], [role="button"], [role="checkbox"], [role="radio"], [role="switch"]) {
       position: relative;

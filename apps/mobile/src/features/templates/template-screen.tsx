@@ -15,7 +15,6 @@ import {
   Modal,
   ScrollView,
   Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
@@ -23,6 +22,11 @@ import {
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
+import {
+  KeyboardAvoidingView,
+  keyboardAwareScrollProps,
+} from "../../components/keyboard";
+import { TextInput } from "../../components/themed-text-input";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
 import { useTasks } from "../tasks/task-context";
@@ -136,11 +140,11 @@ export function TemplateScreen() {
   return (
     <>
       <ScrollView
+        {...keyboardAwareScrollProps}
         contentContainerStyle={[
           styles.page,
           compact ? styles.pageCompact : undefined,
         ]}
-        keyboardShouldPersistTaps="handled"
       >
         <View
           style={[styles.hero, compact ? styles.heroCompact : undefined]}
@@ -421,7 +425,7 @@ function TemplateEditor({
       transparent
       visible={visible}
     >
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView style={styles.overlay}>
         <View accessibilityViewIsModal style={styles.modal}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
@@ -442,8 +446,8 @@ function TemplateEditor({
             </Pressable>
           </View>
           <ScrollView
+            {...keyboardAwareScrollProps}
             contentContainerStyle={styles.form}
-            keyboardShouldPersistTaps="handled"
           >
             <Field
               label="Template name"
@@ -579,7 +583,7 @@ function TemplateEditor({
             </View>
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

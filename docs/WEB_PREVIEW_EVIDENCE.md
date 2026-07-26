@@ -12,12 +12,12 @@ or Web Push behavior, independent security review, or legal approval.
 | --- | --- |
 | EAS project | `@t-muro/organa` |
 | EAS project ID | `ae92cff5-050e-4972-808d-a393be8d67e3` |
-| Source commit | `ca648c4e59254834d914053fbaa2a26ddcad0abd` |
+| Source commit | `73d367e5cf025610f333ebac80b3670a7632339a` |
 | EAS environment | `preview` |
-| Deployment ID | `tdszx5hikw` |
-| Immutable URL | `https://organa--tdszx5hikw.expo.app` |
+| Deployment ID | `utbk3m0udl` |
+| Immutable URL | `https://organa--utbk3m0udl.expo.app` |
 | Stable alias | `https://organa--preview.expo.app` |
-| Fingerprinted bundle | `entry-8d21a9944ff26dbb1866ab86777e2d73.js` |
+| Fingerprinted bundle | `entry-abbea49625c3788eb726e5548ef699f2.js` |
 
 The clean source commit was pushed before deployment. The deployment command
 used a cache-cleared export built under the EAS `preview` environment and
@@ -49,7 +49,7 @@ Both of these commands pass all 17 checks:
 
 ```sh
 pnpm verify:web-deployment -- https://organa--preview.expo.app
-pnpm verify:web-deployment -- https://organa--tdszx5hikw.expo.app
+pnpm verify:web-deployment -- https://organa--utbk3m0udl.expo.app
 ```
 
 Direct live evidence covers:
@@ -80,6 +80,9 @@ Direct live evidence covers:
   rows to reach local storage while the failed row remains retryable
 - stored AES envelopes are decoded to bytes before Expo Crypto parses them,
   keeping the web and native decryption boundary interoperable
+- the shared readable type scale is present in the hosted bundle; rendered
+  inspection at 1280x720 confirms 12px labels, 13-15px supporting copy, a 47px
+  headline, and no horizontal overflow
 
 [Expo Router server headers](https://docs.expo.dev/router/web/server-headers/)
 are encoded into `_expo/.routes.json` for EAS Hosting. EAS documents that it

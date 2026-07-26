@@ -10,13 +10,14 @@ import {
   ActivityIndicator,
   ScrollView,
   Text,
-  TextInput,
   useWindowDimensions,
   View,
 } from "react-native";
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
+import { keyboardAwareScrollProps } from "../../components/keyboard";
+import { TextInput } from "../../components/themed-text-input";
 import { checkInReminderCapability } from "../../data/create-check-in-reminder-scheduler";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
@@ -122,11 +123,11 @@ export function CheckInScreen() {
 
   return (
     <ScrollView
+      {...keyboardAwareScrollProps}
       contentContainerStyle={[
         styles.page,
         isCompact ? styles.pageCompact : undefined,
       ]}
-      keyboardShouldPersistTaps="handled"
     >
       <View
         style={[styles.hero, isCompact ? styles.heroCompact : undefined]}

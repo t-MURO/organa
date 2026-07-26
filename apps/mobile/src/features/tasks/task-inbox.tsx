@@ -1,9 +1,10 @@
 import { getTaskTimingState, type Task } from "@organa/domain";
 import { useState } from "react";
-import { Text, TextInput, useWindowDimensions, View } from "react-native";
+import { Text, useWindowDimensions, View } from "react-native";
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
+import { TextInput } from "../../components/themed-text-input";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
 import {

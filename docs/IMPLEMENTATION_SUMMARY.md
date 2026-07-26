@@ -2601,3 +2601,35 @@ must have direct evidence before production launch.
 - Strict TypeScript, the 28-check web export, iOS and Android Hermes exports,
   all 18 security checks, all 23 platform checks, and `git diff --check` pass.
   No test file was added, changed, or run.
+- Clean commit `73d367e5cf025610f333ebac80b3670a7632339a` is deployed from
+  the EAS `preview` environment as immutable deployment `utbk3m0udl` and the
+  `https://organa--preview.expo.app` alias. Both URLs serve
+  `entry-abbea49625c3788eb726e5548ef699f2.js` and pass all 17 live
+  deployment checks.
+
+## Stable Input And Completion Interaction Milestone
+
+- Task completion and Undo now keep the same action-column width and height,
+  preventing an immediate row-size change when checkbox state changes.
+- Checkbox press feedback no longer scales the control. The checkmark,
+  strikethrough, Undo action, five-second grace period, slow fade, and measured
+  delayed collapse remain intact.
+- Authenticated app content, authentication, encryption recovery, and both
+  task and template modal editors now share platform-appropriate keyboard
+  avoidance. Input-bearing scroll views adjust keyboard insets, preserve taps,
+  and support drag-to-dismiss behavior.
+- Android explicitly pins `softwareKeyboardLayoutMode` to `resize`, matching
+  the generated activity's `adjustResize` mode.
+- Every text field uses one shared input boundary with theme-aware cursor and
+  selection color. Native focus changes only border color, never border width;
+  web uses one close-fitting focus ring and an explicit selected-text color.
+- The pre-fix source diagnostic identified eight input surfaces without
+  keyboard protection, a completion-state action-geometry swap, and a scaled
+  checkbox press state. The post-fix diagnostic finds no unprotected input
+  surface, stable 70px completion action geometry, and no checkbox transform.
+- A production web rendering confirms a 1px field border before and after
+  focus, a 2px focus ring with 1px offset, theme-colored caret, visible typed
+  text, and zero horizontal overflow.
+- Strict TypeScript, the 28-check web export, iOS and Android Hermes exports,
+  all 18 security checks, all 24 platform checks, and `git diff --check` pass.
+  No test file was added, changed, or run.

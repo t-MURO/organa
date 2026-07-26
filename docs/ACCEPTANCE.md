@@ -9,8 +9,9 @@ The criterion-by-criterion status and evidence boundary is recorded in
 
 - [x] Task creation, editing, scheduling, recurrence, completion, Undo, search,
   priority/time lanes, week/month calendar, inbox, and history
-- [x] Completion grace keeps the task, subtasks, Undo controls, duplicate time
-  lane entry, and matching Inbox row stable before a measured smooth collapse
+- [x] Completion grace keeps the task, subtasks, same-size action column, Undo
+  controls, duplicate time lane entry, and matching Inbox row stable before a
+  measured smooth collapse
 - [x] One-off, routine, medication, dose confirmation, subtasks, and
   independently configurable optional subtask reminders
 - [x] Multiple reminder stages and per-task snooze presets, with every saved
@@ -58,6 +59,8 @@ The criterion-by-criterion status and evidence boundary is recorded in
   expansion, and uncapped system text scaling
 - [x] Shared responsive typography raises small labels and supporting copy,
   with proportional line-height adjustment and no desktop or phone overflow
+- [x] Keyboard-aware app, auth, recovery, and modal layouts keep focused phone
+  inputs visible; shared fields provide stable themed focus and selection
 - [x] Source-pinned iOS 16.4+ and Android 7+/API 36 build targets plus a
   documented browser and platform capability matrix
 - [x] Native OAuth callback recovery across attached browser sessions, app

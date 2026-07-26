@@ -88,6 +88,11 @@ ok(
   "source pins Android API 24/36/36 and Build Tools 36",
 );
 ok(
+  appConfig.android.softwareKeyboardLayoutMode === "resize" &&
+    androidManifest.includes('android:windowSoftInputMode="adjustResize"'),
+  "source and generated Android activity keep focused inputs above the keyboard",
+);
+ok(
   packageJson.dependencies.expo === "~57.0.8" &&
     packageJson.dependencies["expo-build-properties"] === "~57.0.7",
   "Expo and build-properties versions match the selected contract",

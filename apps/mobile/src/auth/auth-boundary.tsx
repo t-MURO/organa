@@ -2,17 +2,20 @@ import type { PropsWithChildren } from "react";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
   ScrollView,
   Text,
-  TextInput,
   useColorScheme,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AccessiblePressable as Pressable } from "../accessibility/accessible-pressable";
+import {
+  KeyboardAvoidingView,
+  keyboardAwareScrollProps,
+} from "../components/keyboard";
+import { TextInput } from "../components/themed-text-input";
 import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
 import { StyleSheet } from "../typography";
 import { useAuth } from "./auth-context";
@@ -97,10 +100,13 @@ function SignInScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.safeArea}
       >
-        <ScrollView contentContainerStyle={styles.authPage} role="main">
+        <ScrollView
+          {...keyboardAwareScrollProps}
+          contentContainerStyle={styles.authPage}
+          role="main"
+        >
           <View aria-hidden style={styles.ambientOne} />
           <View aria-hidden style={styles.ambientTwo} />
           <View style={styles.authLayout}>
