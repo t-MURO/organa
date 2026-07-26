@@ -104,9 +104,30 @@ until custom SMTP and both email paths have been exercised.
 
 The managed project was found using Supabase's default link templates,
 8-digit codes, a 60-minute expiry, and a local-only Site URL. Its OTP policy
-has been corrected to six digits and 15 minutes. The link templates cannot be
-replaced until custom SMTP is configured. After adding custom SMTP in the
-Supabase dashboard, apply and verify the checked-in code-only templates with:
+has been corrected to six digits and 15 minutes. Its Site URL now uses the
+live Expo web preview, and its exact redirect set contains that web origin,
+the `organa://**` native callback, and the documented local development
+origins. Provision and verify the same fail-closed URL set with:
+
+```sh
+pnpm configure:managed:auth-urls -- \
+  --project-ref bkqinjscdxofsfgwozgd \
+  --site-url https://organa--53zq3pxf5p.expo.app
+pnpm configure:managed:auth-urls -- \
+  --project-ref bkqinjscdxofsfgwozgd \
+  --site-url https://organa--53zq3pxf5p.expo.app \
+  --check-only
+```
+
+The preview is only the managed engineering callback target. It is not
+production-hosting evidence because that host does not apply Organa's required
+response headers. Replace `--site-url` with the reviewed production HTTPS
+origin before production acceptance. The command replaces the complete
+allowlist rather than preserving stale or unintended redirect destinations.
+
+The link templates cannot be replaced until custom SMTP is configured. After
+adding custom SMTP in the Supabase dashboard, apply and verify the checked-in
+code-only templates with:
 
 ```sh
 pnpm configure:managed:email-otp -- \
@@ -116,10 +137,11 @@ pnpm configure:managed:email-otp -- \
   --check-only
 ```
 
-The command requires the exact linked project, reads the existing Supabase CLI
-login from its native credential store or private file fallback, and never
-prints the access token, SMTP values, or template bodies. It updates only the
-OTP length/expiry and the confirmation/magic-link subjects and bodies.
+Both managed Auth commands require the exact linked project and share the same
+Supabase CLI credential boundary. They read the existing login from its native
+credential store or private file fallback and never print the access token,
+SMTP values, or template bodies. The OTP command updates only the OTP
+length/expiry and the confirmation/magic-link subjects and bodies.
 Organa deliberately keeps the code out of the subject line so notification
 previews do not expose it.
 

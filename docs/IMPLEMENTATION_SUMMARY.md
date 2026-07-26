@@ -2272,6 +2272,32 @@ No tests were added, changed, or run for this milestone.
   claimed. Strict TypeScript, Node syntax, diff hygiene, and 22 platform checks
   pass. No tests were added, changed, or run.
 
+## Managed Auth Redirect Provisioning Milestone
+
+- A read-only Management API probe reproduced the dead-link report exactly:
+  the managed project used `http://localhost:3000` as its Site URL and had an
+  empty redirect allowlist.
+- The managed engineering project now defaults new Auth links to the live
+  Organa Expo web preview and allows only that web origin, the
+  `organa://**` native callback, and the two documented local web origins.
+- Added `pnpm configure:managed:auth-urls` to provision and verify this exact
+  set. It rejects HTTP, local-only, placeholder, path-bearing, credentialed,
+  query-bearing, and fragment-bearing Site URLs and replaces stale allowlist
+  entries rather than merging them.
+- Extracted the linked-project and Supabase CLI credential boundary shared by
+  the Auth URL and email-OTP provisioners. Management API credentials remain
+  in the native credential store or private file fallback and are never
+  printed.
+- The Expo origin remains a connected-test callback only. It does not satisfy
+  production web-hosting acceptance because its response headers do not match
+  Organa's checked-in security policy; production provisioning must replace it
+  with the reviewed production origin.
+- The original probe failed before the update and passes afterward. The
+  callback origin responds with HTTP 200; an insecure loopback input fails
+  before credential lookup. Node syntax, strict TypeScript, all 22 platform
+  checks, and the production web export with 26 checks, eight routes, and 23
+  precache URLs pass. No tests were added, changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

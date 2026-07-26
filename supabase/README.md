@@ -65,6 +65,23 @@ https://app.example.com/**
 http://localhost:8081/**
 ```
 
+For a managed project, provision the Site URL and the complete Organa
+allowlist without preserving stale destinations:
+
+```sh
+pnpm configure:managed:auth-urls -- \
+  --project-ref PROJECT_REF \
+  --site-url https://app.example.com
+pnpm configure:managed:auth-urls -- \
+  --project-ref PROJECT_REF \
+  --site-url https://app.example.com \
+  --check-only
+```
+
+This also includes `http://localhost:4173/**`, which is used by the production
+export preview. Use the reviewed production origin for release acceptance;
+temporary deployment-preview origins are connected-testing targets only.
+
 Provider consoles must contain the callback URL shown by Supabase for that
 provider.
 
