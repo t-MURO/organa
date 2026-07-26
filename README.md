@@ -74,31 +74,31 @@ Expo Go.
 
 ## Verification
 
-```sh
-pnpm typecheck
-pnpm test
-pnpm verify:platform
-pnpm verify:performance
-pnpm verify:yjs-runtime
-pnpm verify:web-push
-pnpm build:native
-pnpm build:web
-pnpm dlx expo-doctor@latest apps/mobile
-pnpm audit --prod
-```
-
-Backend verification additionally requires Docker:
+For ordinary layout, styling, copy, animation, and presentational component
+changes, run only:
 
 ```sh
-pnpm dlx supabase start
-pnpm dlx supabase db reset
-pnpm dlx supabase db lint --local --level warning
-pnpm verify:supabase
+pnpm verify:ui
 ```
+
+This typechecks the app and verifies a local production web export. It does
+not contact Supabase, deploy production, build native artifacts, run the test
+suite, update release evidence, or require acceptance-document changes.
+
+Use only the verification lane that matches the change:
+
+- UI-only: `pnpm verify:ui` plus a visual check of the affected viewport.
+- Domain, persistence, authentication, synchronization, encryption,
+  reminders, native configuration, or Supabase: run the relevant targeted
+  verifier documented in `docs/DEVELOPMENT_WORKFLOW.md`.
+- Release candidate: run the complete `docs/RELEASE_RUNBOOK.md` gate once for
+  the selected candidate, not after every development commit.
 
 See [supabase/README.md](./supabase/README.md) for production setup,
+[docs/DEVELOPMENT_WORKFLOW.md](./docs/DEVELOPMENT_WORKFLOW.md) for the
+lightweight change lanes,
 [docs/MANAGED_SUPABASE_TESTING.md](./docs/MANAGED_SUPABASE_TESTING.md) for
-the current managed connected-test deployment,
+the current managed production backend,
 [docs/PLATFORM_SUPPORT.md](./docs/PLATFORM_SUPPORT.md) for the release
 compatibility contract, and [docs/ACCEPTANCE.md](./docs/ACCEPTANCE.md) for the
 controlled-beta checklist. The requirement-by-requirement evidence map is in
@@ -112,4 +112,5 @@ The exact local/cloud data inventory and store-declaration draft are in
 
 Read [docs/SECURITY.md](./docs/SECURITY.md) before connecting real user data.
 An independent cryptographic and application security review is a mandatory
-production gate; repository tests are not a substitute for that review.
+production gate, not a prerequisite for routine UI iteration. Repository
+tests are not a substitute for that review.

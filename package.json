@@ -11,6 +11,7 @@
     "initialize:release:evidence": "pnpm --filter @organa/app initialize:release:evidence",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
+    "verify:ui": "pnpm --filter @organa/app typecheck && pnpm --filter @organa/app build:web",
     "verify:yjs-runtime": "pnpm --filter @organa/app verify:yjs-runtime",
     "verify:migrations": "pnpm --filter @organa/app verify:migrations",
     "verify:platform": "pnpm --filter @organa/app verify:platform",

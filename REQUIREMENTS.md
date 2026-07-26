@@ -5,6 +5,19 @@
 **Date:** 2026-07-23  
 **Working product name:** Organa
 
+## Development Scope
+
+This document describes product behavior and release acceptance, not a
+mandatory checklist for every commit. Routine UI-only changes do not require
+Supabase verification, connected drills, native builds, dependency audits,
+release-evidence updates, or production deployment.
+
+Use `pnpm verify:ui` for layout, styling, copy, animation, and presentational
+component changes. Escalate only when a change crosses a domain, persistence,
+authentication, synchronization, encryption, reminder, native, dependency,
+or backend boundary. Run the full acceptance and release gates once for an
+intentional release candidate.
+
 ## 1. Purpose
 
 Organa is a calm, organization-focused productivity app for people with ADHD. It helps users capture, plan, remember, and complete everyday responsibilities without adding pressure or turning self-care into a performance system.

@@ -5,6 +5,11 @@ Status recorded on 2026-07-26.
 The criterion-by-criterion status and evidence boundary is recorded in
 `docs/MVP_TRACEABILITY.md`.
 
+This is a release-candidate checklist, not a per-commit development gate.
+UI-only changes use `pnpm verify:ui` and a focused visual check; they do not
+require connected Supabase drills, native artifacts, audits, evidence
+rewrites, or production deployment.
+
 ## Implemented And Locally Verified
 
 - [x] Task creation, editing, scheduling, recurrence, completion, Undo, search,

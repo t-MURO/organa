@@ -5,6 +5,9 @@ Status updated on 2026-07-26.
 This runbook turns a reviewed Organa commit into reproducible preview and
 store artifacts. It does not replace the connected-backend, physical-device,
 security, legal, or store review gates in `docs/ACCEPTANCE.md`.
+It applies only when intentionally selecting a release candidate. Do not run
+this workflow after routine UI, documentation, or development-tooling
+commits; use the matching lane in `docs/DEVELOPMENT_WORKFLOW.md` instead.
 The engineering disclosure inventory and unresolved declaration decisions are
 in `docs/PRIVACY_DATA_MAP.md`.
 Connected functional testing currently uses the managed path in
