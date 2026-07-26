@@ -102,7 +102,18 @@ The managed free tier can use custom SMTP. Its default SMTP service cannot
 apply Organa's custom email-code templates, so do not claim the email method
 until custom SMTP and both email paths have been exercised.
 
-After Auth is configured, run:
+The missing providers do not need to block independent backend evidence. Run:
+
+```sh
+pnpm verify:connected:acceptance:backend
+```
+
+This scope verifies the deployed RLS/RPC, encrypted Realtime/durable recovery,
+Brain Dump convergence, reminder ownership, and revocation contracts. Its
+phase and evidence scope are explicitly `backend-only`; release readiness
+cannot count it as provider acceptance.
+
+After Auth is configured, run the full provider-qualified scope:
 
 ```sh
 pnpm verify:connected:acceptance
@@ -110,9 +121,15 @@ pnpm verify:connected:acceptance:web-push
 ```
 
 Enable `allowWebPushSchedulerDrill` in the private config only for the
-dedicated Web Push phase. Enable `allowOneHourDeletionDrill` only when an
-operator is prepared to wait for and observe the full destructive one-hour
-deletion drill.
+dedicated Web Push phase. Before providers are ready, use
+`pnpm verify:connected:acceptance:backend:web-push`; afterward repeat the full
+provider-qualified command. The synthetic endpoint uses the reserved
+`.invalid` namespace and must remain outside the production Push-host
+allowlist. A pass proves the real cron path removes the rejected endpoint
+without outbound access.
+
+Enable `allowOneHourDeletionDrill` only when an operator is prepared to wait
+for and observe the full destructive one-hour deletion drill.
 
 The production candidate must repeat every connected phase against its final
 reviewed backend and use a separate release evidence manifest.

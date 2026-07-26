@@ -1164,9 +1164,8 @@ silently creating an authentication client:
 - Adds a separately consented connected Web Push verifier. It creates one
   disposable account and valid synthetic Push subscription, schedules
   content-free metadata against the non-resolving `.invalid` namespace, and
-  waits without invoking the function for the real cron path to claim once,
-  clear the failed claim, apply the five-minute retry, and retain the
-  subscription.
+  waits without invoking the function for the real cron path to claim once and
+  remove the disallowed capability plus its reminder without outbound access.
 - The Web Push scheduler command is prepared but unrun because this workspace
   has no private connected operator configuration. Actual browser delivery
   remains explicitly unclaimed.
@@ -1274,8 +1273,8 @@ network capability rather than accepting any syntactically valid HTTPS URL:
   product assumptions. Release validation must confirm the hostnames from
   actual supported-browser subscriptions.
 - The self-hosted mode-600 function environment and portable POSIX preflight
-  enforce the same host-pattern grammar. The connected retry drill requires
-  `push.invalid` only temporarily and removes it afterward.
+  enforce the same host-pattern grammar. The connected scheduler drill keeps
+  `push.invalid` outside the allowlist and proves fail-closed removal.
 
 Edge Function TypeScript transpilation, exact allowlist/endpoint protocol
 checks, shell and script syntax, the portable server-preflight contract,
@@ -1993,9 +1992,9 @@ No tests were added, changed, or run for this milestone.
   source tree from a release-ready production candidate. It binds evidence to
   the clean current commit and the opaque EAS project identifier.
 - The preflight validates the private connected operator config without
-  printing credentials and requires one sanitized runner-v3 evidence file with
-  passing baseline, Web Push scheduler, and one-hour deletion phases for the
-  same commit, backend origin, and migration revision.
+  printing credentials and requires one sanitized full-scope evidence file
+  with passing baseline, Web Push scheduler, and one-hour deletion phases for
+  the same commit, backend origin, and deployment identity.
 - A strict ignored manifest records checksummed iOS, Android, and immutable web
   artifacts plus direct references for the complete source gate, EU backend,
   all auth providers, production repeat, physical iOS/Android checks, every

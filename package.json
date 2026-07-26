@@ -15,6 +15,8 @@
     "verify:platform": "pnpm --filter @organa/app verify:platform",
     "verify:performance": "pnpm --filter @organa/app verify:performance",
     "verify:connected:acceptance": "pnpm --filter @organa/app verify:connected:acceptance",
+    "verify:connected:acceptance:backend": "pnpm --filter @organa/app verify:connected:acceptance:backend",
+    "verify:connected:acceptance:backend:web-push": "pnpm --filter @organa/app verify:connected:acceptance:backend:web-push",
     "verify:connected:acceptance:deletion": "pnpm --filter @organa/app verify:connected:acceptance:deletion",
     "verify:connected:acceptance:full": "pnpm --filter @organa/app verify:connected:acceptance:full",
     "verify:connected:acceptance:web-push": "pnpm --filter @organa/app verify:connected:acceptance:web-push",

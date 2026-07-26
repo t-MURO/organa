@@ -51,7 +51,7 @@ function readOperatorInput(read) {
         : "Connected acceptance configuration is invalid.";
     console.error(`Connected acceptance cannot start: ${message}`);
     console.error(
-      "Prepare the private config with supabase/self-hosted/prepare-connected-acceptance-config.sh and follow docs/SELF_HOSTED_TESTING.md.",
+      "Prepare the private config with the managed or self-hosted helper documented in docs/MANAGED_SUPABASE_TESTING.md and docs/SELF_HOSTED_TESTING.md.",
     );
     process.exit(1);
   }
@@ -81,12 +81,19 @@ if (options.includeDeletion && !config.allowOneHourDeletionDrill) {
 }
 
 const organaCommit = readCleanCommit();
+const evidenceScope = options.backendOnly ? "backend-only" : "full";
 const phases = [
-  {
-    arguments: ["--connected", configPath],
-    name: "connected-supabase",
-    script: "verify-local-supabase.mjs",
-  },
+  options.backendOnly
+    ? {
+        arguments: ["--connected-backend", configPath],
+        name: "connected-backend-contract",
+        script: "verify-local-supabase.mjs",
+      }
+    : {
+        arguments: ["--connected", configPath],
+        name: "connected-supabase",
+        script: "verify-local-supabase.mjs",
+      },
 ];
 if (options.includeWebPush) {
   phases.push({
@@ -209,7 +216,8 @@ const evidencePath = writeEvidence({
     organaCommitConfirmedAtFinish,
     phases: phaseEvidence,
     platform: `${process.platform}-${process.arch}`,
-    runnerVersion: 4,
+    runnerVersion: 5,
+    scope: evidenceScope,
     startedAt: startedAt.toISOString(),
     status: runFailure ? "failed" : "passed",
     supabaseDeployment: config.deployment,
@@ -223,7 +231,7 @@ console.log(
 );
 if (runFailure) throw runFailure;
 console.log(
-  `Connected acceptance run passed (${phaseEvidence.length} phases).`,
+  `Connected ${evidenceScope} acceptance run passed (${phaseEvidence.length} phases).`,
 );
 
 function runPhase(phase) {
@@ -315,6 +323,7 @@ function connectedConfigsMatch(left, right) {
 
 function parseArguments(argumentsList) {
   const parsed = {
+    backendOnly: false,
     configPath: undefined,
     configOnly: false,
     includeDeletion: false,
@@ -323,7 +332,9 @@ function parseArguments(argumentsList) {
 
   for (let index = 0; index < argumentsList.length; index += 1) {
     const argument = argumentsList[index];
-    if (argument === "--include-deletion") {
+    if (argument === "--backend-only") {
+      parsed.backendOnly = true;
+    } else if (argument === "--include-deletion") {
       parsed.includeDeletion = true;
     } else if (argument === "--include-web-push") {
       parsed.includeWebPush = true;
@@ -333,14 +344,16 @@ function parseArguments(argumentsList) {
       parsed.configPath = requireOptionValue(argumentsList, ++index, argument);
     } else {
       throw new Error(
-        "Usage: node verify-connected-acceptance.mjs [--config path] [--config-only] [--include-web-push] [--include-deletion]",
+        "Usage: node verify-connected-acceptance.mjs [--backend-only] [--config path] [--config-only] [--include-web-push] [--include-deletion]",
       );
     }
   }
 
   if (
     parsed.configOnly &&
-    (parsed.includeDeletion || parsed.includeWebPush)
+    (parsed.backendOnly ||
+      parsed.includeDeletion ||
+      parsed.includeWebPush)
   ) {
     throw new Error(
       "--config-only cannot be combined with a connected acceptance phase.",

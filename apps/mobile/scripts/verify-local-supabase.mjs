@@ -51,7 +51,7 @@ for (const signal of handledSignals) {
 
 let runFailure;
 try {
-  if (verificationEnvironment.connected) {
+  if (verificationEnvironment.verifyAuthSettings) {
     await verifyConnectedAuthSettings();
   }
   await verifyDeviceApprovalContract();
@@ -1931,14 +1931,20 @@ function readVerificationEnvironment() {
       label: "Local",
       publishableKey: local.PUBLISHABLE_KEY,
       serviceRoleKey: local.SERVICE_ROLE_KEY,
+      verifyAuthSettings: false,
     };
   }
-  if (mode !== "--connected" || unexpected.length > 0) {
+  if (
+    (mode !== "--connected" && mode !== "--connected-backend") ||
+    unexpected.length > 0
+  ) {
     throw new Error(
-      "Usage: node verify-local-supabase.mjs [--connected [config-path]]",
+      "Usage: node verify-local-supabase.mjs [--connected|--connected-backend [config-path]]",
     );
   }
-  return readConnectedEnvironment(configPath);
+  return readConnectedEnvironment(configPath, {
+    verifyAuthSettings: mode === "--connected",
+  });
 }
 
 function readLocalEnvironment() {
@@ -1956,14 +1962,15 @@ function readLocalEnvironment() {
   );
 }
 
-function readConnectedEnvironment(configPath) {
+function readConnectedEnvironment(configPath, { verifyAuthSettings }) {
   const config = readConnectedSupabaseConfig(configPath);
 
   return {
     apiUrl: config.supabaseUrl,
     connected: true,
-    label: "Connected",
+    label: verifyAuthSettings ? "Connected" : "Connected backend",
     publishableKey: config.publishableKey,
     serviceRoleKey: config.secretKey,
+    verifyAuthSettings,
   };
 }

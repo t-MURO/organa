@@ -16,6 +16,8 @@
     "typecheck": "tsc --noEmit",
     "verify:yjs-runtime": "node scripts/verify-yjs-dev-runtime.mjs",
     "verify:connected:acceptance": "node scripts/verify-connected-acceptance.mjs",
+    "verify:connected:acceptance:backend": "node scripts/verify-connected-acceptance.mjs --backend-only",
+    "verify:connected:acceptance:backend:web-push": "node scripts/verify-connected-acceptance.mjs --backend-only --include-web-push",
     "verify:connected:acceptance:deletion": "node scripts/verify-connected-acceptance.mjs --include-deletion",
     "verify:connected:acceptance:full": "node scripts/verify-connected-acceptance.mjs --include-web-push --include-deletion",
     "verify:connected:acceptance:web-push": "node scripts/verify-connected-acceptance.mjs --include-web-push",

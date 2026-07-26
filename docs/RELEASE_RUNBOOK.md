@@ -138,6 +138,9 @@ Run all connected backend phases into one commit-bound evidence file:
 pnpm verify:connected:acceptance:full
 ```
 
+Backend-only evidence may be gathered before external Auth providers are ready,
+but its distinct scope and phase name cannot satisfy this release command.
+
 After every source, connected, physical-device, browser, artifact, audit, and
 review gate is complete, run:
 

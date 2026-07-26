@@ -14,8 +14,7 @@ const POLL_INTERVAL_MS = 5_000;
 const PROGRESS_INTERVAL_MS = 60_000;
 const SCHEDULE_LEAD_MS = 15_000;
 const SCHEDULER_WAIT_MS = 3 * 60 * 1_000;
-const RETRY_DELAY_MS = 5 * 60 * 1_000;
-const RETRY_TOLERANCE_MS = 10_000;
+const DUE_TOLERANCE_MS = 10_000;
 
 const [configPath, ...unexpectedArguments] = process.argv.slice(2);
 if (unexpectedArguments.length > 0) {
@@ -175,7 +174,7 @@ async function runWebPushSchedulerDrill() {
           .toString("base64url"),
       },
     }),
-    "content-free Web Push retry probe scheduled",
+    "content-free Web Push egress-rejection probe scheduled",
   );
 
   const subscription = noError(
@@ -208,63 +207,50 @@ async function runWebPushSchedulerDrill() {
     "scheduler probe starts unclaimed with content-free routing metadata",
   );
 
-  await waitForRetryState(reminder.id, Date.parse(scheduledFireAt));
-
-  const retainedSubscription = noError(
-    await admin
-      .from("web_push_subscriptions")
-      .select("id")
-      .eq("id", subscription.id)
-      .maybeSingle(),
-    "retrying Web Push subscription checked",
-  );
-  ok(
-    retainedSubscription?.id === subscription.id,
-    "transient delivery failure retains the subscription",
-  );
+  await waitForRejectedState({
+    fireAtMs: Date.parse(scheduledFireAt),
+    reminderId: reminder.id,
+    subscriptionId: subscription.id,
+  });
 }
 
-async function waitForRetryState(reminderId, fireAtMs) {
+async function waitForRejectedState({
+  fireAtMs,
+  reminderId,
+  subscriptionId,
+}) {
   const finishAt = performance.now() + SCHEDULER_WAIT_MS;
   let nextProgressAt = performance.now() + PROGRESS_INTERVAL_MS;
 
   while (performance.now() <= finishAt) {
-    const row = noCheckError(
-      await admin
+    const [reminderResult, subscriptionResult] = await Promise.all([
+      admin
         .from("web_push_reminders")
-        .select(
-          "attempts,claimed_at,fire_at,last_error_at",
-        )
+        .select("id")
         .eq("id", reminderId)
         .maybeSingle(),
-      "Connected Web Push retry state could not be read.",
+      admin
+        .from("web_push_subscriptions")
+        .select("id")
+        .eq("id", subscriptionId)
+        .maybeSingle(),
+    ]);
+    const reminder = noCheckError(
+      reminderResult,
+      "Connected Web Push reminder state could not be read.",
     );
-    if (!row) {
-      throw new Error(
-        "The synthetic reminder disappeared instead of entering retry state; verify the connected function is not using local test mode.",
-      );
-    }
-
-    if (
-      row.attempts >= 1 &&
-      row.claimed_at === null &&
-      typeof row.last_error_at === "string"
-    ) {
-      const lastErrorAtMs = Date.parse(row.last_error_at);
-      const retryAtMs = Date.parse(row.fire_at);
+    const subscription = noCheckError(
+      subscriptionResult,
+      "Connected Web Push subscription state could not be read.",
+    );
+    if (!reminder && !subscription) {
       ok(
-        Number.isFinite(lastErrorAtMs) &&
-          Number.isFinite(retryAtMs) &&
-          lastErrorAtMs >= fireAtMs - RETRY_TOLERANCE_MS,
-        "real dispatcher records a post-due delivery failure",
+        Date.now() >= fireAtMs - DUE_TOLERANCE_MS,
+        "real dispatcher does not process the probe before its due time",
       );
       ok(
-        row.attempts === 1 &&
-          retryAtMs - lastErrorAtMs >=
-            RETRY_DELAY_MS - RETRY_TOLERANCE_MS &&
-          retryAtMs - lastErrorAtMs <=
-            RETRY_DELAY_MS + RETRY_TOLERANCE_MS,
-        "real dispatcher clears the claim and applies one five-minute retry",
+        true,
+        "real dispatcher rejects the untrusted Push host and removes its schedule",
       );
       return;
     }
@@ -286,8 +272,8 @@ async function waitForRetryState(reminderId, fireAtMs) {
 
   throw new Error(
     [
-      "The once-per-minute Web Push scheduler did not produce retry evidence within three minutes.",
-      "Verify cron, VAPID configuration, and that WEB_PUSH_ALLOWED_HOSTS includes push.invalid.",
+      "The once-per-minute Web Push scheduler did not remove the rejected endpoint within three minutes.",
+      "Verify cron, function configuration, and the fail-closed Push-host allowlist.",
     ].join(" "),
   );
 }

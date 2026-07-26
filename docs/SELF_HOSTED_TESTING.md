@@ -580,17 +580,8 @@ drills below.
 
 After deploying the current Web Push function and observing the configured
 crontab run on consecutive minutes, use the short connected scheduler drill.
-Temporarily append the reserved probe hostname to
-`WEB_PUSH_ALLOWED_HOSTS`, then recreate the function service:
-
-```text
-WEB_PUSH_ALLOWED_HOSTS=fcm.googleapis.com,updates.push.services.mozilla.com,*.push.apple.com,push.invalid
-```
-
-```sh
-sh run.sh recreate functions
-sh validate-self-hosted.sh full
-```
+Keep `WEB_PUSH_ALLOWED_HOSTS` restricted to reviewed real browser Push hosts;
+the drill must not weaken it with a probe hostname.
 
 In the private connected configuration, temporarily set:
 
@@ -609,31 +600,38 @@ Web-Push command name. It reruns the connected baseline first, then creates one
 `web-push-live-` synthetic account and a valid P-256 Push subscription with a
 content-free route. Its endpoint uses the reserved, non-resolving `.invalid`
 namespace, so no internal service, real Push provider, or third-party capture
-service receives the request. The command never invokes the Edge Function and
-never reads the scheduler bearer. It waits up to three minutes for the real
+service receives the request. The command never invokes the Edge Function or
+reads the scheduler bearer directly. It waits up to three minutes for the real
 cron path to:
 
 - authorize and invoke `dispatch-web-push`
 - validate that the configured VAPID public/private keys are a matching pair
-- authorize the reserved probe through the configured Push-host allowlist
 - claim the due reminder exactly once
-- construct the encrypted, VAPID-signed Web Push request
-- record the expected transport failure and clear the claim
-- reschedule the reminder by five minutes while retaining the subscription
+- reject the reserved hostname against the production Push-host allowlist
+- remove both the rejected capability and its scheduled reminder without an
+  outbound request
 
 The dispatcher now returns `500` before claiming reminders when its VAPID pair
-or subject is malformed, so retry state cannot falsely count invalid server
-credentials as scheduler evidence. The operator command prints no account ID,
-key, proof, token, endpoint capability, payload, or scheduler secret and
-attempts bounded cleanup on failure or interruption. Set
-`allowWebPushSchedulerDrill` back to `false` after the run. Remove
-`push.invalid` from `WEB_PUSH_ALLOWED_HOSTS`, recreate `functions`, and rerun
-the full preflight before browser delivery validation.
+or subject is malformed, so endpoint removal cannot falsely count invalid
+server credentials as scheduler evidence. The operator command prints no
+account ID, key, proof, token, endpoint capability, payload, or scheduler
+secret and attempts bounded cleanup on failure or interruption. Set
+`allowWebPushSchedulerDrill` back to `false` after the run.
 
 A pass plus the full preflight, installed once-per-minute crontab, and
 consecutive scheduler logs supports the Web Push function/scheduler acceptance
 row. It does not prove successful delivery, replacement, deep links,
 cancellation, denial fallback, or sign-out behavior in any browser.
+
+If external Auth providers are not ready yet, run the same scheduler phase
+without claiming provider acceptance:
+
+```sh
+pnpm verify:connected:acceptance:backend:web-push
+```
+
+This writes distinct `backend-only` evidence. Release readiness accepts only
+the full provider-qualified scope.
 
 After the account-deletion function and its once-per-minute scheduler are
 deployed, use the separate long-running drill to verify the real one-hour
