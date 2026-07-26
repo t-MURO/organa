@@ -1,6 +1,6 @@
 # Controlled-Beta Release Runbook
 
-Status prepared on 2026-07-24.
+Status updated on 2026-07-26.
 
 This runbook turns a reviewed Organa commit into reproducible preview and
 store artifacts. It does not replace the connected-backend, physical-device,
@@ -24,6 +24,11 @@ release backend and every gate in this runbook.
 - Web/PWA deployment remains a separate immutable production export.
 
 ## One-Time Project Setup
+
+The current source is linked to `@t-muro/organa`, EAS project
+`ae92cff5-050e-4972-808d-a393be8d67e3`. Steps 1-4 below are complete for this
+release line; repeat the live `project:info` check before recording candidate
+evidence.
 
 1. Create or select the Organa EAS project under the organization that will
    own the release.

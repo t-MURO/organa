@@ -158,6 +158,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "ae92cff5-050e-4972-808d-a393be8d67e3"
+      }
+    },
+    "owner": "t-muro"
   }
 }

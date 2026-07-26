@@ -2025,6 +2025,18 @@ No tests were added, changed, or run for this milestone.
   with eight static routes and 22 precache URLs, and both native Hermes exports
   pass. No tests were added, changed, or run.
 
+## Live EAS Project Link
+
+- Created the canonical Organa project as `@t-muro/organa` in the personal
+  `t-muro` Expo account.
+- Source configuration records the EAS owner and opaque project ID
+  `ae92cff5-050e-4972-808d-a393be8d67e3`; no generated native credentials or
+  secrets are stored in the repository.
+- `eas project:info --non-interactive` resolves the same account, slug, and
+  project ID. The release-readiness preflight now passes its EAS-link gate.
+- The 19-check platform verifier and strict TypeScript pass. No tests were
+  added, changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

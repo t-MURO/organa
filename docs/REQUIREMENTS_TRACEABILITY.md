@@ -80,6 +80,9 @@ Status meanings:
   explicit EAS environments, remote build-number management, and draft
   Android internal-track submission; `docs/RELEASE_RUNBOOK.md` defines the
   credential, artifact, physical-check, and evidence handoff
+- `apps/mobile/app.json` links the source to live EAS project
+  `@t-muro/organa` (`ae92cff5-050e-4972-808d-a393be8d67e3`);
+  non-interactive EAS project inspection resolves the same owner, slug, and ID
 
 ## Completion Boundary
 

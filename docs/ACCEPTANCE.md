@@ -261,7 +261,10 @@ Local evidence:
 - EAS configuration now separates internal preview artifacts from
   auto-incremented store builds, requires a clean commit, binds each profile to
   its matching environment, and submits Android to the internal track as a
-  draft; project linking, credentials, and real artifacts remain release gates
+  draft; signing credentials and real artifacts remain release gates
+- the source is linked to live EAS project `@t-muro/organa`
+  (`ae92cff5-050e-4972-808d-a393be8d67e3`), and non-interactive
+  `project:info` resolves the same account, slug, and opaque project ID
 - the EAS profile JSON and resolved public Expo configuration validate locally;
   strict TypeScript, the production PWA export, both Hermes exports, and the
   production dependency audit pass; no tests were added, changed, or run for
