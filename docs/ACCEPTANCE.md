@@ -581,8 +581,10 @@ Local evidence:
   allowlist and removes unlisted subscriptions before network access. Actual
   release-browser endpoint compatibility remains part of the browser-delivery
   drill.
-- [ ] Google, GitHub, and email OTP against configured connected
-  providers
+- [x] Configure managed Maileroo SMTP and six-digit/15-minute code-only
+  confirmation and returning-user email templates
+- [ ] Google, GitHub, and end-to-end email OTP delivery/sign-in against
+  configured connected providers
 - [x] Apply all ten migrations and pass linked database lint against the
   managed EU connected-test project
 - [ ] Repeat migration application and lint against the selected production

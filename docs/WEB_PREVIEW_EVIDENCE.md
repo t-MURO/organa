@@ -102,7 +102,7 @@ deployment.
   the same live verifier against the production origin.
 - Exercise install, offline restart, service-worker replacement, and
   permission-granted Web Push in every supported release browser.
-- Configure and exercise Google, GitHub, and custom-SMTP email codes.
+- Exercise Google, GitHub, and Maileroo-delivered email codes.
 - Complete the connected production repeat, physical-device matrix,
   independent security review, legal review, signing, and store evidence.
 

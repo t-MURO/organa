@@ -93,8 +93,9 @@ Latest verified task-type work:
   verifier, iOS and Android Hermes exports, the production PWA export with all
   18 artifact checks, the production dependency audit, and `git diff --check`
   pass.
-- Hosted Google, GitHub, and email provider configuration and live
-  redirect drills remain a connected-project gate.
+- Hosted Google and GitHub configuration plus every provider's live redirect
+  drill remain connected-project gates. Maileroo custom SMTP and managed
+  code-only email templates are now configured.
 
 ## Interaction Feedback Contract Milestone
 
@@ -2225,10 +2226,9 @@ No tests were added, changed, or run for this milestone.
 - A live read-only Management API probe reproduced the reported Auth mismatch:
   the managed test project used Supabase's default confirmation/magic-link
   templates, an 8-digit token, a 60-minute expiry, and a local-only Site URL.
-- The managed OTP policy is now six digits with a 15-minute expiry, matching
-  the Organa code-entry flow. The hosted templates remain links because the
-  free-tier project still uses Supabase's default email provider, which rejects
-  custom template updates until custom SMTP is configured.
+- The managed OTP policy is six digits with a 15-minute expiry, matching the
+  Organa code-entry flow. Maileroo custom SMTP is now configured, and both the
+  confirmation and returning-user templates send only the six-digit code.
 - Added `pnpm configure:managed:email-otp` as a guarded, idempotent Management
   API provisioner. It requires the exact CLI-linked project, resolves the
   existing CLI login without printing it, updates only the OTP policy and the
@@ -2240,10 +2240,11 @@ No tests were added, changed, or run for this milestone.
 - Local and self-hosted subjects are now static so lock-screen notification
   previews do not expose the one-time code.
 - Node syntax, strict TypeScript, diff hygiene, and the live managed-state
-  probe pass at their applicable scopes. The live probe confirms the policy is
-  6 digits/15 minutes and accurately reports both remaining link templates and
-  missing custom SMTP. Provider delivery remains unclaimed. No tests were
-  added, changed, or run.
+  probe pass at their applicable scopes. An immediate read-only repeat confirms
+  the 6-digit/15-minute policy, both code-only templates, and configured custom
+  SMTP without printing credentials or template bodies. Inbox delivery and
+  successful code entry remain unclaimed. No tests were added, changed, or
+  run.
 
 ## iOS Simulator Native Build Milestone
 
@@ -2370,8 +2371,8 @@ No tests were added, changed, or run for this milestone.
 
 Connected Supabase project:
 
-- Configure and exercise hosted Google, GitHub, and email-code
-  providers.
+- Configure and exercise hosted Google and GitHub, and exercise the configured
+  Maileroo email-code provider end to end.
 - Repeat cross-account RLS, unauthorized RPC, trusted-device, encrypted sync,
   and Web Push scheduler checks against the selected production deployment.
 - Complete rendered reminder-device cleanup, then repeat large-account,
