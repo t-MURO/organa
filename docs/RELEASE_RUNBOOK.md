@@ -103,6 +103,13 @@ This profile deliberately reuses the preview environment. A successful
 simulator artifact does not satisfy notification, widget interaction,
 VoiceOver, dynamic-type, offline-process, or physical-device rows.
 
+Organa implements AES-256-GCM rather than relying only on transport security.
+Do not add `ios.config.usesNonExemptEncryption` merely to silence an EAS
+warning. Complete Apple's App Store Connect encryption questionnaire and the
+legal/export review first. Set the Info.plist declaration only from that
+recorded determination, and attach any required compliance code or
+documentation before TestFlight or App Store submission.
+
 Confirm that both Supabase values point to the selected EU project. Confirm
 that hosted Auth allows the exact web origins and the `organa://**` native
 callback. Configure Google and GitHub secrets only in Supabase and

@@ -12,6 +12,8 @@ const [
   workManagerPlugin,
   podfilePropertiesText,
   xcodeProject,
+  iosAppEntitlements,
+  iosWidgetEntitlements,
   platformSupport,
   browserSupport,
   requirements,
@@ -35,6 +37,14 @@ const [
   readFile(new URL("ios/Podfile.properties.json", appRoot), "utf8"),
   readFile(
     new URL("ios/Organa.xcodeproj/project.pbxproj", appRoot),
+    "utf8",
+  ),
+  readFile(new URL("ios/Organa/Organa.entitlements", appRoot), "utf8"),
+  readFile(
+    new URL(
+      "ios/ExpoWidgetsTarget/ExpoWidgetsTarget.entitlements",
+      appRoot,
+    ),
     "utf8",
   ),
   readFile(new URL("docs/PLATFORM_SUPPORT.md", repoRoot), "utf8"),
@@ -114,6 +124,17 @@ const xcodeTargets = [
 ok(
   xcodeTargets.length >= 6 && xcodeTargets.every((target) => target === "16.4"),
   "all generated iOS app and widget configurations target iOS 16.4",
+);
+ok(
+  iosAppEntitlements.includes("group.app.organa.mobile") &&
+    iosWidgetEntitlements.includes("group.app.organa.mobile") &&
+    xcodeProject.includes(
+      "CODE_SIGN_ENTITLEMENTS = Organa/Organa.entitlements;",
+    ) &&
+    xcodeProject.includes(
+      'CODE_SIGN_ENTITLEMENTS = "ExpoWidgetsTarget/ExpoWidgetsTarget.entitlements";',
+    ),
+  "generated iOS app and widget targets share the configured App Group",
 );
 ok(
   androidManifest.includes('android:allowBackup="false"'),

@@ -2245,6 +2245,33 @@ No tests were added, changed, or run for this milestone.
   missing custom SMTP. Provider delivery remains unclaimed. No tests were
   added, changed, or run.
 
+## iOS Simulator Native Build Milestone
+
+- Added a `preview-simulator` EAS profile that reuses the validated preview
+  environment and compiles a standalone iOS Simulator app without requiring an
+  Apple Developer account. The platform verifier guards this exact profile.
+- EAS build `d8daa354-fd72-45a3-a8ea-18009cd0e675` completed successfully from
+  clean commit `ffdfd3012d33e0f04c965307f871aed0c8d5a518` as Organa `0.1.0`
+  build `1`.
+- The 29,034,446-byte artifact passes gzip/tar integrity and deep macOS
+  `codesign` verification. Its SHA-256, build identity, and explicit limits are
+  recorded in `docs/IOS_SIMULATOR_EVIDENCE.md`; the installable artifact stays
+  ignored.
+- The app and embedded `ExpoWidgetsTarget.appex` both target iOS 16.4 and
+  contain universal `x86_64`/`arm64` simulator executables with the expected
+  `app.organa.mobile` and `app.organa.mobile.widgets` bundle identifiers.
+- The platform verifier now guards that both generated entitlement sources and
+  Xcode targets use `group.app.organa.mobile`. Ad-hoc simulator signatures have
+  empty entitlement dictionaries, so physical App Group provisioning and
+  widget data sharing remain unclaimed.
+- EAS surfaced the missing `ITSAppUsesNonExemptEncryption` decision. Because
+  Organa implements AES-256-GCM, the runbook now requires a recorded
+  Apple/legal export-compliance determination instead of silently declaring
+  the app exempt or non-exempt.
+- This Mac lacks full Xcode and `simctl`, so local simulator launch was not
+  claimed. Strict TypeScript, Node syntax, diff hygiene, and 22 platform checks
+  pass. No tests were added, changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
