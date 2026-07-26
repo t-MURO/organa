@@ -42,8 +42,10 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
 
 ## Authentication
 
-- Supabase Auth uses PKCE for Google and GitHub OAuth. Passwordless
-  email access uses a six-digit verification code.
+- Controlled-beta access uses a passwordless six-digit email verification
+  code. Google and GitHub OAuth are hard-disabled in the client.
+- The retained Google and GitHub implementation uses PKCE, but it is dormant
+  until a separate post-beta provider rollout.
 - Native authentication state and the PKCE verifier use Expo SecureStore.
   Web authentication state uses origin-scoped browser storage.
 - Native OAuth accepts callbacks only at the configured `organa` app redirect.
@@ -56,8 +58,9 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
 - Provider-supplied callback descriptions are not displayed. Cancellation has
   fixed local copy and all other callback failures use a generic local message.
 - Callback URLs and authorization codes are not logged.
-- Hosted provider credentials, redirect allowlists, and end-to-end provider
-  drills remain deployment responsibilities for the selected EU project.
+- Hosted OAuth credentials and provider drills are not part of the
+  controlled-beta release boundary. Redirect allowlists and email delivery
+  remain deployment responsibilities for the selected EU project.
 
 ## Browser Policy
 

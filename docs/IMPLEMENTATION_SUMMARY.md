@@ -505,8 +505,9 @@ Implemented user-facing areas:
 
 ## Authentication And Security
 
-- Supabase Auth adapters support Google, GitHub, and email verification
-  codes.
+- Controlled-beta account creation uses Supabase email verification codes.
+- Google and GitHub adapters remain implemented but are dormant behind a
+  hard-disabled client flag until a separate post-beta rollout.
 - Native PKCE callbacks recover through browser completion, app resume, and
   cold start while strict redirect matching and exchange deduplication prevent
   unrelated or duplicate callback handling.
@@ -2331,8 +2332,7 @@ No tests were added, changed, or run for this milestone.
   disable before accepting link-based security flows.
 - A subsequent live preview walkthrough received the Maileroo-delivered
   six-digit code and completed sign-in successfully. Managed-test email OTP is
-  therefore accepted; Google, GitHub, and the production provider repeat
-  remain open.
+  therefore accepted; the production email-provider repeat remains open.
 - Auth now reads the public managed settings endpoint before presenting a
   signed-out provider choice. The response is shape-validated and bounded to
   five seconds; failures hide OAuth controls while preserving email, and an
@@ -2341,8 +2341,8 @@ No tests were added, changed, or run for this milestone.
   disabled Google/GitHub controls and their divider without disturbing email.
   The stable and immutable deployments pass all 16 live checks, and the live
   bundle contains the provider-aware email-only copy.
-- Added `pnpm configure:managed:oauth` for the remaining hosted Google/GitHub
-  gate. It requires the exact linked project, reads credentials only from a
+- Retained `pnpm configure:managed:oauth` for a post-beta Google/GitHub
+  rollout. It requires the exact linked project, reads credentials only from a
   bounded ignored regular file, rejects symlinks, placeholders, extra fields,
   ownership changes, and non-private Unix modes, and never prints client IDs
   or secrets. Its read-only mode requires no credential file and currently
@@ -2354,6 +2354,21 @@ No tests were added, changed, or run for this milestone.
   commands, scope, provider semantics, and remaining production/browser
   limits. Strict TypeScript, 22 platform checks, the 27-check web export, and
   the live verifier pass. No tests were added, changed, or run.
+
+## Email-Only Controlled-Beta Auth Milestone
+
+- Changed the controlled-beta account requirement to passwordless email
+  verification codes. Google and GitHub are now explicitly deferred.
+- Added a hard-disabled social OAuth gate in the client. Provider discovery
+  does not run, social controls never render, and programmatic OAuth starts
+  fail closed even if a backend provider is accidentally enabled.
+- Kept the provider settings adapter, PKCE callback coordinator, and
+  secret-safe managed provisioner intact for a deliberate post-beta rollout.
+- Updated managed and self-hosted Auth checks to require email enabled and
+  phone, Google, and GitHub disabled for the controlled beta.
+- Updated requirements, acceptance matrices, privacy/security boundaries,
+  self-hosting instructions, release instructions, and evidence placeholders
+  to match the email-only release scope.
 
 ## Internal Security Hardening Milestone
 
@@ -2397,8 +2412,7 @@ No tests were added, changed, or run for this milestone.
 
 Connected Supabase project:
 
-- Configure and exercise hosted Google and GitHub, then repeat the confirmed
-  Maileroo email-code flow against production.
+- Repeat the confirmed Maileroo email-code flow against production.
 - Repeat cross-account RLS, unauthorized RPC, trusted-device, encrypted sync,
   and Web Push scheduler checks against the selected production deployment.
 - Complete rendered reminder-device cleanup, then repeat large-account,

@@ -12,10 +12,10 @@ before completing Apple or Google declarations.
 
 | Service | Runtime purpose | Data boundary |
 | --- | --- | --- |
-| Supabase Auth | Account creation, provider identity, sessions | Email, provider identity, account ID, session and request metadata |
+| Supabase Auth | Email-code account creation and sessions | Email, account ID, session and request metadata |
 | Supabase Database and Realtime | Durable encrypted sync, device trust, deletion state | Ciphertext plus the operational metadata listed below |
 | Supabase Edge Functions | Scheduled deletion and Web Push dispatch | Due account IDs or Push capabilities and generic encrypted Push payloads |
-| Google and GitHub | User-selected OAuth authentication | Provider-controlled identity and sign-in request metadata |
+| Google and GitHub (deferred) | No controlled-beta runtime use | No data is sent while social OAuth remains disabled |
 | Browser Push service | Closed-tab web reminder transport | Push endpoint/capability and encrypted payload containing only a safe route and opaque tag |
 | Apple/Google app distribution | Installation and store updates | Store-account, download, device, and platform diagnostics governed by the stores |
 

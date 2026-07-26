@@ -12,7 +12,7 @@
       "migrationVersion": "replace_with_14_digit_migration_version"
     },
     "euRegionEvidence": "replace_with_region_reference",
-    "providerEvidence": "replace_with_google_github_email_drill_reference",
+    "providerEvidence": "replace_with_email_code_drill_reference",
     "productionRepeatEvidence": "replace_with_production_repeat_reference"
   },
   "artifacts": {

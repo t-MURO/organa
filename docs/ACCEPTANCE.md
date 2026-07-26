@@ -587,7 +587,10 @@ Local evidence:
   accepting any link-based security email flow
 - [x] Complete Maileroo-delivered six-digit email OTP sign-in against the live
   managed-test preview
-- [ ] Google and GitHub sign-in against configured connected providers
+- [x] Keep Google and GitHub sign-in dormant for the controlled beta, with no
+  provider discovery, controls, divider, or programmatic OAuth start
+- Deferred post-beta: configure and exercise Google and GitHub before enabling
+  the retained social OAuth path
 - [x] Apply all ten migrations and pass linked database lint against the
   managed EU connected-test project
 - [ ] Repeat migration application and lint against the selected production

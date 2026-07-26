@@ -112,10 +112,12 @@ documentation before TestFlight or App Store submission.
 
 Confirm that both Supabase values point to the selected EU project. Confirm
 that hosted Auth allows the exact web origins and the `organa://**` native
-callback. Configure Google and GitHub secrets only in Supabase and
-their provider consoles. The app rejects non-HTTPS remote endpoints, URL
-credentials, placeholders, and any key that is not an `sb_publishable_` client
-key; do not weaken that runtime boundary to make a build appear configured.
+callback. Keep Google and GitHub disabled in Supabase and in the client for
+the controlled beta. Their credentials and provider-console setup belong to a
+separate post-beta rollout. The app rejects non-HTTPS remote endpoints, URL
+credentials, placeholders, and any key that is not an `sb_publishable_`
+client key; do not weaken that runtime boundary to make a build appear
+configured.
 The Web Push function must also have a reviewed `WEB_PUSH_ALLOWED_HOSTS` list
 containing only the exact or explicit `*.` Push-service hosts observed in
 supported release browsers.
@@ -163,8 +165,9 @@ Run all connected backend phases into one commit-bound evidence file:
 pnpm verify:connected:acceptance:full
 ```
 
-Backend-only evidence may be gathered before external Auth providers are ready,
-but its distinct scope and phase name cannot satisfy this release command.
+Backend-only evidence may be gathered independently, but its distinct scope
+and phase name cannot satisfy this release command. The full scope confirms
+the controlled-beta email-only Auth policy.
 
 After every source, connected, physical-device, browser, artifact, audit, and
 review gate is complete, run:

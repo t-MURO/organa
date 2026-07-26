@@ -358,15 +358,7 @@ for provider in GOOGLE GITHUB; do
   require_exact_value \
     .env.auth \
     "GOTRUE_EXTERNAL_${provider}_ENABLED" \
-    true
-  require_configured_value \
-    .env.auth \
-    .env.auth.example \
-    "GOTRUE_EXTERNAL_${provider}_CLIENT_ID"
-  require_configured_value \
-    .env.auth \
-    .env.auth.example \
-    "GOTRUE_EXTERNAL_${provider}_SECRET"
+    false
 done
 
 require_private_file .env.functions
@@ -400,8 +392,8 @@ docker compose config --format json |
     | $services.auth.environment as $auth
     | ($auth.GOTRUE_JWT_KEYS | fromjson) as $signing
     | ($services.rest.environment.PGRST_JWT_SECRET | fromjson) as $jwks
-    | ($auth.GOTRUE_EXTERNAL_GOOGLE_ENABLED == "true")
-      and ($auth.GOTRUE_EXTERNAL_GITHUB_ENABLED == "true")
+    | ($auth.GOTRUE_EXTERNAL_GOOGLE_ENABLED == "false")
+      and ($auth.GOTRUE_EXTERNAL_GITHUB_ENABLED == "false")
       and ($auth.GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI == $callback)
       and ($auth.GOTRUE_EXTERNAL_GITHUB_REDIRECT_URI == $callback)
       and ($auth.GOTRUE_MAILER_OTP_EXP == "900")
@@ -426,7 +418,7 @@ docker compose config --format json |
         and .crv == "P-256"
         and (has("d") | not)))
   ' >/dev/null 2>&1 ||
-  fail "the resolved asymmetric Auth, provider, or email-code configuration is invalid"
+  fail "the resolved asymmetric Auth or email-code configuration is invalid"
 
 services=$(docker compose config --services)
 for service in auth rest realtime functions db templates-server; do

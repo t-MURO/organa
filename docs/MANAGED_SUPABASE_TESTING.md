@@ -84,20 +84,18 @@ version. Self-hosted evidence instead uses the exact upstream Supabase source
 Git revision and applied migration version. These identities are not
 interchangeable.
 
-## Remaining Auth Configuration
+## Controlled-Beta Auth Configuration
 
-The baseline connected verifier intentionally checks public Auth settings
-before creating synthetic accounts. The provider-qualified phase remains
-blocked until the project has:
+The controlled beta requires:
 
-- Google OAuth enabled
-- GitHub OAuth enabled
+- email authentication enabled
 - Phone authentication disabled
 
 The live settings check currently reports email enabled and phone disabled,
 with Google and GitHub disabled. Maileroo custom SMTP, both code-only
-templates, and a live six-digit sign-in are now accepted. Provider acceptance
-still requires real Google and GitHub redirects.
+templates, and a live six-digit sign-in are accepted. The app also
+hard-disables social OAuth, so a future backend setting change cannot expose
+Google or GitHub before the client flag is deliberately enabled.
 
 The managed project was found using Supabase's default link templates,
 8-digit codes, a 60-minute expiry, and a local-only Site URL. Its OTP policy
@@ -144,7 +142,10 @@ length/expiry and the confirmation/magic-link subjects and bodies.
 Organa deliberately keeps the code out of the subject line so notification
 previews do not expose it.
 
-## Managed OAuth Provisioning
+## Deferred Managed OAuth Provisioning
+
+This section is retained for the post-beta social sign-in rollout. Do not
+enable either provider for the controlled beta.
 
 Google and GitHub must each use Supabase Auth's provider callback:
 
@@ -180,11 +181,12 @@ fields, and updates only provider-specific Auth fields. `--validate-only`
 checks that file without contacting the managed project. The read-only
 `--check-only` path does not open the credentials file. No path prints client
 IDs or secrets.
-After provisioning, reload Organa: its provider-aware sign-in screen exposes
-each enabled provider automatically. Complete one real web redirect and one
-native callback for each provider before checking the acceptance row.
+After a future client release enables social OAuth, reload Organa: its
+provider-aware sign-in screen will expose each enabled provider. Complete one
+real web redirect and one native callback for each provider before accepting
+that post-beta feature.
 
-The missing providers do not need to block independent backend evidence. Run:
+Deferred providers do not block controlled-beta backend evidence. Run:
 
 ```sh
 pnpm verify:connected:acceptance:backend
@@ -192,8 +194,8 @@ pnpm verify:connected:acceptance:backend
 
 This scope verifies the deployed RLS/RPC, encrypted Realtime/durable recovery,
 Brain Dump convergence, reminder ownership, and revocation contracts. Its
-phase and evidence scope are explicitly `backend-only`; release readiness
-cannot count it as provider acceptance.
+phase and evidence scope are explicitly `backend-only`; it does not claim
+post-beta provider acceptance.
 
 ## Captured Backend Evidence
 
@@ -221,11 +223,11 @@ On 2026-07-26, the managed test project passed
   bearer, session, device proof, ciphertext, Push capability, or user content
   was serialized into evidence.
 
-This evidence does not prove OAuth redirects, email delivery, permission-granted
-browser Push, physical-device behavior, the one-hour deletion deadline, or a
-production deployment repeat.
+This evidence does not prove email delivery, deferred OAuth redirects,
+permission-granted browser Push, physical-device behavior, the one-hour
+deletion deadline, or a production deployment repeat.
 
-After Auth is configured, run the full provider-qualified scope:
+Run the full controlled-beta scope:
 
 ```sh
 pnpm verify:connected:acceptance
@@ -233,12 +235,12 @@ pnpm verify:connected:acceptance:web-push
 ```
 
 Enable `allowWebPushSchedulerDrill` in the private config only for the
-dedicated Web Push phase. Before providers are ready, use
-`pnpm verify:connected:acceptance:backend:web-push`; afterward repeat the full
-provider-qualified command. The synthetic endpoint uses the reserved
-`.invalid` namespace and must remain outside the production Push-host
-allowlist. A pass proves the real cron path removes the rejected endpoint
-without outbound access.
+dedicated Web Push phase. Use
+`pnpm verify:connected:acceptance:backend:web-push` when the public Auth-policy
+check is intentionally out of scope; otherwise use the full command. The
+synthetic endpoint uses the reserved `.invalid` namespace and must remain
+outside the production Push-host allowlist. A pass proves the real cron path
+removes the rejected endpoint without outbound access.
 
 Enable `allowOneHourDeletionDrill` only when an operator is prepared to wait
 for and observe the full destructive one-hour deletion drill.

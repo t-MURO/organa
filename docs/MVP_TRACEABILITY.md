@@ -15,7 +15,7 @@ Status meanings:
 
 | # | Acceptance criterion | Status | Current evidence | Evidence still required |
 | --- | --- | --- | --- | --- |
-| 1 | Google, GitHub, or email account creation | Partial | `apps/mobile/src/auth/auth-boundary.tsx`, `apps/mobile/src/auth/auth-context.tsx`, native OAuth callback handling, and local email-code sign-in | Exercise all three methods against the connected deployment |
+| 1 | Email verification-code account creation | Local + managed preview | `apps/mobile/src/auth/auth-boundary.tsx`, `apps/mobile/src/auth/auth-context.tsx`, and a user-confirmed Maileroo six-digit code sign-in on the live preview; social OAuth is explicitly dormant for this beta | Repeat the email-code flow against the reviewed production deployment |
 | 2 | Recovery-key confirmation and trusted-device enrollment | Partial | `apps/mobile/src/security/security-boundary.tsx`, strict native/web stored-identity parsing, an encrypted restore into a separately enrolled clean browser origin, local two-origin approval, and the managed 119-check backend run covering recovery proof, approval, rejection, expiry, revocation, and cross-account denial | Complete malformed/missing-identity and physical-device recovery drills, then repeat against production |
 | 3 | Task creation, editing, scheduling, recurrence, completion, and search | Local | `apps/mobile/src/features/tasks`, `packages/domain/src/tasks.ts`, and the 2026-07-24 browser walkthrough | None for local product behavior |
 | 4 | One-off, routine, and medication behavior | Local | Task editor/domain invariants, medication dose confirmation, recurrence/grace handling, and browser drills recorded in `docs/ACCEPTANCE.md` | None for local product behavior |

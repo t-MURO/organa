@@ -117,8 +117,8 @@ async function verifyConnectedAuthSettings() {
   ok(external && typeof external === "object", "Auth settings are available");
   ok(external.email === true, "email authentication is enabled");
   ok(external.phone === false, "phone authentication is disabled");
-  ok(external.google === true, "Google authentication is enabled");
-  ok(external.github === true, "GitHub authentication is enabled");
+  ok(external.google === false, "Google authentication is disabled");
+  ok(external.github === false, "GitHub authentication is disabled");
 }
 
 async function verifyDeviceApprovalContract() {

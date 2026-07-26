@@ -27,6 +27,9 @@ WebBrowser.maybeCompleteAuthSession();
 
 type OAuthProvider = Extract<Provider, ConfiguredOAuthProvider>;
 
+// Keep the completed OAuth path dormant until its providers are released.
+const socialOAuthEnabled = false;
+
 interface AuthContextValue {
   configurationIssue: string;
   configured: boolean;
@@ -55,7 +58,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [callbackError, setCallbackError] = useState("");
   const [oauthProviders, setOauthProviders] = useState<OAuthProvider[]>([]);
   const [oauthProvidersLoading, setOauthProvidersLoading] = useState(
-    isSupabaseConfigured,
+    isSupabaseConfigured && socialOAuthEnabled,
   );
   const [authRedirectUrl] = useState(() => Linking.createURL("/"));
   const [oauthCallbackCoordinator] = useState(() => {
@@ -84,7 +87,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [authRedirectUrl]);
 
   useEffect(() => {
-    if (!isSupabaseConfigured) {
+    if (!isSupabaseConfigured || !socialOAuthEnabled) {
+      setOauthProviders([]);
       setOauthProvidersLoading(false);
       return;
     }
@@ -197,6 +201,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [oauthCallbackCoordinator]);
 
   async function signInWithOAuth(provider: OAuthProvider) {
+    if (!socialOAuthEnabled) {
+      throw new Error("Social sign-in is not available in this beta.");
+    }
     if (!supabase) throw new Error("Supabase is not configured.");
     setCallbackError("");
     const { data, error } = await supabase.auth.signInWithOAuth({

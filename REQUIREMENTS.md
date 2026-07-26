@@ -365,11 +365,14 @@ Because content is end-to-end encrypted, the server must not maintain a plaintex
 
 ## 12. Accounts and Authentication
 
-Supabase Auth will provide:
+Supabase Auth provides for the controlled beta:
 
-- Google sign-in
-- GitHub sign-in
 - Email verification-code sign-in
+
+Google and GitHub sign-in are deferred until after the controlled beta. Their
+PKCE callback implementation and deployment tooling may remain dormant in the
+codebase, but the client must not discover, display, or start either provider
+while social OAuth is disabled.
 
 Requirements:
 
@@ -660,7 +663,7 @@ Encrypted payloads and server-readable synchronization metadata must be separate
 
 The MVP is ready for controlled beta when:
 
-1. A user can create an account with Google, GitHub, or email.
+1. A user can create an account with an email verification code.
 2. Recovery-key confirmation and trusted-device enrollment work.
 3. Tasks can be created, edited, scheduled, repeated, completed, and searched.
 4. One-off, habit, and medication task behaviors are implemented.

@@ -209,16 +209,19 @@ confirmation and magic-link paths, because new and returning addresses can
 take different Auth flows. It also fixes the OTP length at six digits and the
 lifetime at 900 seconds so the app and email copy remain accurate.
 
-Google and GitHub are separate provider drills. Each provider must use:
+Google and GitHub are deferred for the controlled beta. Keep both
+`GOTRUE_EXTERNAL_*_ENABLED` values `false`; the empty credential fields are
+retained only as a post-beta template.
+
+When social OAuth is released later, each provider must use:
 
 ```text
 https://supabase.example.net/auth/v1/callback
 ```
 
-Register that exact callback in both provider consoles.
+Register that exact callback in both provider consoles at that time.
 
-Copy the secret-free Auth template and fill every empty client ID and secret
-on the server:
+Copy the secret-free Auth template on the server:
 
 ```sh
 [ -f .env.auth ] || cp .env.auth.example .env.auth
@@ -515,10 +518,10 @@ the recorded Supabase source revision and current 14-digit migration version.
 It refuses placeholder/insecure URLs, stale migration heads, legacy or swapped
 key types, unsupported configuration fields, oversized files, credential files
 not owned by the current operator, symlinked or non-private credential files,
-and missing destructive-test consent. Before creating users it confirms email,
-Google, and GitHub are enabled and phone Auth is disabled through the public
-settings endpoint. Its output contains check labels and counts only, never
-keys, sessions, proofs, or payloads.
+and missing destructive-test consent. Before creating users it confirms email
+is enabled while phone, Google, and GitHub Auth are disabled through the
+public settings endpoint. Its output contains check labels and counts only,
+never keys, sessions, proofs, or payloads.
 
 Avoid interrupting a connected run. If `SIGHUP` on Unix, `SIGINT`, or
 `SIGTERM` is received, the parent records a failed run, forwards the signal to
@@ -623,15 +626,14 @@ consecutive scheduler logs supports the Web Push function/scheduler acceptance
 row. It does not prove successful delivery, replacement, deep links,
 cancellation, denial fallback, or sign-out behavior in any browser.
 
-If external Auth providers are not ready yet, run the same scheduler phase
-without claiming provider acceptance:
+To gather only backend evidence without checking the public Auth policy, run:
 
 ```sh
 pnpm verify:connected:acceptance:backend:web-push
 ```
 
 This writes distinct `backend-only` evidence. Release readiness accepts only
-the full provider-qualified scope.
+the full scope, which includes the controlled-beta email-only Auth policy.
 
 After the account-deletion function and its once-per-minute scheduler are
 deployed, use the separate long-running drill to verify the real one-hour
@@ -673,8 +675,7 @@ before checking the connected deletion acceptance row. Preparing the command
 does not count as evidence, and this drill does not cover encrypted-export
 restore on a separate clean device.
 
-1. Sign in by email OTP, then Google and GitHub as each provider is
-   configured.
+1. Sign in by email OTP and confirm no social sign-in controls are present.
 2. Confirm recovery-key setup and approve a second clean browser/device.
 3. Apply cross-account read/write/RPC probes and confirm RLS isolation.
 4. Create and edit encrypted tasks, settings, Check-In entries, templates, and
