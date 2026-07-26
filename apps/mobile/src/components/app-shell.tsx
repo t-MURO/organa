@@ -132,7 +132,7 @@ export function AppShell() {
                 ? "A recent change could not be saved safely on this device. Keep Organa open and review the change before closing the app."
                 : sync.localReadFailed
                   ? "Saved data could not be reopened on this device. Organa will retry automatically."
-                  : "Encrypted sync needs attention. Your changes remain safe on this device while Organa retries."}
+                  : "One or more encrypted cloud changes could not be opened. Organa will keep syncing other records and retry the affected change."}
             </Text>
             {!sync.localSaveFailed ? (
               <Pressable

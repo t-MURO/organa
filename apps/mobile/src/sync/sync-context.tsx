@@ -676,6 +676,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
     }
     try {
       let recordCursor = "";
+      let deliveryError: unknown;
       while (true) {
         let query = supabase
           .from("encrypted_records")
@@ -691,8 +692,9 @@ export function SyncProvider({ children }: PropsWithChildren) {
         if (result.error) throw result.error;
 
         const rows = result.data as EncryptedRecordRow[];
-        for (const row of rows) await deliverRow(row);
-        if (rows.length < syncPageSize) return;
+        const pageDeliveryError = await receiveRowsIndependently(rows);
+        deliveryError ??= pageDeliveryError;
+        if (rows.length < syncPageSize) break;
 
         const nextCursor = rows.at(-1)?.record_id;
         if (!nextCursor || nextCursor <= recordCursor) {
@@ -700,6 +702,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
         }
         recordCursor = nextCursor;
       }
+      if (deliveryError) throw deliveryError;
     } catch (nextError) {
       setReadError(syncReadErrorMessage(nextError));
     }
@@ -745,6 +748,8 @@ export function SyncProvider({ children }: PropsWithChildren) {
     reconciling.current = true;
     try {
       let cursor = overlapSyncCursor(reconciliationCursor.current);
+      let latestCursor = reconciliationCursor.current;
+      let deliveryError: unknown;
       while (true) {
         const result = await supabase
           .from("encrypted_records")
@@ -767,26 +772,29 @@ export function SyncProvider({ children }: PropsWithChildren) {
         }
 
         if (rows.length < syncPageSize) {
-          for (const row of rows) {
-            if (isSyncRecordType(row.record_type)) await receiveRow(row);
-          }
-          reconciliationCursor.current = timestamp;
+          const pageDeliveryError = await receiveRowsIndependently(
+            rows.filter((row) => isSyncRecordType(row.record_type)),
+          );
+          deliveryError ??= pageDeliveryError;
+          latestCursor = timestamp;
           break;
         }
 
-        for (const row of rows) {
-          if (
-            row.updated_at === timestamp ||
-            !isSyncRecordType(row.record_type)
-          ) {
-            continue;
-          }
-          await receiveRow(row);
-        }
-        await pullTimestampGroup(timestamp);
-        reconciliationCursor.current = timestamp;
+        const pageDeliveryError = await receiveRowsIndependently(
+          rows.filter(
+            (row) =>
+              row.updated_at !== timestamp &&
+              isSyncRecordType(row.record_type),
+          ),
+        );
+        deliveryError ??= pageDeliveryError;
+        const timestampDeliveryError = await pullTimestampGroup(timestamp);
+        deliveryError ??= timestampDeliveryError;
+        latestCursor = timestamp;
         cursor = timestamp;
       }
+      if (deliveryError) throw deliveryError;
+      reconciliationCursor.current = latestCursor;
       setReadError("");
       setLastSyncedAt(new Date().toISOString());
     } catch (nextError) {
@@ -798,6 +806,7 @@ export function SyncProvider({ children }: PropsWithChildren) {
 
   async function pullTimestampGroup(timestamp: string) {
     if (!auth.user || !supabase) return;
+    let deliveryError: unknown;
     for (const recordType of syncRecordTypes) {
       let recordCursor = "";
       while (true) {
@@ -816,7 +825,8 @@ export function SyncProvider({ children }: PropsWithChildren) {
         if (result.error) throw result.error;
 
         const rows = result.data as EncryptedRecordRow[];
-        for (const row of rows) await receiveRow(row);
+        const pageDeliveryError = await receiveRowsIndependently(rows);
+        deliveryError ??= pageDeliveryError;
         if (rows.length < syncPageSize) break;
 
         const nextCursor = rows.at(-1)?.record_id;
@@ -826,10 +836,23 @@ export function SyncProvider({ children }: PropsWithChildren) {
         recordCursor = nextCursor;
       }
     }
+    return deliveryError;
   }
 
   async function receiveRow(row: EncryptedRecordRow) {
     await deliverRow(row);
+  }
+
+  async function receiveRowsIndependently(rows: EncryptedRecordRow[]) {
+    let firstError: unknown;
+    for (const row of rows) {
+      try {
+        await receiveRow(row);
+      } catch (error) {
+        firstError ??= error;
+      }
+    }
+    return firstError;
   }
 
   function deliverRow(row: EncryptedRecordRow) {

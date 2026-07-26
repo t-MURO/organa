@@ -2,9 +2,9 @@
 
 Status recorded on 2026-07-26.
 
-This file records connected-test web evidence. It does not claim production
-promotion, a custom domain, provider acceptance, release-browser PWA or Web
-Push behavior, independent security review, or legal approval.
+This file records connected-test web evidence. It does not claim a reviewed
+production candidate, custom domain, provider acceptance, release-browser PWA
+or Web Push behavior, independent security review, or legal approval.
 
 ## Deployment Identity
 
@@ -12,20 +12,23 @@ Push behavior, independent security review, or legal approval.
 | --- | --- |
 | EAS project | `@t-muro/organa` |
 | EAS project ID | `ae92cff5-050e-4972-808d-a393be8d67e3` |
-| Source commit | `f0cc0dae1b0d37aa7e86880f9499264424daa0ad` |
+| Source commit | `ea6ed7a788229f7808120fc34a93b6e26c561724` |
 | EAS environment | `preview` |
-| Deployment ID | `pldlvsmg80` |
-| Immutable URL | `https://organa--pldlvsmg80.expo.app` |
+| Deployment ID | `g5ax4v2qpm` |
+| Immutable URL | `https://organa--g5ax4v2qpm.expo.app` |
 | Stable alias | `https://organa--preview.expo.app` |
-| Fingerprinted bundle | `entry-247b50b7046078fad7750187bb5242c3.js` |
+| Fingerprinted bundle | `entry-2c3063ff1455af5d3f4d9394b29ec826.js` |
 
 The clean source commit was pushed before deployment. The deployment command
-used the locally verified `apps/mobile/dist` export, disabled deployment source
-maps, and assigned the `preview` alias.
+used a cache-cleared export built under the EAS `preview` environment and
+assigned the `preview` alias. An earlier invocation also assigned the same
+preview-environment artifact to EAS's default domain. That domain is not
+treated as production evidence and must be replaced by a reviewed
+production-environment candidate before release.
 
 ## Artifact Checks
 
-`pnpm build:web` passed 27 production artifact checks:
+`pnpm build:web` passed 28 production artifact checks:
 
 - eight statically rendered routes
 - one exact document CSP shared by HTML, Expo route metadata, and `_headers`
@@ -33,6 +36,8 @@ maps, and assigned the `preview` alias.
 - one fingerprinted application bundle
 - a 23-URL Workbox precache
 - an external registration bootstrap with `updateViaCache: "none"`
+- exact agreement between the managed Supabase origin compiled into the
+  application bundle and the origin allowed by CSP
 
 The EAS deployment dry run produced only `assets.json`, `manifest.json`, and
 `routes.json`. Its private-file scan passed, and the transformed route manifest
@@ -40,11 +45,11 @@ retained all nine expected header names with no redirects.
 
 ## Live Response Checks
 
-Both of these commands pass all 16 checks:
+Both of these commands pass all 17 checks:
 
 ```sh
 pnpm verify:web-deployment -- https://organa--preview.expo.app
-pnpm verify:web-deployment -- https://organa--pldlvsmg80.expo.app
+pnpm verify:web-deployment -- https://organa--g5ax4v2qpm.expo.app
 ```
 
 Direct live evidence covers:
@@ -53,6 +58,8 @@ Direct live evidence covers:
   `frame-ancestors 'none'`
 - same-origin scripts plus only the exact Expo hydration hash
 - only the paired managed Supabase HTTPS and WebSocket origins
+- the live bundle uses that exact managed origin and contains no alternate
+  Supabase cloud project
 - MIME, opener, resource, permission, referrer, and transport protection
 - shell revalidation with `no-cache`, `no-store`, and `must-revalidate`
 - a content-addressed application bundle
@@ -67,6 +74,8 @@ Direct live evidence covers:
 - the deployed device-approval UI identifies a pending device with a short
   request ID and completes its recipient-bound handoff automatically, without
   a transfer-code input
+- web auth uses durable Supabase session persistence and migrates a session
+  once from the previous browser vault so ordinary reloads do not discard it
 
 [Expo Router server headers](https://docs.expo.dev/router/web/server-headers/)
 are encoded into `_expo/.routes.json` for EAS Hosting. EAS documents that it

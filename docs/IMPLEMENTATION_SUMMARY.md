@@ -2464,7 +2464,7 @@ Connected Supabase project:
   the supported release-browser matrix.
 - Validate permission-granted Web Push delivery, replacement, cancellation,
   deep links, denial fallback, and sign-out in every supported release browser.
-- Repeat the scheduled deletion finalizer drill against the hosted project.
+- Repeat the scheduled deletion finalizer drill against production.
 
 Physical devices:
 
@@ -2506,4 +2506,39 @@ must have direct evidence before production launch.
   in device-bound SecureStore.
 - The exact managed project configuration passes the release validator while
   loopback and custom HTTPS Supabase origins are deliberately rejected. No
+  tests were added, changed, or run.
+- Clean commit `ea6ed7a788229f7808120fc34a93b6e26c561724` is deployed from
+  the EAS `preview` environment as immutable deployment `g5ax4v2qpm` and the
+  `https://organa--preview.expo.app` alias. Both URLs serve
+  `entry-2c3063ff1455af5d3f4d9394b29ec826.js` and pass all 17 live checks.
+- Strict TypeScript, 17 security checks, 22 platform checks, the 28-check web
+  export, and both native Hermes exports pass. A live bundle scan confirms the
+  managed origin, durable auth persistence, previous-vault migration, and no
+  loopback Supabase origin.
+
+## One-Way Android Sync Recovery Milestone
+
+- Sanitized managed-backend inspection confirmed the PC had uploaded five
+  task rows and Android had uploaded one. All 17 mutations were applied, both
+  devices remained trusted, and all ten encrypted records used valid envelope
+  metadata, the current account key ID, and record-bound AAD. No task content,
+  account identifier, device identifier, key, proof, token, or ciphertext was
+  printed.
+- The first task in the Android full-pull order was a web-written version-3
+  row. The existing pull loop stopped at the first delivery/decryption error,
+  which prevented all five later cloud tasks from being applied and kept the
+  generic sync-attention state active.
+- Remote task-type pulls, durable reconciliation pages, and same-timestamp
+  pagination now isolate delivery failures per record. Valid later records
+  continue to local storage, while any failed record remains retryable because
+  the durable cursor is not advanced on a partial failure.
+- The sync notice now explains that other records continue syncing while the
+  affected cloud change is retried. The existing manual Retry sync action and
+  five-second local-hydration retry remain available.
+- The latest installable Android preview predates these fixes at source commit
+  `4faf6e6e2f4369a1cb95adb19146879b1a8d1ede`; a replacement APK is required.
+- The red diagnostic reproduced one first-row failure blocking five later
+  tasks. The isolated-delivery diagnostic preserved all five valid rows and
+  retained one retry signal. Strict TypeScript, the 28-check web export, the
+  Android Hermes export, 17 security checks, and 22 platform checks pass. No
   tests were added, changed, or run.

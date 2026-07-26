@@ -177,6 +177,12 @@ Local evidence:
   seconds and the approval action disappeared after claim
 - a task created on the newly approved browser appeared on the original browser
   through encrypted realtime synchronization without a reload
+- sanitized managed-state inspection for a reported one-way Android sync issue
+  confirmed both trusted devices, five applied web task rows, one applied
+  Android task row, zero unapplied mutations, and valid key/AAD/envelope
+  metadata without reading content; inbound page delivery now isolates failed
+  records so valid later tasks continue while the affected row remains
+  retryable
 - a managed rendered-client drill used independently enrolled production web
   origins to measure task create and edit delivery at 283 ms and 281 ms,
   respectively; a proxy-controlled offline mutation remained local with one
@@ -537,10 +543,12 @@ Local evidence:
   permission-granted closed-app delivery remains a release-browser gate
 
 ## Requires Connected Backend Validation
-- `pnpm verify:connected:acceptance:deletion` is prepared to capture the real
-  one-hour scheduler and cascade evidence after rerunning the connected
-  baseline. It has not been run against a connected backend in this workspace,
-  so the corresponding row remains unchecked.
+
+- On 2026-07-26, `pnpm verify:connected:acceptance:deletion` passed from clean
+  commit `e433ad27d41464984983e485afb8a3420e5d9329`: the managed baseline passed
+  124 checks and the real scheduler-driven deletion phase passed 30 checks in
+  60.3 minutes. Synthetic cleanup completed and the private destructive-drill
+  consent was reset to `false`.
 - On 2026-07-26, `pnpm verify:connected:acceptance` passed from clean commit
   `f0cc0dae1b0d37aa7e86880f9499264424daa0ad` against migration head
   `20260726180000` on the managed EU test project. Its 124-check backend phase
@@ -616,11 +624,12 @@ Local evidence:
   replacement, cancellation, denial fallback, and sign-out drill in every
   supported release browser; iOS/iPadOS uses an installed Home Screen PWA
 - [x] The stable managed-test EAS preview and its immutable deployment pass
-  all 16 live web response checks
+  all 17 live web response checks
 - [ ] The selected HTTPS web deployment passes
   `pnpm verify:web-deployment -- https://<production-origin>`
-- [ ] Repeat the scheduled deletion finalizer drill against the connected
-  backend
+- [x] Run the one-hour scheduled deletion finalizer drill against the managed
+  connected-test backend
+- [ ] Repeat the scheduled deletion finalizer drill against production
 
 ## Requires Physical Device Validation
 

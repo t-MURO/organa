@@ -116,7 +116,7 @@ pnpm configure:managed:auth-urls -- \
 
 The preview is only the managed engineering callback target. It is not
 production approval. Its current deployment applies Organa's route security
-headers and passes the 16-check live deployment verifier, as recorded in
+headers and passes the 17-check live deployment verifier, as recorded in
 `docs/WEB_PREVIEW_EVIDENCE.md`, but the production promotion and
 release-browser matrix remain open. Replace `--site-url` with the reviewed
 production HTTPS origin before production acceptance. The command replaces
@@ -225,9 +225,17 @@ On 2026-07-26, the managed test project passed
   bearer, session, device proof, ciphertext, Push capability, or user content
   was serialized into evidence.
 
+The separately consented one-hour deletion run from clean commit
+`e433ad27d41464984983e485afb8a3420e5d9329` passed the 124-check baseline and
+the 30-check scheduler-driven deletion phase in 60.3 minutes. The ignored
+sanitized evidence is
+`.organa-connected-evidence/connected-2026-07-26T16-21-39-881Z-e433ad27d414.json`.
+Synthetic cleanup completed and `allowOneHourDeletionDrill` was reset to
+`false` immediately after the run.
+
 This evidence does not prove email delivery, deferred OAuth redirects,
-permission-granted browser Push, physical-device behavior, the one-hour
-deletion deadline, or a production deployment repeat.
+permission-granted browser Push, physical-device behavior, or a production
+deployment repeat.
 
 Run the full controlled-beta scope:
 
