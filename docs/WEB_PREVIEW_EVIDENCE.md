@@ -12,12 +12,12 @@ Push behavior, independent security review, or legal approval.
 | --- | --- |
 | EAS project | `@t-muro/organa` |
 | EAS project ID | `ae92cff5-050e-4972-808d-a393be8d67e3` |
-| Source commit | `de2056b9b8706328b96b06a7430ae222423ebca0` |
+| Source commit | `f0cc0dae1b0d37aa7e86880f9499264424daa0ad` |
 | EAS environment | `preview` |
-| Deployment ID | `bl03zsxjcu` |
-| Immutable URL | `https://organa--bl03zsxjcu.expo.app` |
+| Deployment ID | `pldlvsmg80` |
+| Immutable URL | `https://organa--pldlvsmg80.expo.app` |
 | Stable alias | `https://organa--preview.expo.app` |
-| Fingerprinted bundle | `entry-22b4150f3b857e81378e782b24898d2e.js` |
+| Fingerprinted bundle | `entry-247b50b7046078fad7750187bb5242c3.js` |
 
 The clean source commit was pushed before deployment. The deployment command
 used the locally verified `apps/mobile/dist` export, disabled deployment source
@@ -44,7 +44,7 @@ Both of these commands pass all 16 checks:
 
 ```sh
 pnpm verify:web-deployment -- https://organa--preview.expo.app
-pnpm verify:web-deployment -- https://organa--bl03zsxjcu.expo.app
+pnpm verify:web-deployment -- https://organa--pldlvsmg80.expo.app
 ```
 
 Direct live evidence covers:
@@ -64,6 +64,9 @@ Direct live evidence covers:
   fixed recovery message instead of silently returning to the login form
 - the live fingerprinted bundle contains the controlled-beta email-only copy
   and the fail-closed social OAuth guard
+- the deployed device-approval UI identifies a pending device with a short
+  request ID and completes its recipient-bound handoff automatically, without
+  a transfer-code input
 
 [Expo Router server headers](https://docs.expo.dev/router/web/server-headers/)
 are encoded into `_expo/.routes.json` for EAS Hosting. EAS documents that it

@@ -2403,6 +2403,16 @@ No tests were added, changed, or run for this milestone.
   trusted origin approved the selected pending device, and the second origin
   unlocked automatically in about 6.5 seconds with no transfer-code input.
   The approval action disappeared after the one-time envelope was claimed.
+- Clean source commit `f0cc0dae1b0d37aa7e86880f9499264424daa0ad`
+  passes all 124 managed backend checks at migration head `20260726180000`.
+  The same revision is deployed as immutable EAS deployment `pldlvsmg80` and
+  assigned to `https://organa--preview.expo.app`; both URLs pass all 16 live
+  deployment checks. The live bundle is
+  `entry-247b50b7046078fad7750187bb5242c3.js`.
+- Strict TypeScript, 15 security checks, 22 platform checks, the 27-check web
+  export, iOS and Android Hermes exports, and the production dependency audit
+  pass. The audit covers 610 production dependencies with zero advisories.
+  No tests were added, changed, or run.
 
 ## Internal Security Hardening Milestone
 

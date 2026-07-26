@@ -200,11 +200,13 @@ post-beta provider acceptance.
 ## Captured Backend Evidence
 
 On 2026-07-26, the managed test project passed
-`pnpm verify:connected:acceptance:backend:web-push` from clean commit
-`eb13fe3430c2471b7fb1ca97a6693d98609de5b3`.
+`pnpm verify:connected:acceptance` from clean commit
+`f0cc0dae1b0d37aa7e86880f9499264424daa0ad`.
 
-- The backend phase passed 119 checks, including cross-account RLS,
+- The backend phase passed 124 checks at migration head `20260726180000`,
+  including cross-account RLS,
   unauthorized and proof-gated RPCs, trusted-device approval/revocation,
+  recipient-bound approval exchange and one-time claim erasure,
   reminder ownership across live sessions, private Realtime delivery within
   one second, durable missed-event recovery, ciphertext-only reads, and
   encrypted Brain Dump convergence/compaction/deletion races.
@@ -213,12 +215,12 @@ On 2026-07-26, the managed test project passed
   includes a generated UUID in payloads created by `realtime.send()`. The
   verifier permits only the expected opaque record or device hint plus a
   canonical UUID that matches Broadcast metadata.
-- The real once-per-minute Web Push cron processed the due synthetic probe in
-  43 seconds. The deployed dispatcher rejected its reserved `.invalid` host
-  before outbound access and removed both the reminder and subscription.
+- An earlier commit-bound Web Push phase passed the real once-per-minute cron
+  path in 43 seconds. The deployed dispatcher rejected its reserved `.invalid`
+  host before outbound access and removed both the reminder and subscription.
 - The ignored sanitized evidence is bound to the managed project ref,
-  migration `20260725120000`, runner version 5, and the exact clean commit.
-  Both temporary drill consents were disabled again after the run.
+  migration `20260726180000`, runner version 5, and the exact clean commit.
+  Optional destructive drill consents remained disabled.
 - Synthetic accounts were deleted by the verifier. No API key, scheduler
   bearer, session, device proof, ciphertext, Push capability, or user content
   was serialized into evidence.

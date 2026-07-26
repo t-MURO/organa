@@ -545,19 +545,18 @@ Local evidence:
   one-hour scheduler and cascade evidence after rerunning the connected
   baseline. It has not been run against a connected backend in this workspace,
   so the corresponding row remains unchecked.
-- On 2026-07-26, `pnpm verify:connected:acceptance:backend` passed from clean
-  commit `8948614388815f2a8a71dabe940e0a3fded2d6f8` against migration head
-  `20260726120000` on the managed EU test project. Its 119-check backend phase
-  directly exercised cross-account RLS,
-  unauthorized and proof-gated RPCs, trusted-device approval and revocation,
+- On 2026-07-26, `pnpm verify:connected:acceptance` passed from clean commit
+  `f0cc0dae1b0d37aa7e86880f9499264424daa0ad` against migration head
+  `20260726180000` on the managed EU test project. Its 124-check backend phase
+  directly exercised cross-account RLS, unauthorized and proof-gated RPCs,
+  recipient-bound trusted-device approval, automatic one-time claim erasure,
+  revocation,
   live reminder ownership, private Realtime latency, durable missed-event
   recovery, ciphertext-only reads, and encrypted Brain Dump convergence,
   compaction, and delete-versus-update cleanup.
-- The first current-source attempt missed one managed Realtime broadcast's
-  10-second deadline after its mutation RPC succeeded. Cleanup completed, and
-  the immediate clean rerun passed all 119 checks; both sanitized phase records
-  remain private. The earlier commit-bound run also passed the real
-  once-per-minute Web Push cron path
+- The current run passed on its first attempt and recorded sanitized private
+  evidence after exact synthetic-account cleanup. An earlier commit-bound run
+  also passed the real once-per-minute Web Push cron path
   in 43 seconds. The deployed dispatcher claimed the due synthetic schedule,
   rejected its reserved `.invalid` host before outbound access, and removed
   both the reminder and subscription. This proves scheduler and egress-rejection

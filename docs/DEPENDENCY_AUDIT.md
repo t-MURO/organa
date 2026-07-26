@@ -5,13 +5,13 @@ Audit performed on 2026-07-26 against the live package advisory registry.
 ## Audited Graph
 
 - Organa source commit at audit time:
-  `662091c97df9d91088303f1a31ddffd737600ed1`
+  `f0cc0dae1b0d37aa7e86880f9499264424daa0ad`
 - `pnpm-lock.yaml` SHA-256:
-  `5d64c88b12e623fa51bd39c202f9e592f20062e8e9d17702790301947b914dde`
+  `4f8656a17adea96a53ec255b81b99660595f77eb33553aad27e138026f96a176`
 - pnpm: `10.28.2`
 - Node.js: `v25.4.0`
 - Scope: production dependencies and production optional dependencies
-- Audited dependencies: `609`
+- Audited dependencies: `610`
 - Development dependencies included: `0`
 
 ## Result
