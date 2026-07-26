@@ -20,6 +20,7 @@ apps/mobile/ios/
 .env.functions
 .organa-connected-supabase.json
 .organa-connected-evidence/
+.organa-release-evidence.json
 .organa-self-hosted-db-url
 supabase/.branches/
 supabase/.temp/

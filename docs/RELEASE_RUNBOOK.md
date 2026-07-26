@@ -98,6 +98,41 @@ work is paused.
 Record the commit SHA, Expo SDK, React Native version, dependency-audit result,
 and web/native build output in the release evidence.
 
+## Readiness Gate
+
+The final readiness check consumes only local, non-secret evidence references;
+it does not contact EAS, stores, reviewers, browsers, devices, or the backend
+on the operator's behalf. Start the private manifest from the checked-in
+template:
+
+```sh
+install -m 600 .organa-release-evidence.example.json .organa-release-evidence.json
+```
+
+Replace every placeholder only after the corresponding direct evidence exists.
+The manifest is ignored by Git. Do not put provider credentials, tokens,
+sessions, device proofs, encryption material, or user content in it.
+
+Run all connected backend phases into one commit-bound evidence file:
+
+```sh
+pnpm verify:connected:acceptance:full
+```
+
+After every source, connected, physical-device, browser, artifact, audit, and
+review gate is complete, run:
+
+```sh
+pnpm verify:release:readiness
+```
+
+The command requires a clean current commit, its matching three-phase
+connected evidence, a real EAS project link, and a strict production manifest.
+The manifest also binds the complete source-gate output to the candidate. The
+command reports every ready or blocked evidence group and exits nonzero until
+none remain. Passing this structural preflight does not replace review of the
+referenced evidence.
+
 ## Preview Builds
 
 Create physical-device artifacts from the same commit:

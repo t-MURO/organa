@@ -16,8 +16,10 @@
     "verify:performance": "pnpm --filter @organa/app verify:performance",
     "verify:connected:acceptance": "pnpm --filter @organa/app verify:connected:acceptance",
     "verify:connected:acceptance:deletion": "pnpm --filter @organa/app verify:connected:acceptance:deletion",
+    "verify:connected:acceptance:full": "pnpm --filter @organa/app verify:connected:acceptance:full",
     "verify:connected:acceptance:web-push": "pnpm --filter @organa/app verify:connected:acceptance:web-push",
     "verify:connected:config": "pnpm --filter @organa/app verify:connected:config",
+    "verify:release:readiness": "pnpm --filter @organa/app verify:release:readiness",
     "verify:web-push": "pnpm --filter @organa/app verify:web-push",
     "verify:supabase": "pnpm --filter @organa/app verify:supabase"
   },

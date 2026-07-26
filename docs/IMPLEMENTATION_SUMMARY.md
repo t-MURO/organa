@@ -1987,6 +1987,29 @@ No tests were added, changed, or run for this milestone.
   strict TypeScript, and `git diff --check` pass; no tests were added, changed,
   or run.
 
+## Controlled-Beta Readiness Preflight
+
+- A single `pnpm verify:release:readiness` command now separates a buildable
+  source tree from a release-ready production candidate. It binds evidence to
+  the clean current commit and the opaque EAS project identifier.
+- The preflight validates the private connected operator config without
+  printing credentials and requires one sanitized runner-v3 evidence file with
+  passing baseline, Web Push scheduler, and one-hour deletion phases for the
+  same commit, backend origin, and migration revision.
+- A strict ignored manifest records checksummed iOS, Android, and immutable web
+  artifacts plus direct references for the complete source gate, EU backend,
+  all auth providers, production repeat, physical iOS/Android checks, every
+  supported browser, dependency audit, independent security, legal, privacy,
+  and store approval. Backend origin and revision must match the current
+  private connected config.
+- `pnpm verify:connected:acceptance:full` now produces all three connected
+  phases in one commit-bound record. A checked-in placeholder template contains
+  no credentials and fails validation until every reference is replaced.
+- The pre-commit dry run reports five blockers: uncommitted source, missing
+  EAS project link, missing connected config, missing production manifest, and
+  missing matching three-phase evidence. JavaScript syntax and
+  `git diff --check` pass; no tests were added, changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

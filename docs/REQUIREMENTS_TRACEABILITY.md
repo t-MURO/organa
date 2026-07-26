@@ -69,6 +69,10 @@ Status meanings:
   deletion-function, and 15 Web Push function checks pass
 - `pnpm build:web`: 18 production artifact checks and 22 precache URLs pass
 - `pnpm build:native`: iOS and Android Hermes exports pass
+- `pnpm verify:release:readiness`: strict private-manifest and sanitized
+  connected-evidence validation binds the clean commit, EAS project, backend,
+  artifacts, platform/browser drills, source gate, and external approvals; it
+  remains nonzero until every release evidence group exists
 - `pnpm audit --prod`: a current complete production-graph audit remains open;
   the newly installed `@noble/hashes` 2.2.0 artifact is integrity-pinned,
   MIT-licensed, and has no runtime dependencies

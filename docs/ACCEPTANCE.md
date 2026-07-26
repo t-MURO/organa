@@ -510,6 +510,12 @@ Local evidence:
   Evidence records sanitized interruption/process outcomes and input-state
   confirmations without keys, key-derived digests, sessions, proofs, payloads,
   or user content.
+- `pnpm verify:release:readiness` now binds the clean candidate commit, EAS
+  project, private operator config, passed three-phase connected record,
+  checksummed artifacts, source gate, provider/production repeats, physical
+  devices, release browsers, and external approvals into one strict,
+  credential-free production evidence manifest; it exits nonzero and lists
+  every incomplete evidence group
 - The dispatcher now fails closed on a missing/malformed trusted Push-host
   allowlist and removes unlisted subscriptions before network access. Actual
   release-browser endpoint compatibility remains part of the browser-delivery

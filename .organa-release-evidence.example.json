@@ -1,0 +1,48 @@
+{
+  "format": "organa-controlled-beta-release-evidence-v1",
+  "candidate": "production",
+  "organaCommit": "replace_with_current_40_character_commit",
+  "easProjectId": "replace_with_eas_project_uuid",
+  "sourceGateEvidence": "replace_with_typecheck_test_build_and_audit_output_reference",
+  "backend": {
+    "origin": "https://supabase.example.net",
+    "migrationRevision": "replace_with_40_character_supabase_revision",
+    "euRegionEvidence": "replace_with_region_reference",
+    "providerEvidence": "replace_with_google_apple_github_email_drill_reference",
+    "productionRepeatEvidence": "replace_with_production_repeat_reference"
+  },
+  "artifacts": {
+    "ios": {
+      "buildId": "replace_with_eas_build_id",
+      "buildNumber": "replace_with_build_number",
+      "sha256": "replace_with_64_character_sha256"
+    },
+    "android": {
+      "buildId": "replace_with_eas_build_id",
+      "versionCode": "replace_with_version_code",
+      "sha256": "replace_with_64_character_sha256"
+    },
+    "web": {
+      "deploymentId": "replace_with_immutable_deployment_id",
+      "sha256": "replace_with_64_character_sha256"
+    }
+  },
+  "physicalDevices": {
+    "ios": "replace_with_ios_checklist_reference",
+    "android": "replace_with_android_checklist_reference"
+  },
+  "browsers": {
+    "safari": "replace_with_macos_safari_pwa_and_push_reference",
+    "chrome": "replace_with_desktop_and_android_chrome_reference",
+    "edge": "replace_with_edge_reference",
+    "firefox": "replace_with_firefox_reference",
+    "iosHomeScreenPwa": "replace_with_ios_home_screen_pwa_reference"
+  },
+  "reviews": {
+    "dependencyAudit": "replace_with_current_production_audit_reference",
+    "security": "replace_with_independent_security_approval_reference",
+    "legal": "replace_with_legal_approval_reference",
+    "privacy": "replace_with_policy_and_store_declaration_reference",
+    "store": "replace_with_app_store_and_play_release_reference"
+  }
+}

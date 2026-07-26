@@ -332,7 +332,7 @@ function parseArguments(argumentsList) {
       parsed.configPath = requireOptionValue(argumentsList, ++index, argument);
     } else {
       throw new Error(
-        "Usage: node verify-connected-acceptance.mjs [--config path] [--config-only | --include-web-push | --include-deletion]",
+        "Usage: node verify-connected-acceptance.mjs [--config path] [--config-only] [--include-web-push] [--include-deletion]",
       );
     }
   }
