@@ -77,7 +77,7 @@ Status meanings:
   `f0cc0dae1b0d37aa7e86880f9499264424daa0ad`; the earlier commit-bound Web
   Push cron/egress-rejection phase also remains passed. Sanitized evidence is
   private; full-scope release evidence is still pending
-- `pnpm build:web`: 27 production artifact/CSP/header checks and 23 precache
+- `pnpm build:web`: 28 production artifact/CSP/header checks and 23 precache
   URLs pass
 - `pnpm build:native`: iOS and Android Hermes exports pass
 - `pnpm verify:release:readiness`: strict private-manifest and sanitized
@@ -85,7 +85,7 @@ Status meanings:
   artifacts, platform/browser drills, source gate, and external approvals; it
   remains nonzero until every release evidence group exists
 - `pnpm audit --prod --json`: the live registry reports zero findings across
-  all severities and no muted advisories for 609 production dependencies; the
+  all severities and no muted advisories for 610 production dependencies; the
   lockfile digest and tool versions are recorded in `docs/DEPENDENCY_AUDIT.md`
 - `apps/mobile/eas.json` defines clean-commit preview/store profiles with
   explicit EAS environments, remote build-number management, and draft

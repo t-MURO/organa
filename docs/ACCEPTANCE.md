@@ -448,7 +448,7 @@ Local evidence:
   and mixes rather than interrupting other audio; a live preview with sounds
   enabled created and completed a task without a runtime failure
 - `pnpm audit --prod --json` queried the live advisory registry for the current
-  lockfile and reported 609 production dependencies with zero critical, high,
+  lockfile and reported 610 production dependencies with zero critical, high,
   moderate, low, or informational findings and no muted advisories; the
   lockfile digest and tool versions are recorded in `docs/DEPENDENCY_AUDIT.md`
 - the audit includes the integrity-pinned `@noble/hashes` `2.2.0` production
@@ -457,8 +457,9 @@ Local evidence:
 - the internal security audit in `docs/INTERNAL_SECURITY_AUDIT.md` resolved
   device-migratable native secrets, retained native export/import cache files,
   account-unbound browser vault records, and unbounded encrypted mutation
-  payloads; `pnpm verify:security` now guards those fixes plus the
-  device-approval exchange-key boundary with 15 static checks
+  payloads; subsequent hardening also covers the device-approval exchange-key,
+  managed-client, durable browser-auth, migration-erasure, and native AES
+  byte-boundaries with 18 static checks
 - managed migration `20260726120000` applies encrypted payload and field
   metadata bounds; migration `20260726180000` adds target-bound approval
   exchange keys; the linked project matches all eleven local migrations and
