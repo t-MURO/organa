@@ -46,11 +46,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [localPreview, setLocalPreview] = useState(false);
   const [callbackError, setCallbackError] = useState("");
-  const [oauthRedirectUrl] = useState(() => Linking.createURL("/"));
+  const [authRedirectUrl] = useState(() => Linking.createURL("/"));
   const [oauthCallbackCoordinator] = useState(() => {
     const client = supabase;
     if (!client) return undefined;
-    return createOAuthCallbackCoordinator(oauthRedirectUrl, async (code) => {
+    return createOAuthCallbackCoordinator(authRedirectUrl, async (code) => {
       const result = await client.auth.exchangeCodeForSession(code);
       if (result.error) throw result.error;
     });
@@ -152,7 +152,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: oauthRedirectUrl,
+        redirectTo: authRedirectUrl,
         skipBrowserRedirect: Platform.OS !== "web",
       },
     });
@@ -162,7 +162,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     const result = await WebBrowser.openAuthSessionAsync(
       data.url,
-      oauthRedirectUrl,
+      authRedirectUrl,
     );
     if (result.type !== "success") return;
     if (!oauthCallbackCoordinator) {
@@ -182,7 +182,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (!supabase) throw new Error("Supabase is not configured.");
     const result = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: {
+        emailRedirectTo: authRedirectUrl,
+        shouldCreateUser: true,
+      },
     });
     if (result.error) throw result.error;
   }
