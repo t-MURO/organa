@@ -112,18 +112,21 @@ origins. Provision and verify the same fail-closed URL set with:
 ```sh
 pnpm configure:managed:auth-urls -- \
   --project-ref bkqinjscdxofsfgwozgd \
-  --site-url https://organa--53zq3pxf5p.expo.app
+  --site-url https://organa--preview.expo.app
 pnpm configure:managed:auth-urls -- \
   --project-ref bkqinjscdxofsfgwozgd \
-  --site-url https://organa--53zq3pxf5p.expo.app \
+  --site-url https://organa--preview.expo.app \
   --check-only
 ```
 
 The preview is only the managed engineering callback target. It is not
-production-hosting evidence because that host does not apply Organa's required
-response headers. Replace `--site-url` with the reviewed production HTTPS
-origin before production acceptance. The command replaces the complete
-allowlist rather than preserving stale or unintended redirect destinations.
+production approval. Its current deployment applies Organa's route security
+headers and passes the 16-check live deployment verifier, as recorded in
+`docs/WEB_PREVIEW_EVIDENCE.md`, but the production promotion and
+release-browser matrix remain open. Replace `--site-url` with the reviewed
+production HTTPS origin before production acceptance. The command replaces
+the complete allowlist rather than preserving stale or unintended redirect
+destinations.
 
 The link templates cannot be replaced until custom SMTP is configured. After
 adding custom SMTP in the Supabase dashboard, apply and verify the checked-in

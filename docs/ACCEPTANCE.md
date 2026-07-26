@@ -594,6 +594,8 @@ Local evidence:
 - [ ] Permission-granted closed-app Web Push delivery, deep-link,
   replacement, cancellation, denial fallback, and sign-out drill in every
   supported release browser; iOS/iPadOS uses an installed Home Screen PWA
+- [x] The stable managed-test EAS preview and its immutable deployment pass
+  all 16 live web response checks
 - [ ] The selected HTTPS web deployment passes
   `pnpm verify:web-deployment -- https://<production-origin>`
 - [ ] Repeat the scheduled deletion finalizer drill against the connected

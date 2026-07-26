@@ -76,10 +76,17 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
   MIME-sniffing protection, a restrictive capability policy, cross-origin
   isolation that preserves OAuth popups, referrer minimization, HSTS, and
   explicit mutable/immutable cache boundaries.
+- Expo Router emits the same policy into `_expo/.routes.json` for EAS Hosting.
+  EAS converts the legacy frame header into the required response CSP and uses
+  a bounded one-hour static-asset cache. Organa's worker registration sets
+  `updateViaCache: "none"` so worker and imported-worker updates do not depend
+  on that HTTP cache.
 - Hosts that do not consume the `_headers` format must apply equivalent
   response headers. `pnpm verify:web-deployment -- https://web-origin.example`
-  checks the actual HTTPS responses; a passing artifact check alone does not
-  prove that a host applied them.
+  checks the actual HTTPS responses. Its EAS cache alternative is restricted
+  to `*.expo.app`; every other host must satisfy the strict `_headers` cache
+  contract. A passing artifact check alone does not prove that a host applied
+  the policy.
 
 ## Key Storage
 

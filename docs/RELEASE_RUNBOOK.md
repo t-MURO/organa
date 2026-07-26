@@ -249,6 +249,11 @@ The export includes `dist/_headers`, generated from the exact rendered CSP.
 Netlify- and Cloudflare-compatible hosts can consume that file directly.
 Other hosts must map every rule to equivalent response-header configuration;
 do not serve `_headers` as evidence that the rules were applied.
+Expo Router also writes the same document policy to `_expo/.routes.json`.
+EAS Hosting consumes that route metadata for HTML responses. Its static assets
+use a documented bounded one-hour cache, so Organa registers the worker with
+`updateViaCache: "none"` to bypass HTTP caches for worker and imported-worker
+update checks.
 
 After deployment, verify the real HTTPS responses:
 
@@ -257,9 +262,11 @@ pnpm verify:web-deployment -- https://your-organa-web-origin.example
 ```
 
 The command checks CSP/clickjacking policy, MIME and capability restrictions,
-HSTS, cross-origin/referrer policy, mutable shell/worker caching, and immutable
-fingerprinted bundles. Keep its output with the web artifact and browser
-evidence.
+HSTS, cross-origin/referrer policy, shell/worker caching, and fingerprinted
+bundles. Non-EAS hosts must apply the strict mutable and immutable cache
+policy. On `*.expo.app`, the verifier instead requires EAS's exact bounded
+cache profile plus the deployed worker-update bypass. Keep its output with the
+web artifact and browser evidence.
 
 Do not commit the generated `.env` file. Record the deployment identifier,
 artifact checksum, header-verifier output, exact browser versions, PWA install

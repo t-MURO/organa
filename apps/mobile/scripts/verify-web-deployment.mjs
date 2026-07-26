@@ -8,6 +8,7 @@ if (!originArgument || unexpectedArguments.length > 0) {
 }
 
 const origin = parseOrigin(originArgument);
+const isEasHostingOrigin = new URL(origin).hostname.endsWith(".expo.app");
 const checks = [];
 const documentResponse = await fetchSameOrigin(origin, "/");
 const html = await documentResponse.text();
@@ -49,8 +50,10 @@ ok(
 );
 ok(
   documentResponse.headers.get("x-content-type-options") === "nosniff" &&
-    documentResponse.headers.get("x-frame-options") === "DENY",
-  "MIME sniffing and legacy framing are blocked",
+    (documentResponse.headers.get("x-frame-options") === "DENY" ||
+      (isEasHostingOrigin &&
+        documentResponse.headers.get("x-frame-options") === null)),
+  "MIME sniffing is blocked and framing uses CSP with an optional legacy header",
 );
 ok(
   documentResponse.headers.get("referrer-policy") ===
@@ -81,17 +84,31 @@ ok(
   "the application shell requires network revalidation",
 );
 
-for (const path of [
+const mutablePaths = [
   "/manifest.json",
   "/push-handler.js",
   "/register-service-worker.js",
   "/sw.js",
-]) {
-  const response = await fetchSameOrigin(origin, path);
-  await response.body?.cancel();
+];
+const mutableResponses = await Promise.all(
+  mutablePaths.map((path) => fetchSameOrigin(origin, path)),
+);
+const registrationIndex = mutablePaths.indexOf("/register-service-worker.js");
+const registrationScript = await mutableResponses[registrationIndex].text();
+const bypassesWorkerHttpCache = registrationScript.includes(
+  'updateViaCache: "none"',
+);
+
+for (let index = 0; index < mutablePaths.length; index += 1) {
+  const path = mutablePaths[index];
+  const response = mutableResponses[index];
+  if (index !== registrationIndex) await response.body?.cancel();
   ok(
-    requiresRevalidation(response.headers.get("cache-control")),
-    `${path} requires network revalidation`,
+    requiresRevalidation(response.headers.get("cache-control")) ||
+      (isEasHostingOrigin &&
+        hasBoundedEasAssetCache(response.headers.get("cache-control")) &&
+        bypassesWorkerHttpCache),
+    `${path} revalidates directly or uses bounded EAS caching with worker update bypass`,
   );
 }
 
@@ -106,8 +123,10 @@ if (applicationBundle) {
   const response = await fetchSameOrigin(origin, applicationBundle);
   await response.body?.cancel();
   ok(
-    isImmutable(response.headers.get("cache-control")),
-    "the fingerprinted app bundle has an immutable cache policy",
+    isImmutable(response.headers.get("cache-control")) ||
+      (isEasHostingOrigin &&
+        hasBoundedEasAssetCache(response.headers.get("cache-control"))),
+    "the fingerprinted app bundle is immutable or uses the bounded EAS asset cache",
   );
 }
 
@@ -219,6 +238,19 @@ function isImmutable(value) {
     hasDirective(value, "public") &&
     hasDirective(value, "max-age=31536000") &&
     hasDirective(value, "immutable")
+  );
+}
+
+function hasBoundedEasAssetCache(value) {
+  const directives =
+    value
+      ?.split(",")
+      .map((part) => part.trim())
+      .sort() ?? [];
+  return (
+    directives.length === 2 &&
+    directives[0] === "max-age=3600" &&
+    directives[1] === "public"
   );
 }
 

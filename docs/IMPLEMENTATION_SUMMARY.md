@@ -2288,15 +2288,42 @@ No tests were added, changed, or run for this milestone.
   the Auth URL and email-OTP provisioners. Management API credentials remain
   in the native credential store or private file fallback and are never
   printed.
-- The Expo origin remains a connected-test callback only. It does not satisfy
-  production web-hosting acceptance because its response headers do not match
-  Organa's checked-in security policy; production provisioning must replace it
-  with the reviewed production origin.
+- The stable Expo alias remains a connected-test callback only. Its current
+  deployment now passes Organa's live response verifier, but production
+  provisioning must still replace it with the reviewed production origin.
 - The original probe failed before the update and passes afterward. The
   callback origin responds with HTTP 200; an insecure loopback input fails
   before credential lookup. Node syntax, strict TypeScript, all 22 platform
   checks, and the production web export with 26 checks, eight routes, and 23
   precache URLs pass. No tests were added, changed, or run.
+
+## EAS Web Route Security Milestone
+
+- Centralized the generated CSP and nine response headers so the HTML meta
+  policy, Expo Router route metadata, and host-agnostic `_headers` artifact
+  cannot drift.
+- Expo's static export now places the exact policy in
+  `_expo/.routes.json`. The EAS deployment dry run retained all nine header
+  names, contained no private file, and produced only its three expected
+  deployment manifests.
+- Worker registration now uses `updateViaCache: "none"`, ensuring that
+  service-worker and imported-worker update checks bypass EAS's bounded static
+  HTTP cache.
+- Clean commit `d8d46fe40834a0ae3a0475c2010a2a61a87b8e26`
+  was deployed with the `preview` environment as immutable deployment
+  `qx4eh5f2zq` and assigned the stable
+  `https://organa--preview.expo.app` alias.
+- The stable alias and immutable URL both pass all 16 live deployment checks.
+  EAS omits the converted legacy frame header while retaining the exact
+  response-level `frame-ancestors 'none'` CSP, and serves static assets with
+  the required one-hour provider profile.
+- Managed Supabase now uses the stable alias for its Site URL and exact web
+  redirect. The old immutable callback was removed, and both the provisioning
+  command and immediate read-only repeat pass.
+- `docs/WEB_PREVIEW_EVIDENCE.md` records the non-secret deployment identity,
+  commands, scope, provider semantics, and remaining production/browser
+  limits. Strict TypeScript, 22 platform checks, the 27-check web export, and
+  the live verifier pass. No tests were added, changed, or run.
 
 ## Remaining Acceptance Gates
 
