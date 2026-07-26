@@ -1,0 +1,10 @@
+{
+  "google": {
+    "clientId": "replace-with-google-web-client-id.apps.googleusercontent.com",
+    "clientSecret": "replace-with-google-client-secret"
+  },
+  "github": {
+    "clientId": "replace-with-github-oauth-app-client-id",
+    "clientSecret": "replace-with-github-oauth-app-client-secret"
+  }
+}

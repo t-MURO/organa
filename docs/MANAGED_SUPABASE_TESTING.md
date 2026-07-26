@@ -95,12 +95,9 @@ blocked until the project has:
 - Phone authentication disabled
 
 The live settings check currently reports email enabled and phone disabled,
-with Google and GitHub disabled.
-Provider acceptance additionally requires real Google and GitHub redirects
-plus email code delivery through custom SMTP.
-The managed free tier can use custom SMTP. Its default SMTP service cannot
-apply Organa's custom email-code templates, so do not claim the email method
-until custom SMTP and both email paths have been exercised.
+with Google and GitHub disabled. Maileroo custom SMTP, both code-only
+templates, and a live six-digit sign-in are now accepted. Provider acceptance
+still requires real Google and GitHub redirects.
 
 The managed project was found using Supabase's default link templates,
 8-digit codes, a 60-minute expiry, and a local-only Site URL. Its OTP policy
@@ -128,9 +125,8 @@ production HTTPS origin before production acceptance. The command replaces
 the complete allowlist rather than preserving stale or unintended redirect
 destinations.
 
-The link templates cannot be replaced until custom SMTP is configured. After
-adding custom SMTP in the Supabase dashboard, apply and verify the checked-in
-code-only templates with:
+Maileroo custom SMTP is configured. Apply and verify the checked-in code-only
+templates with:
 
 ```sh
 pnpm configure:managed:email-otp -- \
@@ -147,6 +143,46 @@ SMTP values, or template bodies. The OTP command updates only the OTP
 length/expiry and the confirmation/magic-link subjects and bodies.
 Organa deliberately keeps the code out of the subject line so notification
 previews do not expose it.
+
+## Managed OAuth Provisioning
+
+Google and GitHub must each use Supabase Auth's provider callback:
+
+```text
+https://bkqinjscdxofsfgwozgd.supabase.co/auth/v1/callback
+```
+
+For Google, create a Web application OAuth client, add
+`https://organa--preview.expo.app` as an authorized JavaScript origin, and add
+the callback above as an authorized redirect URI. For GitHub, create an OAuth
+App with `https://organa--preview.expo.app` as its homepage and the same
+Supabase callback as its authorization callback.
+
+Do not paste provider secrets into commands, tracked files, issues, or
+evidence. Start from `.organa-managed-oauth.example.json`, place real
+credentials in the ignored `.organa-managed-oauth.json`, and make it private:
+
+```sh
+chmod 600 .organa-managed-oauth.json
+pnpm configure:managed:oauth -- \
+  --project-ref bkqinjscdxofsfgwozgd \
+  --validate-only
+pnpm configure:managed:oauth -- \
+  --project-ref bkqinjscdxofsfgwozgd
+pnpm configure:managed:oauth -- \
+  --project-ref bkqinjscdxofsfgwozgd \
+  --check-only
+```
+
+The apply path validates a bounded, current-user-owned regular file with mode
+`600` or `400`, rejects symlinks, placeholders, malformed values, and extra
+fields, and updates only provider-specific Auth fields. `--validate-only`
+checks that file without contacting the managed project. The read-only
+`--check-only` path does not open the credentials file. No path prints client
+IDs or secrets.
+After provisioning, reload Organa: its provider-aware sign-in screen exposes
+each enabled provider automatically. Complete one real web redirect and one
+native callback for each provider before checking the acceptance row.
 
 The missing providers do not need to block independent backend evidence. Run:
 

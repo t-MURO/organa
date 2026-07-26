@@ -2341,6 +2341,12 @@ No tests were added, changed, or run for this milestone.
   disabled Google/GitHub controls and their divider without disturbing email.
   The stable and immutable deployments pass all 16 live checks, and the live
   bundle contains the provider-aware email-only copy.
+- Added `pnpm configure:managed:oauth` for the remaining hosted Google/GitHub
+  gate. It requires the exact linked project, reads credentials only from a
+  bounded ignored regular file, rejects symlinks, placeholders, extra fields,
+  ownership changes, and non-private Unix modes, and never prints client IDs
+  or secrets. Its read-only mode requires no credential file and currently
+  confirms both managed providers remain disabled.
 - Managed Supabase now uses the stable alias for its Site URL and exact web
   redirect. The old immutable callback was removed, and both the provisioning
   command and immediate read-only repeat pass.
