@@ -446,6 +446,16 @@ Local evidence:
 - the audit includes the integrity-pinned `@noble/hashes` `2.2.0` production
   dependency; a clean advisory result does not replace the independent
   cryptographic and application security review
+- the internal security audit in `docs/INTERNAL_SECURITY_AUDIT.md` resolved
+  device-migratable native secrets, retained native export/import cache files,
+  account-unbound browser vault records, and unbounded encrypted mutation
+  payloads; `pnpm verify:security` guards all four fixes with 12 static checks
+- managed migration `20260726120000` applies encrypted payload and field
+  metadata bounds; the linked project matches all ten local migrations and
+  linked schema lint reports no errors
+- the Docker-backed migration-preservation verifier was attempted but Docker
+  was unavailable, so no fresh isolated-schema result is claimed for this
+  milestone
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks
@@ -569,7 +579,7 @@ Local evidence:
   drill.
 - [ ] Google, GitHub, and email OTP against configured connected
   providers
-- [x] Apply all nine migrations and pass linked database lint against the
+- [x] Apply all ten migrations and pass linked database lint against the
   managed EU connected-test project
 - [ ] Repeat migration application and lint against the selected production
   deployment

@@ -25,6 +25,7 @@
     "verify:migrations": "node scripts/verify-migration-preservation.mjs",
     "verify:release:client-config": "node scripts/verify-release-client-config.mjs",
     "verify:release:readiness": "node scripts/verify-release-readiness.mjs",
+    "verify:security": "node scripts/verify-security-hardening.mjs",
     "verify:web-deployment": "node scripts/verify-web-deployment.mjs",
     "verify:web-push": "node scripts/verify-web-push-protocol.mjs",
     "verify:supabase": "node scripts/verify-local-supabase-all.mjs",

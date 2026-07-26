@@ -22,10 +22,14 @@ export function createBackupFileReader(): BackupFileReader {
       }
 
       const file = new File(asset.uri);
-      if (file.size > MAX_BACKUP_BYTES) {
-        throw new Error("The selected backup is larger than 20 MB.");
+      try {
+        if (file.size > MAX_BACKUP_BYTES) {
+          throw new Error("The selected backup is larger than 20 MB.");
+        }
+        return await file.text();
+      } finally {
+        if (file.exists) file.delete();
       }
-      return file.text();
     },
   };
 }

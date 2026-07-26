@@ -1,0 +1,113 @@
+import { readFile } from "node:fs/promises";
+
+const appRoot = new URL("../", import.meta.url);
+const repoRoot = new URL("../../../", import.meta.url);
+const [
+  deviceBoundStore,
+  authStorage,
+  contentKeyVaultNative,
+  deviceIdentity,
+  appLockAdapter,
+  deletionCache,
+  reminderCache,
+  androidWidgetSnapshot,
+  contentKeyVaultWeb,
+  exportWriter,
+  backupReader,
+  payloadBoundsMigration,
+] = await Promise.all([
+  readAppSource("src/security/device-bound-secure-store.ts"),
+  readAppSource("src/auth/auth-storage.native.ts"),
+  readAppSource("src/security/content-key-vault.native.ts"),
+  readAppSource("src/security/device-identity.native.ts"),
+  readAppSource("src/security/create-app-lock-adapter.native.ts"),
+  readAppSource("src/features/account/account-deletion-cache.native.ts"),
+  readAppSource(
+    "src/features/account/reminder-authorization-cache.native.ts",
+  ),
+  readAppSource(
+    "src/features/widgets/android-widget-snapshot.android.ts",
+  ),
+  readAppSource("src/security/content-key-vault.web.ts"),
+  readAppSource("src/data/create-export-file-writer.native.ts"),
+  readAppSource("src/data/create-backup-file-reader.native.ts"),
+  readFile(
+    new URL(
+      "supabase/migrations/20260726120000_encrypted_payload_bounds.sql",
+      repoRoot,
+    ),
+    "utf8",
+  ),
+]);
+
+const checks = [];
+
+ok(
+  deviceBoundStore.includes("WHEN_UNLOCKED_THIS_DEVICE_ONLY") &&
+    deviceBoundStore.includes("Rewriting also migrates older iOS entries"),
+  "native private state is device-bound and migrates legacy entries",
+);
+
+for (const [label, source] of [
+  ["auth storage", authStorage],
+  ["content-key vault", contentKeyVaultNative],
+  ["device identity", deviceIdentity],
+  ["app-lock preference", appLockAdapter],
+  ["deletion cache", deletionCache],
+  ["reminder authorization", reminderCache],
+  ["Android widget snapshot", androidWidgetSnapshot],
+]) {
+  ok(
+    source.includes("device-bound-secure-store") &&
+      !source.includes('from "expo-secure-store"'),
+    `${label} uses the device-bound SecureStore adapter`,
+  );
+}
+
+ok(
+  contentKeyVaultWeb.includes("version?: 2") &&
+    contentKeyVaultWeb.includes("version: 2") &&
+    contentKeyVaultWeb.includes("additionalData: vaultAdditionalData(userId)") &&
+    contentKeyVaultWeb.includes("wrapped.version !== 2"),
+  "browser content keys are account-bound with legacy migration",
+);
+ok(
+  exportWriter.includes("finally") &&
+    exportWriter.includes("if (file.exists) file.delete()"),
+  "native export cache files are removed after sharing",
+);
+ok(
+  backupReader.includes("finally") &&
+    backupReader.includes("if (file.exists) file.delete()"),
+  "native imported backup copies are removed after reading",
+);
+ok(
+  payloadBoundsMigration.includes("pg_column_size(new.ciphertext) > 4194304") &&
+    payloadBoundsMigration.includes(
+      "pg_column_size(new.field_versions) > 65536",
+    ) &&
+    payloadBoundsMigration.includes("field_count > 128") &&
+    payloadBoundsMigration.includes(
+      "encrypted_records_enforce_payload_bounds",
+    ) &&
+    payloadBoundsMigration.includes(
+      "sync_mutations_enforce_payload_bounds",
+    ) &&
+    payloadBoundsMigration.includes(
+      "revoke execute on function public.enforce_encrypted_payload_bounds()",
+    ),
+  "database bounds encrypted payloads and field metadata",
+);
+
+console.log(
+  `Security hardening verification passed (${checks.length} checks).`,
+);
+
+function readAppSource(path) {
+  return readFile(new URL(path, appRoot), "utf8");
+}
+
+function ok(condition, label) {
+  if (!condition) throw new Error(`FAILED: ${label}`);
+  checks.push(label);
+}

@@ -93,6 +93,10 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
 Native:
 
 - The content key is stored with Expo SecureStore.
+- Native private state uses `WHEN_UNLOCKED_THIS_DEVICE_ONLY` on iOS so content
+  keys, auth sessions, device proofs, app-lock state, deletion state, reminder
+  authorization, and widget projections cannot migrate through a device
+  backup. Reads rewrite older entries with the device-bound policy.
 - Parsed key-vault values must contain non-empty content-key identifiers and
   encoded key material. Malformed values fail closed instead of entering the
   private application boundary.
@@ -118,6 +122,9 @@ Web:
 
 - A non-extractable Web Crypto AES-GCM wrapping key and wrapped content key are
   stored in a separate IndexedDB database.
+- Vault format v2 authenticates the owning account ID as AES-GCM additional
+  data. Legacy vault records are rewrapped in place after their first valid
+  read, without changing the user's recovery code.
 - Decrypted key-vault values receive the same runtime validation as native
   values before use.
 - The per-device proof secret is stored with the browser device identity in
@@ -301,6 +308,10 @@ mutation rows.
 - Security-definer RPC execution is revoked from `public` and `anon`.
 - Mutation RPCs validate authentication, trusted-device state, record type,
   patch shape, and future clock skew.
+- Database triggers bound incoming and durable encrypted records to 4 MiB of
+  ciphertext, 64 KiB of field-version metadata, 128 top-level fields, and
+  application-controlled field names no longer than 80 characters. This limits
+  authenticated resource abuse without exposing encrypted values.
 - Private Realtime authorization compares the authenticated user ID with the
   exact user-scoped topic.
 - The mutation, recovery enrollment, approval, and device-control RPCs reject
@@ -459,6 +470,9 @@ wipe.
 ## Export And Deletion
 
 - Readable JSON and Markdown exports are assembled locally.
+- Native share-sheet files and document-picker backup copies use the app cache
+  only for the active operation and are removed in `finally` cleanup. Files the
+  user saves through the share destination remain under the user's control.
 - Full backups encrypt the complete export and include the recovery envelope.
 - Backup restoration validates the format, unwraps the content key locally with
   the recovery code, authenticates the backup metadata, and rejects tampering

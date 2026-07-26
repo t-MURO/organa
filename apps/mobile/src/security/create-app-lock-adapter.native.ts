@@ -1,7 +1,10 @@
 import * as LocalAuthentication from "expo-local-authentication";
-import * as SecureStore from "expo-secure-store";
 
 import type { AppLockAdapter } from "./app-lock-adapter.types";
+import {
+  getDeviceBoundItem,
+  setDeviceBoundItem,
+} from "./device-bound-secure-store";
 
 const enabledKey = "organa:app-lock-enabled";
 
@@ -18,7 +21,7 @@ export function createAppLockAdapter(): AppLockAdapter {
       return result.success;
     },
     async getEnabled() {
-      const value = await SecureStore.getItemAsync(enabledKey);
+      const value = await getDeviceBoundItem(enabledKey);
       if (value === null || value === "false") return false;
       if (value === "true") return true;
       throw new Error("The app lock preference is invalid.");
@@ -28,7 +31,7 @@ export function createAppLockAdapter(): AppLockAdapter {
       return level !== LocalAuthentication.SecurityLevel.NONE;
     },
     async setEnabled(enabled) {
-      await SecureStore.setItemAsync(enabledKey, String(enabled));
+      await setDeviceBoundItem(enabledKey, String(enabled));
     },
   };
 }

@@ -2325,6 +2325,38 @@ No tests were added, changed, or run for this milestone.
   limits. Strict TypeScript, 22 platform checks, the 27-check web export, and
   the live verifier pass. No tests were added, changed, or run.
 
+## Internal Security Hardening Milestone
+
+- Audited authentication, recovery/device enrollment, local key storage,
+  encrypted sync/RLS, export/restore, and deletion against the current
+  controlled-beta requirements. The review is internal engineering evidence,
+  not the mandatory independent production review.
+- Added one native device-bound SecureStore adapter using
+  `WHEN_UNLOCKED_THIS_DEVICE_ONLY`. Auth sessions, content keys, device proofs,
+  app-lock state, deletion state, reminder authorization, and Android widget
+  projections now resist iOS backup migration; reads rewrite legacy entries.
+- Added browser content-key vault format v2. AES-GCM additional data binds each
+  wrapped key to its owner ID, while valid legacy records migrate in place
+  without changing recovery codes.
+- Native readable exports are removed from Organa's cache after the share sheet
+  completes, and document-picker backup copies are removed after their bounded
+  read. User-selected destination files remain outside Organa's deletion
+  boundary.
+- Added migration `20260726120000` to bound incoming and durable encrypted
+  payloads to 4 MiB of ciphertext, 64 KiB of field metadata, 128 fields, and
+  80-character application field names. Managed Supabase accepted the
+  migration, all ten local/remote versions match, and linked schema lint
+  reports no errors.
+- `pnpm verify:security` passes 12 repeatable source/schema checks. Strict
+  TypeScript, all 22 platform checks, the 27-check production web export with
+  eight routes and 23 precache URLs, and both native Hermes exports pass. The
+  live production dependency audit reports zero findings at every severity.
+- The Docker-backed migration-preservation verifier was attempted but Docker
+  was unavailable, so that isolated-schema result remains unclaimed. No test
+  file was added, changed, or run. Full details and remaining physical,
+  production, and independent-review gates are in
+  `docs/INTERNAL_SECURITY_AUDIT.md`.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

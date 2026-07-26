@@ -1,6 +1,9 @@
-import * as SecureStore from "expo-secure-store";
-
 import type { WidgetTimeline } from "./widget-snapshot";
+import {
+  getDeviceBoundItem,
+  removeDeviceBoundItem,
+  setDeviceBoundItem,
+} from "../../security/device-bound-secure-store";
 
 export interface AndroidWidgetSnapshot {
   nextReminder?: {
@@ -114,7 +117,7 @@ export function resolveAndroidWidgetSnapshot(
 
 export async function loadAndroidWidgetTimeline() {
   try {
-    const value = await SecureStore.getItemAsync(storageKey);
+    const value = await getDeviceBoundItem(storageKey);
     return value
       ? parseAndroidWidgetTimeline(value)
       : contentFreeAndroidWidgetTimeline();
@@ -126,11 +129,11 @@ export async function loadAndroidWidgetTimeline() {
 export async function saveAndroidWidgetTimeline(
   timeline: AndroidWidgetTimeline,
 ) {
-  await SecureStore.setItemAsync(storageKey, JSON.stringify(timeline));
+  await setDeviceBoundItem(storageKey, JSON.stringify(timeline));
 }
 
 export async function clearAndroidWidgetTimeline() {
-  await SecureStore.deleteItemAsync(storageKey);
+  await removeDeviceBoundItem(storageKey);
 }
 
 function currentTimelineValue<T>(

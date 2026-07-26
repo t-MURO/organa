@@ -11,13 +11,17 @@ export function createExportFileWriter(): ExportFileWriter {
       }
 
       const file = new File(Paths.cache, filename);
-      file.create({ overwrite: true });
-      file.write(contents);
-      await Sharing.shareAsync(file.uri, {
-        dialogTitle: `Export ${filename}`,
-        mimeType,
-        UTI: mimeType === "application/json" ? "public.json" : "public.text",
-      });
+      try {
+        file.create({ overwrite: true });
+        file.write(contents);
+        await Sharing.shareAsync(file.uri, {
+          dialogTitle: `Export ${filename}`,
+          mimeType,
+          UTI: mimeType === "application/json" ? "public.json" : "public.text",
+        });
+      } finally {
+        if (file.exists) file.delete();
+      }
     },
   };
 }

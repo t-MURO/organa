@@ -1,22 +1,25 @@
-import * as SecureStore from "expo-secure-store";
-
 import type {
   AccountDeletionCache,
   CachedDeletionRequest,
 } from "./account-deletion-cache.types";
+import {
+  getDeviceBoundItem,
+  removeDeviceBoundItem,
+  setDeviceBoundItem,
+} from "../../security/device-bound-secure-store";
 
 const prefix = "organa.account-deletion.";
 
 export const accountDeletionCache: AccountDeletionCache = {
   async get(userId) {
-    const value = await SecureStore.getItemAsync(`${prefix}${userId}`);
+    const value = await getDeviceBoundItem(`${prefix}${userId}`);
     return parseRequest(value);
   },
   async remove(userId) {
-    await SecureStore.deleteItemAsync(`${prefix}${userId}`);
+    await removeDeviceBoundItem(`${prefix}${userId}`);
   },
   async set(userId, request) {
-    await SecureStore.setItemAsync(
+    await setDeviceBoundItem(
       `${prefix}${userId}`,
       JSON.stringify(request),
     );

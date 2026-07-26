@@ -1,19 +1,22 @@
-import * as SecureStore from "expo-secure-store";
-
 import type { AuthStorage } from "./auth-storage.types";
+import {
+  getDeviceBoundItem,
+  removeDeviceBoundItem,
+  setDeviceBoundItem,
+} from "../security/device-bound-secure-store";
 
 const chunkSize = 1800;
 
 export const authStorage: AuthStorage = {
   async getItem(key) {
-    const countValue = await SecureStore.getItemAsync(metaKey(key));
-    if (!countValue) return SecureStore.getItemAsync(key);
+    const countValue = await getDeviceBoundItem(metaKey(key));
+    if (!countValue) return getDeviceBoundItem(key);
 
     const count = Number(countValue);
     if (!Number.isInteger(count) || count <= 0) return null;
     const chunks = await Promise.all(
       Array.from({ length: count }, (_, index) =>
-        SecureStore.getItemAsync(chunkKey(key, index)),
+        getDeviceBoundItem(chunkKey(key, index)),
       ),
     );
     return chunks.every((chunk): chunk is string => chunk !== null)
@@ -23,7 +26,7 @@ export const authStorage: AuthStorage = {
   async setItem(key, value) {
     await removeChunkedValue(key);
     if (value.length <= chunkSize) {
-      await SecureStore.setItemAsync(key, value);
+      await setDeviceBoundItem(key, value);
       return;
     }
 
@@ -33,10 +36,10 @@ export const authStorage: AuthStorage = {
     );
     await Promise.all(
       chunks.map((chunk, index) =>
-        SecureStore.setItemAsync(chunkKey(key, index), chunk),
+        setDeviceBoundItem(chunkKey(key, index), chunk),
       ),
     );
-    await SecureStore.setItemAsync(metaKey(key), String(chunks.length));
+    await setDeviceBoundItem(metaKey(key), String(chunks.length));
   },
   async removeItem(key) {
     await removeChunkedValue(key);
@@ -44,18 +47,18 @@ export const authStorage: AuthStorage = {
 };
 
 async function removeChunkedValue(key: string) {
-  const countValue = await SecureStore.getItemAsync(metaKey(key));
+  const countValue = await getDeviceBoundItem(metaKey(key));
   const count = Number(countValue ?? 0);
   if (Number.isInteger(count) && count > 0) {
     await Promise.all(
       Array.from({ length: count }, (_, index) =>
-        SecureStore.deleteItemAsync(chunkKey(key, index)),
+        removeDeviceBoundItem(chunkKey(key, index)),
       ),
     );
   }
   await Promise.all([
-    SecureStore.deleteItemAsync(metaKey(key)),
-    SecureStore.deleteItemAsync(key),
+    removeDeviceBoundItem(metaKey(key)),
+    removeDeviceBoundItem(key),
   ]);
 }
 

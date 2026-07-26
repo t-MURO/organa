@@ -8,6 +8,7 @@ interface WrappedContentKey {
   ciphertext: ArrayBuffer;
   iv: Uint8Array<ArrayBuffer>;
   wrappingKey: CryptoKey;
+  version?: 2;
 }
 
 const memoryFallback = new Map<string, ContentKeyVaultValue>();
@@ -20,13 +21,24 @@ export const contentKeyVault: ContentKeyVault = {
       const wrapped = await readWrappedKey(userId);
       if (!wrapped) return memoryFallback.get(userId) ?? null;
       const plaintext = await crypto.subtle.decrypt(
-        { iv: wrapped.iv, name: "AES-GCM" },
+        wrapped.version === 2
+          ? {
+              additionalData: vaultAdditionalData(userId),
+              iv: wrapped.iv,
+              name: "AES-GCM",
+            }
+          : { iv: wrapped.iv, name: "AES-GCM" },
         wrapped.wrappingKey,
         wrapped.ciphertext,
       );
-      return parseContentKeyVaultValue(
+      const value = parseContentKeyVaultValue(
         new TextDecoder().decode(plaintext),
       );
+      memoryFallback.set(userId, value);
+      if (wrapped.version !== 2) {
+        await persistWrappedKey(userId, value).catch(() => undefined);
+      }
+      return value;
     } catch {
       return memoryFallback.get(userId) ?? null;
     }
@@ -34,18 +46,7 @@ export const contentKeyVault: ContentKeyVault = {
   async set(userId, value) {
     memoryFallback.set(userId, value);
     try {
-      const wrappingKey = await crypto.subtle.generateKey(
-        { length: 256, name: "AES-GCM" },
-        false,
-        ["encrypt", "decrypt"],
-      );
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const ciphertext = await crypto.subtle.encrypt(
-        { iv, name: "AES-GCM" },
-        wrappingKey,
-        new TextEncoder().encode(JSON.stringify(value)),
-      );
-      await writeWrappedKey(userId, { ciphertext, iv, wrappingKey });
+      await persistWrappedKey(userId, value);
     } catch {
       // Recovery remains available if this browser blocks durable key storage.
     }
@@ -69,22 +70,58 @@ export const contentKeyVault: ContentKeyVault = {
 
 async function readWrappedKey(userId: string) {
   const database = await openKeyDatabase();
-  const value = await requestAsPromise<WrappedContentKey | undefined>(
-    database.transaction(storeName).objectStore(storeName).get(userId),
-  );
-  database.close();
-  return value;
+  try {
+    return await requestAsPromise<WrappedContentKey | undefined>(
+      database.transaction(storeName).objectStore(storeName).get(userId),
+    );
+  } finally {
+    database.close();
+  }
 }
 
 async function writeWrappedKey(userId: string, value: WrappedContentKey) {
   const database = await openKeyDatabase();
-  await requestAsPromise(
-    database
-      .transaction(storeName, "readwrite")
-      .objectStore(storeName)
-      .put(value, userId),
+  try {
+    await requestAsPromise(
+      database
+        .transaction(storeName, "readwrite")
+        .objectStore(storeName)
+        .put(value, userId),
+    );
+  } finally {
+    database.close();
+  }
+}
+
+async function persistWrappedKey(
+  userId: string,
+  value: ContentKeyVaultValue,
+) {
+  const wrappingKey = await crypto.subtle.generateKey(
+    { length: 256, name: "AES-GCM" },
+    false,
+    ["encrypt", "decrypt"],
   );
-  database.close();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt(
+    {
+      additionalData: vaultAdditionalData(userId),
+      iv,
+      name: "AES-GCM",
+    },
+    wrappingKey,
+    new TextEncoder().encode(JSON.stringify(value)),
+  );
+  await writeWrappedKey(userId, {
+    ciphertext,
+    iv,
+    version: 2,
+    wrappingKey,
+  });
+}
+
+function vaultAdditionalData(userId: string) {
+  return new TextEncoder().encode(`organa:browser-key-vault:v2:${userId}`);
 }
 
 function openKeyDatabase() {
@@ -97,6 +134,8 @@ function openKeyDatabase() {
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
+    request.onblocked = () =>
+      reject(new Error("The browser key vault is blocked."));
   });
 }
 
