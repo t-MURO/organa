@@ -170,6 +170,9 @@ async function verifyDeviceApprovalContract() {
   const keyId = randomUUID();
   const otherKeyId = randomUUID();
   const recoveryProof = "a".repeat(64);
+  const approvedDevicePublicKey = "b".repeat(64);
+  const rejectedDevicePublicKey = "c".repeat(64);
+  const blockedDevicePublicKey = "d".repeat(64);
 
   noError(
     await client1.rpc("enroll_account_key", {
@@ -215,6 +218,7 @@ async function verifyDeviceApprovalContract() {
       p_device_proof: approvedProof,
       p_name: "New browser",
       p_platform: "web",
+      p_request_public_key: approvedDevicePublicKey,
     }),
     "new device approval requested",
   );
@@ -249,11 +253,13 @@ async function verifyDeviceApprovalContract() {
   );
 
   const envelope = {
-    algorithm: "AES-256-GCM",
+    algorithm: "X25519-HKDF-SHA256-AES-256-GCM",
     combined: "C".repeat(80),
     keyId,
+    recipientPublicKey: approvedDevicePublicKey,
+    senderPublicKey: "e".repeat(64),
     targetDeviceId: approvedDeviceId,
-    version: 1,
+    version: 2,
   };
   expectedError(
     await client1.rpc("approve_trusted_device", {
@@ -278,7 +284,9 @@ async function verifyDeviceApprovalContract() {
   const approved = noError(
     await client1
       .from("device_approvals")
-      .select("encrypted_content_key,approved_at,claimed_at")
+      .select(
+        "encrypted_content_key,request_public_key,approved_at,claimed_at",
+      )
       .eq("device_id", approvedDeviceId)
       .single(),
     "approved envelope is retrievable",
@@ -286,6 +294,7 @@ async function verifyDeviceApprovalContract() {
   ok(
     approved.approved_at &&
       !approved.claimed_at &&
+      approved.request_public_key === approvedDevicePublicKey &&
       approved.encrypted_content_key.targetDeviceId === approvedDeviceId,
     "approval remains encrypted and bound to target",
   );
@@ -323,15 +332,16 @@ async function verifyDeviceApprovalContract() {
   const claimedApproval = noError(
     await client1
       .from("device_approvals")
-      .select("encrypted_content_key,claimed_at")
+      .select("encrypted_content_key,request_public_key,claimed_at")
       .eq("device_id", approvedDeviceId)
       .single(),
     "claimed approval loaded",
   );
   ok(
     claimedApproval.encrypted_content_key === null &&
+      claimedApproval.request_public_key === null &&
       Boolean(claimedApproval.claimed_at),
-    "claimed envelope is erased",
+    "claimed envelope and request key are erased",
   );
 
   await verifyEncryptedBrainDumpContract({
@@ -572,6 +582,7 @@ async function verifyDeviceApprovalContract() {
       p_device_proof: rejectedProof,
       p_name: "Unknown browser",
       p_platform: "web",
+      p_request_public_key: rejectedDevicePublicKey,
     }),
     "rejectable request created",
   );
@@ -602,6 +613,7 @@ async function verifyDeviceApprovalContract() {
       p_device_proof: blockedProof,
       p_name: "Blocked browser",
       p_platform: "web",
+      p_request_public_key: blockedDevicePublicKey,
     }),
     /read-only/i,
     "approval request blocked during deletion",
@@ -652,6 +664,7 @@ async function verifyDeviceApprovalContract() {
       p_device_proof: approvedProof,
       p_name: "Revoked phone",
       p_platform: "ios",
+      p_request_public_key: approvedDevicePublicKey,
     }),
     /requires recovery-key enrollment/i,
     "revoked device cannot self-request reapproval",
@@ -664,6 +677,7 @@ async function verifyDeviceApprovalContract() {
       p_device_proof: "7".repeat(72),
       p_name: "Anonymous",
       p_platform: "web",
+      p_request_public_key: "f".repeat(64),
     }),
     /Authentication is required|permission denied/i,
     "anonymous approval request is rejected",

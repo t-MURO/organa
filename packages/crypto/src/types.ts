@@ -26,6 +26,23 @@ export interface DeviceApprovalEnvelope {
   combined: string;
 }
 
+export interface DeviceApprovalExchangeEnvelope {
+  version: 2;
+  algorithm: "X25519-HKDF-SHA256-AES-256-GCM";
+  keyId: string;
+  targetDeviceId: string;
+  recipientPublicKey: string;
+  senderPublicKey: string;
+  combined: string;
+}
+
+export interface DeviceApprovalExchangeKeyPair {
+  version: 1;
+  algorithm: "X25519";
+  publicKey: string;
+  secretKey: string;
+}
+
 export interface KeyHierarchy {
   contentKey: ContentKey;
   recoveryCode: string;

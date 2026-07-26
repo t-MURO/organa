@@ -198,6 +198,7 @@ async function runDeletionDrill() {
 
   const pendingDeviceId = randomUUID();
   const pendingDeviceProof = "p".repeat(72);
+  const pendingDevicePublicKey = "a".repeat(64);
   const firstRequest = await requestDeletion({
     deviceId,
     deviceProof,
@@ -228,6 +229,7 @@ async function runDeletionDrill() {
       p_device_proof: pendingDeviceProof,
       p_name: "Pending deletion drill device",
       p_platform: "web",
+      p_request_public_key: pendingDevicePublicKey,
     }),
     /read-only while deletion is pending/i,
     "device writes are read-only while deletion is pending",
@@ -273,6 +275,7 @@ async function runDeletionDrill() {
       p_device_proof: pendingDeviceProof,
       p_name: "Pending deletion drill device",
       p_platform: "web",
+      p_request_public_key: pendingDevicePublicKey,
     }),
     "device writes resume after cancellation",
   );

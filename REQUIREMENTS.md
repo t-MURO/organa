@@ -452,7 +452,9 @@ The exact plaintext metadata set must be documented and minimized before impleme
 - Each account has a content-encryption key hierarchy.
 - Device keys are stored in platform secure credential storage.
 - Web storage must not persist an unprotected plaintext content key.
-- A new device may be approved by an existing trusted device.
+- A new device may be approved by selecting its pending request on an existing
+  trusted device; approval must complete without copying or typing a transfer
+  code.
 - A recovery key is generated during onboarding.
 - The user must confirm that the recovery key was stored before setup completes.
 - If every trusted device and the recovery key are lost, encrypted content cannot be recovered.
@@ -706,8 +708,9 @@ Resolved recurrence, grace-day, and parent/subtask decisions are recorded in
 - Cryptography uses versioned AES-256-GCM envelopes from Expo Crypto with
   record-bound additional authenticated data.
 - Brain Dump conflict-free editing uses encrypted Yjs updates.
-- Recovery uses a checked, versioned `ORG1` code; trusted-device transfer uses
-  a short-lived, target-bound `ODA1` approval code.
+- Recovery uses a checked, versioned `ORG1` code. Trusted-device transfer uses
+  a short-lived X25519 exchange, HKDF-SHA-256 key derivation, and a
+  target-bound AES-256-GCM envelope.
 - Notification permission is requested only from the direct user action that
   saves an enabled reminder. Unsupported or denied web permission retains a
   visible active-tab fallback.

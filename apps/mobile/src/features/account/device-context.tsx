@@ -1,4 +1,4 @@
-import { createDeviceApproval } from "@organa/crypto";
+import { createDeviceApprovalExchange } from "@organa/crypto";
 import {
   createContext,
   type PropsWithChildren,
@@ -18,6 +18,7 @@ import { resolveReminderAuthorization } from "./reminder-authorization";
 
 export interface TrustedDevice {
   approvalExpiresAt?: string;
+  approvalPublicKey?: string;
   approvalRequestedAt?: string;
   id: string;
   lastSeenAt: string;
@@ -35,7 +36,7 @@ interface DeviceContextValue {
   loading: boolean;
   reminderAuthorizationReady: boolean;
   remindersAllowed: boolean;
-  approve(deviceId: string): Promise<string>;
+  approve(deviceId: string): Promise<void>;
   configureReminders(
     deviceId: string,
     options: { makePrimary?: boolean; notificationsEnabled: boolean },
@@ -91,7 +92,9 @@ export function DeviceProvider({ children }: PropsWithChildren) {
         .order("last_seen_at", { ascending: false }),
       supabase
         .from("device_approvals")
-        .select("device_id,requested_at,expires_at,claimed_at")
+        .select(
+          "device_id,request_public_key,requested_at,expires_at,claimed_at",
+        )
         .eq("user_id", auth.user.id)
         .is("claimed_at", null)
         .gt("expires_at", new Date().toISOString()),
@@ -109,6 +112,10 @@ export function DeviceProvider({ children }: PropsWithChildren) {
         const approval = approvalByDevice.get(row.id);
         return {
           approvalExpiresAt: approval?.expires_at,
+          approvalPublicKey:
+            typeof approval?.request_public_key === "string"
+              ? approval.request_public_key
+              : undefined,
           approvalRequestedAt: approval?.requested_at,
           id: row.id,
           lastSeenAt: row.last_seen_at,
@@ -202,19 +209,28 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     ) {
       throw new Error("A trusted connected device is required.");
     }
-    const approval = await createDeviceApproval(
+    const target = devices.find((item) => item.id === deviceId);
+    if (
+      !target?.approvalPublicKey ||
+      !/^[0-9a-f]{64}$/.test(target.approvalPublicKey)
+    ) {
+      throw new Error(
+        "This request is outdated. Ask the other device to request approval again.",
+      );
+    }
+    const envelope = await createDeviceApprovalExchange(
       security.contentKey,
       deviceId,
+      target.approvalPublicKey,
     );
     const result = await supabase.rpc("approve_trusted_device", {
       p_current_device_id: security.device.id,
       p_current_device_proof: security.device.secret,
-      p_encrypted_content_key: approval.envelope,
+      p_encrypted_content_key: envelope,
       p_target_device_id: deviceId,
     });
     if (result.error) throw result.error;
     await refresh();
-    return approval.approvalCode;
   }
 
   async function rejectApproval(deviceId: string) {

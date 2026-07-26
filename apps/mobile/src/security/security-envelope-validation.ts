@@ -1,5 +1,6 @@
 import type {
   DeviceApprovalEnvelope,
+  DeviceApprovalExchangeEnvelope,
   RecoveryKeyEnvelope,
 } from "@organa/crypto";
 
@@ -50,6 +51,41 @@ export function parseDeviceApprovalEnvelope(
   };
 }
 
+export function parseDeviceApprovalExchangeEnvelope(
+  value: unknown,
+  expectedDeviceId: string,
+  expectedRecipientPublicKey: string,
+): DeviceApprovalExchangeEnvelope {
+  if (
+    !isRecord(value) ||
+    value.version !== 2 ||
+    value.algorithm !== "X25519-HKDF-SHA256-AES-256-GCM" ||
+    typeof value.keyId !== "string" ||
+    value.keyId.length === 0 ||
+    value.targetDeviceId !== expectedDeviceId ||
+    value.recipientPublicKey !== expectedRecipientPublicKey ||
+    !isHexKey(value.recipientPublicKey) ||
+    !isHexKey(value.senderPublicKey) ||
+    typeof value.combined !== "string" ||
+    value.combined.length === 0
+  ) {
+    throw new Error("The trusted-device approval is invalid.");
+  }
+  return {
+    algorithm: value.algorithm,
+    combined: value.combined,
+    keyId: value.keyId,
+    recipientPublicKey: value.recipientPublicKey,
+    senderPublicKey: value.senderPublicKey,
+    targetDeviceId: value.targetDeviceId,
+    version: value.version,
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isHexKey(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
 }

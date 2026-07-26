@@ -19,17 +19,19 @@ storage, and deletion operations.
 - Recovery envelopes read from Supabase are accepted only when their version,
   algorithm, ciphertext, and key ID match the account-key row.
 - A new device may instead create a 15-minute approval request for an existing
-  trusted device. The trusted device encrypts the content key with a fresh
-  256-bit one-time AES key and displays that key as a checked approval code.
-- The approval envelope is authenticated to the target device ID and content
-  key ID. Supabase stores only this encrypted envelope; the one-time approval
-  code is transferred directly by the user and is erased from app state after
-  use.
+  trusted device. It generates a short-lived X25519 key pair, uploads only the
+  public key, and protects the private key with device-bound native storage or
+  protected browser storage.
+- The trusted device selects the pending request, performs ephemeral X25519
+  key agreement, derives a wrapping key with HKDF-SHA-256, and encrypts the
+  content key with AES-256-GCM. No transfer secret is displayed or typed.
+- The approval envelope is authenticated to the target device ID, content key
+  ID, recipient public key, and sender public key. Supabase stores only public
+  exchange keys and the encrypted envelope and cannot derive the content key.
 - Approval envelopes are structurally validated and must be bound to the
   current pending device before decryption.
-- Recovery confirmation, recovery-key input, and one-time approval input are
-  scoped to the active account UI. An account identity change unmounts that
-  state synchronously, and successfully used codes are cleared immediately.
+- Recovery confirmation and recovery-key input are scoped to the active
+  account UI. An account identity change unmounts that state synchronously.
 - The displayed recovery code contains the recovery key plus a short checksum
   for detecting transcription mistakes.
 - The recovery key is never uploaded. Supabase stores only its encrypted
@@ -291,10 +293,10 @@ mutation rows.
   Pending devices remain untrusted until they decrypt the target-bound
   envelope locally, present their per-device proof, and claim the approval.
 - Approval requests expire after 15 minutes. A trusted device can reject them,
-  claimed envelopes are erased, and revoked devices cannot use approval to
-  bypass recovery-key enrollment.
-- A trusted device clears its displayed one-time approval code at the
-  server-provided expiry even when no realtime event arrives.
+  claimed envelopes and request public keys are erased, and revoked devices
+  cannot use approval to bypass recovery-key enrollment.
+- A pending device erases its short-lived private exchange key after approval
+  or recovery-key enrollment.
 - A pending device persists the decrypted content key only after the server
   confirms trust and envelope claim. If an RPC response is lost after commit,
   the client verifies that exact resulting server state before proceeding.

@@ -49,15 +49,16 @@ encryption, operating-system account security, and the optional Organa app
 lock protect local plaintext; end-to-end encryption does not protect an
 already unlocked compromised device.
 
-Native content keys and device proof secrets use SecureStore. In supported
-browsers, content keys, auth sessions, and device proof secrets are encrypted
-at rest with non-extractable Web Crypto wrapping keys stored through
-IndexedDB. This blocks plaintext storage inspection but does not make an
-origin with active malicious script safe. If durable CryptoKey cloning is
-blocked, the content key is memory-only; auth/device storage may fall back to
-the browser's complete `Storage` implementation so the current session can
-survive. Such a browser is outside the controlled-beta capability contract
-until its recovery and storage behavior is explicitly accepted.
+Native content keys, device proof secrets, and short-lived approval private
+keys use SecureStore. In supported browsers, content keys, auth sessions,
+device proof secrets, and approval private keys are encrypted at rest with
+non-extractable Web Crypto wrapping keys stored through IndexedDB. This blocks
+plaintext storage inspection but does not make an origin with active malicious
+script safe. If durable CryptoKey cloning is blocked, the content key is
+memory-only; auth/device storage may fall back to the browser's complete
+`Storage` implementation so the current session can survive. Such a browser is
+outside the controlled-beta capability contract until its recovery and storage
+behavior is explicitly accepted.
 
 Content-free authorization, account-deletion deadline, PWA update, and pending
 Push-schedule caches may use local storage. They contain booleans, timestamps,
@@ -104,7 +105,7 @@ metadata.
 | Previous encrypted record versions | Temporary conflict recovery | Seven days, pruned opportunistically on later mutations |
 | Brain Dump Yjs update ciphertext | Offline and concurrent text merge | New bullet-scoped updates compact into the canonical encrypted snapshot after 64 server-confirmed deltas; covered update/history rows are deleted and their mutation-receipt ciphertext is cleared. Legacy-format updates remain until account deletion for backward compatibility |
 | Mutation ID, operation, versions, timestamps | Idempotent retry evidence | Currently until account deletion |
-| Device approval timestamps and target-bound envelope ciphertext | Short-lived trusted-device handoff | One row per device; envelope clears on claim, row may remain until replacement, rejection, or account deletion |
+| Device approval timestamps, short-lived public exchange key, and target-bound envelope ciphertext | Short-lived trusted-device handoff | One row per device; envelope and public key clear on claim, row may remain until replacement, rejection, or account deletion |
 | Account-deletion timestamps | One-hour cancellation and finalization | Until Auth user deletion cascades the account |
 | Browser Push endpoint and encryption capabilities | Closed-tab reminder delivery | Until unsubscribe, device quieting/revocation, endpoint expiry, or account deletion |
 | Opaque Push scope/key, safe route, fire time, Check-In local time/time zone | Schedule and advance generic reminders | One-off rows delete after delivery; failed rows delete after five attempts; repeating rows remain until replacement, unsubscribe, or account deletion |

@@ -7,7 +7,10 @@ export {
 } from "./record-encryption";
 export {
   createDeviceApproval,
+  createDeviceApprovalExchange,
+  createDeviceApprovalExchangeKeyPair,
   unwrapDeviceApproval,
+  unwrapDeviceApprovalExchange,
 } from "./device-approval";
 export {
   createKeyHierarchy,
@@ -19,6 +22,8 @@ export {
 export type {
   ContentKey,
   DeviceApprovalEnvelope,
+  DeviceApprovalExchangeEnvelope,
+  DeviceApprovalExchangeKeyPair,
   EncryptedEnvelope,
   KeyHierarchy,
   RecoveryKeyEnvelope,

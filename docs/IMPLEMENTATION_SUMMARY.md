@@ -522,13 +522,13 @@ Implemented user-facing areas:
 - Onboarding generates a recovery code and requires storage confirmation.
 - Recovery and approval envelopes are validated against their expected key or
   device identifiers before cryptographic use.
-- Recovery/approval form state is keyed to the active account, successfully
-  used secrets are erased immediately, and displayed approval codes clear at
-  their server-provided expiry without relying on realtime delivery.
+- Recovery form state is keyed to the active account and successfully used
+  secrets are erased immediately.
 - New devices can restore the content key locally with the recovery code.
 - New devices can alternatively request a 15-minute approval from an existing
-  trusted device. The approving device creates a target-bound AES-GCM envelope
-  and displays a one-time code that never reaches Supabase.
+  trusted device. The approving device selects the pending request and creates
+  a target-bound X25519/HKDF-SHA-256/AES-GCM envelope; the new device claims it
+  automatically without displaying or typing a transfer code.
 - Trusted-device restore completes server trust and one-time-envelope claim
   before persisting the decrypted content key. Ambiguous enrollment/approval
   responses are accepted only after the exact committed server state is
@@ -2379,6 +2379,30 @@ No tests were added, changed, or run for this milestone.
 - Strict TypeScript, the 27-check web export, iOS and Android Hermes exports,
   12 security checks, 22 platform checks, and a rendered production-build
   email-only walkthrough pass. No tests were added, changed, or run.
+
+## Selectable Device Approval Milestone
+
+- Replaced the long `ODA1` copy/type flow with a selectable pending-device
+  approval in Account & Privacy.
+- A pending device now creates a short-lived X25519 key pair and stores its
+  private key in device-bound native storage or protected browser storage.
+  Only the public key is uploaded.
+- The approving device uses an ephemeral X25519 key, HKDF-SHA-256, and
+  AES-256-GCM to wrap the content key directly to the selected request.
+- The pending device checks approval status every five seconds, decrypts and
+  claims the handoff automatically, then erases its private exchange key. The
+  server clears the encrypted envelope and request public key after claim.
+- Migration `20260726180000` adds and validates request public keys, disables
+  the legacy four-argument request RPC for authenticated clients, enforces the
+  version-2 envelope binding, and is applied and lint-clean on managed
+  Supabase.
+- The isolated migration-preservation verifier and the complete local
+  Supabase verifier pass. No tests were added, changed, or run.
+- A real two-origin production-build walkthrough used the same account in two
+  browser origins. Both clients displayed the same short request ID, the
+  trusted origin approved the selected pending device, and the second origin
+  unlocked automatically in about 6.5 seconds with no transfer-code input.
+  The approval action disappeared after the one-time envelope was claimed.
 
 ## Internal Security Hardening Milestone
 

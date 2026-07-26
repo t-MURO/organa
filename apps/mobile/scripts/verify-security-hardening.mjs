@@ -6,19 +6,23 @@ const [
   deviceBoundStore,
   authStorage,
   contentKeyVaultNative,
+  deviceApprovalKeyVaultNative,
   deviceIdentity,
   appLockAdapter,
   deletionCache,
   reminderCache,
   androidWidgetSnapshot,
   contentKeyVaultWeb,
+  deviceApprovalKeyVaultWeb,
   exportWriter,
   backupReader,
   payloadBoundsMigration,
+  deviceApprovalExchangeMigration,
 ] = await Promise.all([
   readAppSource("src/security/device-bound-secure-store.ts"),
   readAppSource("src/auth/auth-storage.native.ts"),
   readAppSource("src/security/content-key-vault.native.ts"),
+  readAppSource("src/security/device-approval-key-vault.native.ts"),
   readAppSource("src/security/device-identity.native.ts"),
   readAppSource("src/security/create-app-lock-adapter.native.ts"),
   readAppSource("src/features/account/account-deletion-cache.native.ts"),
@@ -29,11 +33,19 @@ const [
     "src/features/widgets/android-widget-snapshot.android.ts",
   ),
   readAppSource("src/security/content-key-vault.web.ts"),
+  readAppSource("src/security/device-approval-key-vault.web.ts"),
   readAppSource("src/data/create-export-file-writer.native.ts"),
   readAppSource("src/data/create-backup-file-reader.native.ts"),
   readFile(
     new URL(
       "supabase/migrations/20260726120000_encrypted_payload_bounds.sql",
+      repoRoot,
+    ),
+    "utf8",
+  ),
+  readFile(
+    new URL(
+      "supabase/migrations/20260726180000_device_approval_exchange.sql",
       repoRoot,
     ),
     "utf8",
@@ -51,6 +63,7 @@ ok(
 for (const [label, source] of [
   ["auth storage", authStorage],
   ["content-key vault", contentKeyVaultNative],
+  ["device-approval key", deviceApprovalKeyVaultNative],
   ["device identity", deviceIdentity],
   ["app-lock preference", appLockAdapter],
   ["deletion cache", deletionCache],
@@ -70,6 +83,11 @@ ok(
     contentKeyVaultWeb.includes("additionalData: vaultAdditionalData(userId)") &&
     contentKeyVaultWeb.includes("wrapped.version !== 2"),
   "browser content keys are account-bound with legacy migration",
+);
+ok(
+  deviceApprovalKeyVaultWeb.includes("protected-browser-storage") &&
+    !deviceApprovalKeyVaultWeb.includes("localStorage"),
+  "browser device-approval keys use protected storage",
 );
 ok(
   exportWriter.includes("finally") &&
@@ -97,6 +115,18 @@ ok(
       "revoke execute on function public.enforce_encrypted_payload_bounds()",
     ),
   "database bounds encrypted payloads and field metadata",
+);
+ok(
+  deviceApprovalExchangeMigration.includes(
+    "X25519-HKDF-SHA256-AES-256-GCM",
+  ) &&
+    deviceApprovalExchangeMigration.includes(
+      "request_public_key =\n      p_encrypted_content_key ->> 'recipientPublicKey'",
+    ) &&
+    deviceApprovalExchangeMigration.includes(
+      "request_public_key = null",
+    ),
+  "device approval is bound to its exchange key and erases the handoff",
 );
 
 console.log(

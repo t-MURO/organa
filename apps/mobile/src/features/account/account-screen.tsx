@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -62,11 +62,6 @@ export function AccountScreen() {
   const [deletionConfirmation, setDeletionConfirmation] = useState("");
   const [requestingDeletion, setRequestingDeletion] = useState(false);
   const [busyDevice, setBusyDevice] = useState("");
-  const [deviceApproval, setDeviceApproval] = useState<{
-    code: string;
-    deviceId: string;
-    deviceName: string;
-  }>();
   const [updatingLock, setUpdatingLock] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -77,42 +72,6 @@ export function AccountScreen() {
     checkIns.loading ||
     templates.loading ||
     settingsLoading;
-
-  useEffect(() => {
-    if (!deviceApproval) return;
-
-    const target = deviceState.devices.find(
-      (device) => device.id === deviceApproval.deviceId,
-    );
-    if (target?.trustedAt && !target.revokedAt) {
-      setDeviceApproval(undefined);
-      setMessage("Device joined. The one-time code is no longer needed.");
-      return;
-    }
-    if (target && (!target.approvalRequestedAt || target.revokedAt)) {
-      setDeviceApproval(undefined);
-      setMessage("The device approval expired or was canceled.");
-      return;
-    }
-
-    const expiresAt = target?.approvalExpiresAt
-      ? new Date(target.approvalExpiresAt).getTime()
-      : Number.NaN;
-    if (!Number.isFinite(expiresAt)) return;
-
-    const remaining = expiresAt - Date.now();
-    if (remaining <= 0) {
-      setDeviceApproval(undefined);
-      setMessage("The device approval expired or was canceled.");
-      return;
-    }
-
-    const timeout = setTimeout(() => {
-      setDeviceApproval(undefined);
-      setMessage("The device approval expired or was canceled.");
-    }, remaining);
-    return () => clearTimeout(timeout);
-  }, [deviceApproval, deviceState.devices]);
 
   function exportData(): OrganaExportData {
     return {
@@ -284,15 +243,14 @@ export function AccountScreen() {
     }
   }
 
-  async function approveDevice(deviceId: string, deviceName: string) {
+  async function approveDevice(deviceId: string) {
     setBusyDevice(deviceId);
     setError("");
     setMessage("");
     try {
-      const code = await deviceState.approve(deviceId);
-      setDeviceApproval({ code, deviceId, deviceName });
+      await deviceState.approve(deviceId);
       setMessage(
-        "Device approved. Enter the one-time code shown below on the new device.",
+        "Device approved. It will unlock automatically when it checks the request.",
       );
     } catch (nextError) {
       setError(
@@ -311,9 +269,6 @@ export function AccountScreen() {
     setMessage("");
     try {
       await deviceState.rejectApproval(deviceId);
-      if (deviceApproval?.deviceId === deviceId) {
-        setDeviceApproval(undefined);
-      }
       setMessage("The device approval request was rejected.");
     } catch (nextError) {
       setError(
@@ -398,11 +353,11 @@ export function AccountScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardEyebrow}>TRUSTED DEVICES</Text>
-          <Text style={styles.cardTitle}>Reminder ownership</Text>
+          <Text style={styles.cardTitle}>Devices & approvals</Text>
           <Text style={styles.cardText}>
-            The primary device handles reminders. Enable a secondary device
-            only when you want reminders there too. Revoking a device clears it
-            when it reconnects and expires other account sessions.
+            Select a pending device to approve it without copying a code. The
+            primary device handles reminders; enable a secondary only when you
+            want reminders there too.
           </Text>
           {auth.localPreview ? (
             <View style={styles.deviceRow}>
@@ -454,7 +409,9 @@ export function AccountScreen() {
                         {device.revokedAt
                           ? "revoked"
                           : !trusted
-                            ? "awaiting approval"
+                            ? `request ${device.id
+                                .slice(0, 8)
+                                .toUpperCase()} / awaiting approval`
                             : `seen ${formatLastSeen(device.lastSeenAt)}`}
                       </Text>
                     </View>
@@ -477,15 +434,16 @@ export function AccountScreen() {
                   {pendingApproval && !current ? (
                     <View style={styles.deviceActions}>
                       <Pressable
+                        accessibilityLabel={`Approve ${device.name}, request ${device.id
+                          .slice(0, 8)
+                          .toUpperCase()}`}
                         accessibilityRole="button"
                         disabled={busyDevice === device.id}
                         style={styles.miniButton}
-                        onPress={() =>
-                          void approveDevice(device.id, device.name)
-                        }
+                        onPress={() => void approveDevice(device.id)}
                       >
                         <Text style={styles.miniButtonText}>
-                          Approve securely
+                          Approve this device
                         </Text>
                       </Pressable>
                       <Pressable
@@ -566,21 +524,6 @@ export function AccountScreen() {
               );
             })
           )}
-          {deviceApproval ? (
-            <View style={styles.approvalCodePanel}>
-              <Text style={styles.approvalCodeTitle}>
-                ONE-TIME CODE FOR {deviceApproval.deviceName.toUpperCase()}
-              </Text>
-              <Text selectable style={styles.approvalCode}>
-                {deviceApproval.code}
-              </Text>
-              <Text style={styles.cardText}>
-                Enter this code only on device{" "}
-                {deviceApproval.deviceId.slice(0, 8).toUpperCase()}. It expires
-                in 15 minutes and is never sent to Organa.
-              </Text>
-            </View>
-          ) : null}
         </View>
 
         <View style={styles.card}>
@@ -1100,27 +1043,6 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_800ExtraBold",
       fontSize: 6,
       letterSpacing: 0.8,
-    },
-    approvalCodePanel: {
-      backgroundColor: theme.shouldSoft,
-      borderColor: theme.accentStrong,
-      borderRadius: 13,
-      borderWidth: 1,
-      marginTop: 12,
-      padding: 13,
-    },
-    approvalCodeTitle: {
-      color: theme.accentStrong,
-      fontFamily: "Manrope_800ExtraBold",
-      fontSize: 7,
-      letterSpacing: 1,
-    },
-    approvalCode: {
-      color: theme.text,
-      fontFamily: "Manrope_700Bold",
-      fontSize: 10,
-      lineHeight: 18,
-      marginTop: 9,
     },
     revokeButton: { borderColor: theme.must },
     revokeButtonText: { color: theme.must },

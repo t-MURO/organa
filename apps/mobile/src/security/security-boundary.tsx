@@ -33,7 +33,6 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
   const styles = createStyles(theme);
   const [confirmed, setConfirmed] = useState(false);
   const [recoveryInput, setRecoveryInput] = useState("");
-  const [approvalInput, setApprovalInput] = useState("");
   const [busy, setBusy] = useState("");
   const [actionError, setActionError] = useState("");
 
@@ -74,7 +73,6 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
   async function requestApproval() {
     setBusy("request-approval");
     setActionError("");
-    setApprovalInput("");
     try {
       await security.requestTrustedDeviceApproval();
     } catch (error) {
@@ -98,23 +96,6 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
         error instanceof Error
           ? error.message
           : "The device approval status could not be refreshed.",
-      );
-    } finally {
-      setBusy("");
-    }
-  }
-
-  async function restoreFromApproval() {
-    setBusy("restore-approval");
-    setActionError("");
-    try {
-      await security.restoreWithApprovalCode(approvalInput);
-      setApprovalInput("");
-    } catch (error) {
-      setActionError(
-        error instanceof Error
-          ? error.message
-          : "The one-time approval code could not be used.",
       );
     } finally {
       setBusy("");
@@ -248,7 +229,7 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
                 <View style={styles.approvalPanel}>
                   <Text style={styles.approvalTitle}>
                     {security.approvalRequest.approved
-                      ? "A trusted device approved this request."
+                      ? "Approved. Unlocking this device..."
                       : "Waiting for a trusted device"}
                   </Text>
                   <Text style={styles.hint}>
@@ -257,36 +238,10 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
                     {formatExpiry(security.approvalRequest.expiresAt)}
                   </Text>
                   {security.approvalRequest.approved ? (
-                    <>
-                      <TextInput
-                        accessibilityLabel="One-time device approval code"
-                        autoCapitalize="characters"
-                        autoCorrect={false}
-                        multiline
-                        placeholder="ODA1-XXXX-XXXX-..."
-                        placeholderTextColor={theme.textMuted}
-                        style={[styles.input, styles.approvalInput]}
-                        value={approvalInput}
-                        onChangeText={setApprovalInput}
-                      />
-                      <Pressable
-                        accessibilityRole="button"
-                        disabled={!approvalInput.trim() || Boolean(busy)}
-                        style={[
-                          styles.primaryButton,
-                          !approvalInput.trim()
-                            ? styles.primaryButtonDisabled
-                            : undefined,
-                        ]}
-                        onPress={() => void restoreFromApproval()}
-                      >
-                        <Text style={styles.primaryButtonText}>
-                          {busy === "restore-approval"
-                            ? "Verifying approval..."
-                            : "Unlock with approval code"}
-                        </Text>
-                      </Pressable>
-                    </>
+                    <Text style={styles.description}>
+                      Keep Organa open for a moment. The encrypted key is being
+                      transferred directly to this device.
+                    </Text>
                   ) : null}
                   <Pressable
                     accessibilityRole="button"
@@ -469,11 +424,6 @@ function createStyles(theme: OrganaTheme) {
     recoveryInput: {
       minHeight: 92,
       marginTop: 20,
-      textAlignVertical: "top",
-    },
-    approvalInput: {
-      minHeight: 74,
-      marginTop: 14,
       textAlignVertical: "top",
     },
     approvalPanel: {

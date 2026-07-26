@@ -39,8 +39,8 @@ The criterion-by-criterion status and evidence boundary is recorded in
   user mutation, including recurring-task pairs and multi-record restores
 - [x] Explicitly paginated encrypted pulls and visible read-side sync health
 - [x] Recovery-key confirmation and recovery-code restore flow
-- [x] Short-lived encrypted new-device approval by an existing trusted device,
-  including explicit approve/reject and one-time target-bound key handoff
+- [x] Short-lived encrypted new-device approval by selecting a pending device,
+  including explicit approve/reject and automatic target-bound key handoff
 - [x] Trusted reminder-device controls and reconnect-time revocation cleanup
 - [x] Local readable/encrypted exports, validated backup restore/merge, and
   one-hour deletion UI/backend worker
@@ -170,9 +170,11 @@ Local evidence:
   its payload uses `aes128gcm` encryption without plaintext leakage
 - local Supabase sends the six-digit code expected by both the first-time and
   returning-user passwordless sign-in forms
-- a two-origin browser walkthrough completed recovery setup, requested and
-  approved a target-bound device handoff, unlocked the second client, removed
-  the claimed code from the approving UI, and kept secondary reminders off
+- a fresh two-origin production-build browser walkthrough completed recovery
+  setup, requested approval from the second origin, displayed the same short
+  request ID on both clients, and approved the selected device without a
+  transfer-code field; the second client unlocked automatically in about 6.5
+  seconds and the approval action disappeared after claim
 - a task created on the newly approved browser appeared on the original browser
   through encrypted realtime synchronization without a reload
 - a managed rendered-client drill used independently enrolled production web
@@ -449,13 +451,15 @@ Local evidence:
 - the internal security audit in `docs/INTERNAL_SECURITY_AUDIT.md` resolved
   device-migratable native secrets, retained native export/import cache files,
   account-unbound browser vault records, and unbounded encrypted mutation
-  payloads; `pnpm verify:security` guards all four fixes with 12 static checks
+  payloads; `pnpm verify:security` now guards those fixes plus the
+  device-approval exchange-key boundary with 15 static checks
 - managed migration `20260726120000` applies encrypted payload and field
-  metadata bounds; the linked project matches all ten local migrations and
+  metadata bounds; migration `20260726180000` adds target-bound approval
+  exchange keys; the linked project matches all eleven local migrations and
   linked schema lint reports no errors
 - with Docker `28.5.2` healthy, the Docker-backed migration-preservation
   verifier passes all six isolated-schema upgrade checks across the complete
-  ten-migration chain
+  eleven-migration chain
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks
@@ -591,7 +595,7 @@ Local evidence:
   provider discovery, controls, divider, or programmatic OAuth start
 - Deferred post-beta: configure and exercise Google and GitHub before enabling
   the retained social OAuth path
-- [x] Apply all ten migrations and pass linked database lint against the
+- [x] Apply all eleven migrations and pass linked database lint against the
   managed EU connected-test project
 - [ ] Repeat migration application and lint against the selected production
   deployment

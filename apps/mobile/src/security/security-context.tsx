@@ -1,4 +1,5 @@
 import {
+  createDeviceApprovalExchangeKeyPair,
   createKeyHierarchy,
   createRecoveryEnrollmentProof,
   decryptJson,
@@ -7,7 +8,7 @@ import {
   type ContentKey,
   type EncryptedEnvelope,
   type RecoveryKeyEnvelope,
-  unwrapDeviceApproval,
+  unwrapDeviceApprovalExchange,
   unwrapContentKey,
 } from "@organa/crypto";
 import {
@@ -23,9 +24,10 @@ import { Platform } from "react-native";
 import { useAuth } from "../auth/auth-context";
 import { supabase } from "../auth/supabase";
 import { contentKeyVault } from "./content-key-vault";
+import { deviceApprovalKeyVault } from "./device-approval-key-vault";
 import { getDeviceIdentity, type DeviceIdentity } from "./device-identity";
 import {
-  parseDeviceApprovalEnvelope,
+  parseDeviceApprovalExchangeEnvelope,
   parseRecoveryKeyEnvelope,
 } from "./security-envelope-validation";
 
@@ -55,13 +57,13 @@ interface SecurityContextValue {
   confirmRecoverySaved(): Promise<void>;
   refreshDeviceApproval(): Promise<void>;
   requestTrustedDeviceApproval(): Promise<void>;
-  restoreWithApprovalCode(code: string): Promise<void>;
   restoreWithRecoveryCode(code: string): Promise<void>;
 }
 
 export interface DeviceApprovalRequest {
   approved: boolean;
   expiresAt: string;
+  recipientPublicKey: string;
   requestedAt: string;
 }
 
@@ -98,6 +100,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
   const [restoreRequired, setRestoreRequired] = useState(false);
   const [approvalRequest, setApprovalRequest] =
     useState<DeviceApprovalRequest | null>(null);
+  const approvalClaimRef = useRef<Promise<void> | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -227,7 +230,14 @@ export function SecurityProvider({ children }: PropsWithChildren) {
     }
 
     const interval = setInterval(
-      () => void refreshDeviceApproval().catch(() => undefined),
+      () =>
+        void refreshDeviceApproval().catch((nextError) => {
+          setError(
+            nextError instanceof Error
+              ? nextError.message
+              : "The approved device could not be unlocked.",
+          );
+        }),
       5_000,
     );
     return () => clearInterval(interval);
@@ -285,6 +295,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
       contentKey: restoredKey,
       recoveryEnvelope,
     });
+    await deviceApprovalKeyVault.remove(auth.user.id, device.id);
     setScopedContentKey({ key: restoredKey, ownerId: auth.user.id });
     setRestoreRequired(false);
   }
@@ -294,11 +305,14 @@ export function SecurityProvider({ children }: PropsWithChildren) {
       throw new Error("A connected account is required for device approval.");
     }
     setError("");
+    const keyPair = createDeviceApprovalExchangeKeyPair();
+    await deviceApprovalKeyVault.set(auth.user.id, device.id, keyPair);
     const result = await supabase.rpc("request_device_approval", {
       p_device_id: device.id,
       p_device_proof: device.secret,
       p_name: deviceName(),
       p_platform: Platform.OS,
+      p_request_public_key: keyPair.publicKey,
     });
     if (result.error) throw result.error;
     setApprovalRequest(await loadDeviceApproval(auth.user.id, device.id));
@@ -309,57 +323,94 @@ export function SecurityProvider({ children }: PropsWithChildren) {
       setApprovalRequest(null);
       return;
     }
-    setApprovalRequest(await loadDeviceApproval(auth.user.id, device.id));
+    const nextRequest = await loadDeviceApproval(
+      auth.user.id,
+      device.id,
+    );
+    setApprovalRequest(nextRequest);
+    if (nextRequest?.approved) {
+      await completeTrustedDeviceApproval();
+    }
   }
 
-  async function restoreWithApprovalCode(code: string) {
+  async function completeTrustedDeviceApproval() {
     if (!auth.user || !device || !supabase) {
       throw new Error("Device approval setup is incomplete.");
     }
-    setError("");
-    const result = await supabase
-      .from("device_approvals")
-      .select("encrypted_content_key,expires_at,claimed_at")
-      .eq("user_id", auth.user.id)
-      .eq("device_id", device.id)
-      .maybeSingle();
-    if (result.error) throw result.error;
-    if (
-      !result.data?.encrypted_content_key ||
-      result.data.claimed_at ||
-      new Date(result.data.expires_at).getTime() <= Date.now()
-    ) {
-      throw new Error(
-        "The trusted-device approval is unavailable or has expired.",
+    if (approvalClaimRef.current) return approvalClaimRef.current;
+
+    const userId = auth.user.id;
+    const currentDevice = device;
+    const claim = (async () => {
+      setError("");
+      const [result, keyPair] = await Promise.all([
+        supabase
+          .from("device_approvals")
+          .select(
+            "encrypted_content_key,request_public_key,expires_at,claimed_at",
+          )
+          .eq("user_id", userId)
+          .eq("device_id", currentDevice.id)
+          .maybeSingle(),
+        deviceApprovalKeyVault.get(userId, currentDevice.id),
+      ]);
+      if (result.error) throw result.error;
+      if (
+        !result.data?.encrypted_content_key ||
+        !result.data.request_public_key ||
+        result.data.claimed_at ||
+        new Date(result.data.expires_at).getTime() <= Date.now()
+      ) {
+        throw new Error(
+          "The trusted-device approval is unavailable or has expired.",
+        );
+      }
+      if (
+        !keyPair ||
+        keyPair.publicKey !== result.data.request_public_key
+      ) {
+        throw new Error(
+          "This approval belongs to an earlier request. Ask the trusted device again.",
+        );
+      }
+
+      const restoredKey = await unwrapDeviceApprovalExchange(
+        parseDeviceApprovalExchangeEnvelope(
+          result.data.encrypted_content_key,
+          currentDevice.id,
+          keyPair.publicKey,
+        ),
+        currentDevice.id,
+        keyPair,
       );
-    }
+      const completion = await supabase.rpc("complete_device_approval", {
+        p_device_id: currentDevice.id,
+        p_device_proof: currentDevice.secret,
+      });
+      if (
+        completion.error &&
+        !(await deviceApprovalCompleted(userId, currentDevice.id))
+      ) {
+        throw completion.error;
+      }
 
-    const restoredKey = await unwrapDeviceApproval(
-      code,
-      parseDeviceApprovalEnvelope(
-        result.data.encrypted_content_key,
-        device.id,
-      ),
-      device.id,
-    );
-    const completion = await supabase.rpc("complete_device_approval", {
-      p_device_id: device.id,
-      p_device_proof: device.secret,
-    });
-    if (
-      completion.error &&
-      !(await deviceApprovalCompleted(auth.user.id, device.id))
-    ) {
-      throw completion.error;
+      await contentKeyVault.set(userId, {
+        contentKey: restoredKey,
+        recoveryEnvelope,
+      });
+      await deviceApprovalKeyVault.remove(userId, currentDevice.id);
+      setScopedContentKey({ key: restoredKey, ownerId: userId });
+      setApprovalRequest(null);
+      setRestoreRequired(false);
+    })();
+    approvalClaimRef.current = claim;
+    try {
+      await claim;
+    } finally {
+      if (approvalClaimRef.current === claim) {
+        approvalClaimRef.current = null;
+      }
     }
-
-    await contentKeyVault.set(auth.user.id, {
-      contentKey: restoredKey,
-      recoveryEnvelope,
-    });
-    setScopedContentKey({ key: restoredKey, ownerId: auth.user.id });
-    setApprovalRequest(null);
-    setRestoreRequired(false);
   }
 
   async function encryptRecord(
@@ -402,7 +453,6 @@ export function SecurityProvider({ children }: PropsWithChildren) {
         refreshDeviceApproval,
         requestTrustedDeviceApproval,
         restoreRequired,
-        restoreWithApprovalCode,
         restoreWithRecoveryCode,
       }}
     >
@@ -449,13 +499,16 @@ async function loadDeviceApproval(userId: string, deviceId: string) {
   if (!supabase) return null;
   const result = await supabase
     .from("device_approvals")
-    .select("requested_at,approved_at,expires_at,claimed_at")
+    .select(
+      "requested_at,approved_at,expires_at,claimed_at,request_public_key",
+    )
     .eq("user_id", userId)
     .eq("device_id", deviceId)
     .maybeSingle();
   if (result.error) throw result.error;
   if (
     !result.data ||
+    !isApprovalPublicKey(result.data.request_public_key) ||
     result.data.claimed_at ||
     new Date(result.data.expires_at).getTime() <= Date.now()
   ) {
@@ -464,6 +517,7 @@ async function loadDeviceApproval(userId: string, deviceId: string) {
   return {
     approved: Boolean(result.data.approved_at),
     expiresAt: result.data.expires_at,
+    recipientPublicKey: result.data.request_public_key,
     requestedAt: result.data.requested_at,
   };
 }
@@ -524,6 +578,10 @@ async function deviceApprovalCompleted(userId: string, deviceId: string) {
 
 function deviceName() {
   return Platform.OS === "web" ? "Web browser" : `${Platform.OS} device`;
+}
+
+function isApprovalPublicKey(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
 }
 
 export function useSecurity() {
