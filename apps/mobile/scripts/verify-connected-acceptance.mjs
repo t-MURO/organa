@@ -12,7 +12,9 @@ import { readConnectedSupabaseConfig } from "./connected-supabase-config.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
-const options = parseArguments(process.argv.slice(2));
+const options = readOperatorInput(() =>
+  parseArguments(process.argv.slice(2)),
+);
 const configPath = resolve(
   repositoryRoot,
   options.configPath ?? ".organa-connected-supabase.json",
@@ -21,7 +23,9 @@ const evidenceDirectory = resolve(
   repositoryRoot,
   ".organa-connected-evidence",
 );
-const config = readConnectedSupabaseConfig(configPath);
+const config = readOperatorInput(() =>
+  readConnectedSupabaseConfig(configPath),
+);
 let activeChild;
 let interruptedSignal;
 const signalHandlers = new Map();
@@ -29,6 +33,22 @@ const handledSignals =
   process.platform === "win32"
     ? ["SIGINT", "SIGTERM"]
     : ["SIGHUP", "SIGINT", "SIGTERM"];
+
+function readOperatorInput(read) {
+  try {
+    return read();
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Connected acceptance configuration is invalid.";
+    console.error(`Connected acceptance cannot start: ${message}`);
+    console.error(
+      "Prepare .organa-connected-supabase.json from the checked-in example, set mode 600, and follow docs/SELF_HOSTED_TESTING.md.",
+    );
+    process.exit(1);
+  }
+}
 
 for (const signal of handledSignals) {
   const handler = () => {
