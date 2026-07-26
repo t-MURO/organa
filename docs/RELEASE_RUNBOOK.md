@@ -168,11 +168,13 @@ pnpm verify:connected:acceptance:full
 pnpm configure:connected:drill-consent -- --web-push disabled --one-hour-deletion disabled
 ```
 
-Backend-only evidence may be gathered independently, but its distinct scope
-and phase name cannot satisfy this release command. The full scope confirms
-the controlled-beta email-only Auth policy. Each destructive consent is
-explicit and per-run; the configuration command changes only those booleans
-through an atomic, mode-preserving replacement and never prints credentials.
+Backend-only and partial evidence may be gathered independently, but their
+distinct scopes and incomplete phase sets cannot satisfy this release command.
+Only one run that requests and passes all three phases records `scope: "full"`.
+The provider-qualified phase confirms the controlled-beta email-only Auth
+policy. Each destructive consent is explicit and per-run; the configuration
+command changes only those booleans through an atomic, mode-preserving
+replacement and never prints credentials.
 
 After every source, connected, physical-device, browser, artifact, audit, and
 review gate is complete, run:

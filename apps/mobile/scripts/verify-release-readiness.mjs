@@ -344,7 +344,7 @@ function findPassedConnectedEvidence({
       continue;
     }
     if (
-      evidence.runnerVersion !== 5 ||
+      evidence.runnerVersion !== 6 ||
       evidence.scope !== "full" ||
       evidence.status !== "passed" ||
       evidence.organaCommit !== revision ||

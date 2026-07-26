@@ -2678,3 +2678,16 @@ must have direct evidence before production launch.
   and Push checks, production backend repetition, physical devices, store
   signing, and external reviews remain mandatory.
 - No tests were added, changed, or run.
+
+## Connected Evidence Scope Integrity Milestone
+
+- Connected evidence schema version 6 now labels a run `full` only when both
+  scheduled Web Push and one-hour deletion phases were requested alongside the
+  provider-qualified backend phase.
+- A provider-qualified backend run without both scheduled phases records
+  `partial`; the reduced backend contract remains `backend-only`.
+- The strict release verifier rejects every older ambiguous schema version as
+  well as every incomplete phase set. A one-phase success can no longer
+  describe itself as a full connected acceptance run.
+- Connected-run summaries now use correct singular/plural phase wording.
+- No tests were added, changed, or run.

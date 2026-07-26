@@ -81,7 +81,7 @@ if (options.includeDeletion && !config.allowOneHourDeletionDrill) {
 }
 
 const organaCommit = readCleanCommit();
-const evidenceScope = options.backendOnly ? "backend-only" : "full";
+const evidenceScope = readEvidenceScope(options);
 const phases = [
   options.backendOnly
     ? {
@@ -216,7 +216,7 @@ const evidencePath = writeEvidence({
     organaCommitConfirmedAtFinish,
     phases: phaseEvidence,
     platform: `${process.platform}-${process.arch}`,
-    runnerVersion: 5,
+    runnerVersion: 6,
     scope: evidenceScope,
     startedAt: startedAt.toISOString(),
     status: runFailure ? "failed" : "passed",
@@ -231,7 +231,9 @@ console.log(
 );
 if (runFailure) throw runFailure;
 console.log(
-  `Connected ${evidenceScope} acceptance run passed (${phaseEvidence.length} phases).`,
+  `Connected ${evidenceScope} acceptance run passed (${phaseEvidence.length} ${
+    phaseEvidence.length === 1 ? "phase" : "phases"
+  }).`,
 );
 
 function runPhase(phase) {
@@ -361,6 +363,16 @@ function parseArguments(argumentsList) {
   }
 
   return parsed;
+}
+
+function readEvidenceScope({
+  backendOnly,
+  includeDeletion,
+  includeWebPush,
+}) {
+  if (backendOnly) return "backend-only";
+  if (includeDeletion && includeWebPush) return "full";
+  return "partial";
 }
 
 function requireOptionValue(argumentsList, index, option) {

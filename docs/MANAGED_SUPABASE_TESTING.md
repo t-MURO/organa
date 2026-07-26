@@ -237,12 +237,16 @@ This evidence does not prove email delivery, deferred OAuth redirects,
 permission-granted browser Push, physical-device behavior, or a production
 deployment repeat.
 
-Run the full controlled-beta scope:
+Run the provider-qualified backend baseline independently:
 
 ```sh
 pnpm verify:connected:acceptance
-pnpm verify:connected:acceptance:web-push
 ```
+
+This command records `scope: "partial"` because it does not request the
+scheduled Web Push and one-hour deletion phases. Only
+`pnpm verify:connected:acceptance:full`, with both explicit drill consents
+enabled, records `scope: "full"` and can satisfy the release-readiness gate.
 
 Enable the Web Push scheduler consent without opening or printing the
 credential-bearing private config:
