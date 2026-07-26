@@ -886,7 +886,7 @@ function createStyles(theme: OrganaTheme) {
   return StyleSheet.create({
     page: {
       alignSelf: "center",
-      maxWidth: 1100,
+      maxWidth: 1480,
       paddingBottom: 60,
       paddingHorizontal: 28,
       paddingTop: 34,

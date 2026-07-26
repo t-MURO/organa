@@ -298,7 +298,7 @@ function createStyles(theme: OrganaTheme) {
     },
     page: {
       alignSelf: "center",
-      maxWidth: 1080,
+      maxWidth: 1480,
       paddingBottom: 60,
       paddingHorizontal: 28,
       paddingTop: 36,

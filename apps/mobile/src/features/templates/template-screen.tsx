@@ -678,7 +678,7 @@ function createStyles(theme: OrganaTheme) {
     loadingText: { color: theme.textMuted, fontFamily: "Manrope_600SemiBold" },
     page: {
       alignSelf: "center",
-      maxWidth: 1220,
+      maxWidth: 1480,
       paddingBottom: 60,
       paddingHorizontal: 28,
       paddingTop: 34,

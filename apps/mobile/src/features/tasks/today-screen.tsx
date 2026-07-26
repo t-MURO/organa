@@ -961,10 +961,11 @@ function createStyles(theme: OrganaTheme) {
     },
     page: {
       alignSelf: "center",
-      maxWidth: 1400,
+      maxWidth: 1560,
       paddingBottom: 60,
       paddingHorizontal: 24,
       paddingTop: 30,
+      width: "100%",
     },
     pageCompact: {
       alignSelf: "stretch",
