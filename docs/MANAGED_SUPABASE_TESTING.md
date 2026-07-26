@@ -217,9 +217,10 @@ head of the same twelve-migration chain checked into this repository.
 The remaining advisor notices are an explicit review inventory, not a blanket
 clean bill of health: fifteen authenticated security-definer RPCs implement
 Organa's proof-checked privileged API, password leak protection is not used by
-the passwordless-only controlled beta, and three scheduler/supporting indexes
-are currently reported unused. The connected acceptance verifier remains the
-behavioral boundary check for the intentional RPCs.
+the passwordless-only controlled beta, and scheduler/supporting indexes may be
+reported unused depending on which live paths have run. The connected
+acceptance verifier remains the behavioral boundary check for the intentional
+RPCs.
 
 ## Captured Backend Evidence
 

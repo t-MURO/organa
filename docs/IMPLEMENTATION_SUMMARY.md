@@ -2713,7 +2713,7 @@ must have direct evidence before production launch.
   exposed-helper, per-row-auth, or unindexed-foreign-key findings. Remaining
   notices are explicitly retained for fifteen intentional authenticated
   security-definer RPCs, password leak protection in the passwordless-only
-  beta, and three currently unused scheduler/supporting indexes.
+  beta, and workload-dependent unused-index information.
 - The six migration-preservation checks, 75 local Supabase checks, 13 deletion
   function checks, 15 Web Push checks, 18 security checks, strict TypeScript,
   and `git diff --check` pass. No tests were added, changed, or run.
