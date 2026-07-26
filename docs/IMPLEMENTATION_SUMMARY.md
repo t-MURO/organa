@@ -1947,6 +1947,11 @@ No tests were added, changed, or run for this milestone.
 - At `390px`, Brain Dump retained its compact header and bottom navigation,
   and document client/scroll widths both measured `390px`, proving the desktop
   caps introduced no horizontal overflow.
+- Intermediate browser checks cover the adaptive seam rather than only the
+  endpoints: at `900px`, the `250px` sidebar leaves a `650px` main column where
+  Today remains single-column and Library wraps to `580px` cards; at `1120px`,
+  Check-In uses its two-column view inside an `870px` main column. Neither
+  viewport introduced document overflow.
 - Strict TypeScript, the 18-check production PWA export with eight static
   routes and 22 precache URLs, and `git diff --check` pass. No tests were
   added, changed, or run.

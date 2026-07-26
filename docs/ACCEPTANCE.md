@@ -379,6 +379,11 @@ Local evidence:
 - the same Brain Dump route at a `390px` viewport measured equal document
   client and scroll widths, retained the compact header and bottom navigation,
   and introduced no horizontal overflow
+- intermediate adaptive checks measured a `650px` main column at the `900px`
+  sidebar breakpoint: Today retained its single-column board and Library
+  wrapped each preset to a `580px` card without document overflow; at `1120px`,
+  Check-In used its two-column composition inside an `870px` main column
+  without document overflow
 - recovery setup/restore, app lock, and deletion safety screens expose a main
   landmark, a heading, and non-interruptive loading status; the deletion
   countdown remains readable on demand without announcing every second
