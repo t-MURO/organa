@@ -244,16 +244,32 @@ pnpm verify:connected:acceptance
 pnpm verify:connected:acceptance:web-push
 ```
 
-Enable `allowWebPushSchedulerDrill` in the private config only for the
-dedicated Web Push phase. Use
+Enable the Web Push scheduler consent without opening or printing the
+credential-bearing private config:
+
+```sh
+pnpm configure:connected:drill-consent -- --web-push enabled
+```
+
+Use
 `pnpm verify:connected:acceptance:backend:web-push` when the public Auth-policy
 check is intentionally out of scope; otherwise use the full command. The
 synthetic endpoint uses the reserved `.invalid` namespace and must remain
 outside the production Push-host allowlist. A pass proves the real cron path
 removes the rejected endpoint without outbound access.
 
-Enable `allowOneHourDeletionDrill` only when an operator is prepared to wait
-for and observe the full destructive one-hour deletion drill.
+Enable the deletion consent only when an operator is prepared to wait for and
+observe the full destructive one-hour deletion drill:
+
+```sh
+pnpm configure:connected:drill-consent -- --one-hour-deletion enabled
+```
+
+Reset both consents immediately after the run:
+
+```sh
+pnpm configure:connected:drill-consent -- --web-push disabled --one-hour-deletion disabled
+```
 
 The production candidate must repeat every connected phase against its final
 reviewed backend and use a separate release evidence manifest.

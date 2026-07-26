@@ -160,12 +160,16 @@ migration version. Other deployment types are rejected.
 Run all connected backend phases into one commit-bound evidence file:
 
 ```sh
+pnpm configure:connected:drill-consent -- --web-push enabled --one-hour-deletion enabled
 pnpm verify:connected:acceptance:full
+pnpm configure:connected:drill-consent -- --web-push disabled --one-hour-deletion disabled
 ```
 
 Backend-only evidence may be gathered independently, but its distinct scope
 and phase name cannot satisfy this release command. The full scope confirms
-the controlled-beta email-only Auth policy.
+the controlled-beta email-only Auth policy. Each destructive consent is
+explicit and per-run; the configuration command changes only those booleans
+through an atomic, mode-preserving replacement and never prints credentials.
 
 After every source, connected, physical-device, browser, artifact, audit, and
 review gate is complete, run:
