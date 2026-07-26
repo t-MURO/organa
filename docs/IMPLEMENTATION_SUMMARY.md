@@ -2140,6 +2140,35 @@ No tests were added, changed, or run for this milestone.
   exports, Node syntax, and diff hygiene pass. The live 609-package production
   dependency audit reports zero advisories at every severity.
 
+## Managed Rendered-Client Acceptance Evidence
+
+- A disposable confirmed managed account completed first-device recovery setup
+  and restored independently enrolled production web origins through the real
+  protected auth storage and content-key vault. No password option or
+  acceptance bypass was added to shipped source.
+- Bidirectional rendered task changes arrived in 283 ms and 281 ms. A
+  proxy-controlled offline task remained local with one visible encrypted
+  change waiting, then reached the secondary client after reconnect.
+- A temporary trusted seeder wrote 2,000 domain-valid, field-encrypted tasks
+  through the normal mutation RPC. The managed backend held exactly 2,003
+  active task records, and a fresh production client decrypted sampled
+  first/intermediate/final pages plus the expected 459-task day count.
+- Nine rendered exact-title searches had a 74 ms median. A signed-in production
+  client reopened and searched the 2,000-task cache offline in 1,148 ms, then
+  returned to current encrypted sync after reconnect.
+- Concurrent Brain Dump additions converged on two clients. Seventy sequential
+  edits converged in 10,085 ms; 64 more edits from a third client converged on
+  both receivers in 11,635 ms. Competing managed compaction retained six active
+  deltas, below the 64-update threshold.
+- A Brain Dump edit made through the disconnected proxy stayed local and absent
+  from both connected clients. It converged after reconnect, remained visible
+  on the originating client, and returned to current encrypted sync.
+- The synthetic account was reconciled and deleted. Temporary credentials,
+  harnesses, proxy, servers, and browser tabs were removed. Detailed sanitized
+  evidence and scope limits are recorded in
+  `docs/MANAGED_RENDERED_CLIENT_EVIDENCE.md`. No tests were added, changed, or
+  run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
@@ -2148,8 +2177,9 @@ Connected Supabase project:
   providers.
 - Repeat cross-account RLS, unauthorized RPC, trusted-device, encrypted sync,
   and Web Push scheduler checks against the selected production deployment.
-- Complete rendered-client large-account, network-transition, reminder-device
-  cleanup, and two-client editing drills.
+- Complete rendered reminder-device cleanup, then repeat large-account,
+  network-transition, compaction, and two-client editing against production and
+  the supported release-browser matrix.
 - Validate permission-granted Web Push delivery, replacement, cancellation,
   deep links, denial fallback, and sign-out in every supported release browser.
 - Repeat the scheduled deletion finalizer drill against the hosted project.

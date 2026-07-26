@@ -174,6 +174,25 @@ Local evidence:
   the claimed code from the approving UI, and kept secondary reminders off
 - a task created on the newly approved browser appeared on the original browser
   through encrypted realtime synchronization without a reload
+- a managed rendered-client drill used independently enrolled production web
+  origins to measure task create and edit delivery at 283 ms and 281 ms,
+  respectively; a proxy-controlled offline mutation remained local with one
+  visible encrypted change waiting, then reached the other client after
+  reconnect
+- the same drill loaded 2,003 managed encrypted task records into a fresh
+  trusted client, sampled first/intermediate/final pagination, rendered the
+  expected 459-task day count, and measured a 74 ms median across nine
+  rendered searches of the 2,000-task synthetic dataset
+- that large account reopened and searched its cached data in 1,148 ms with
+  the backend proxy disconnected, then returned to current encrypted sync
+- two rendered Brain Dump clients converged concurrent additions; 70
+  sequential edits converged in 10,085 ms, and 64 further edits from a third
+  client converged on both receivers in 11,635 ms while managed compaction
+  retained only six active deltas
+- a proxy-isolated Brain Dump edit remained visible only on its offline
+  client, then converged on both connected clients after reconnect; detailed
+  method, metrics, cleanup, and evidence boundaries are recorded in
+  `docs/MANAGED_RENDERED_CLIENT_EVIDENCE.md`
 - a connected disposable-browser drill enrolled a first device, changed only
   that server record to untrusted, received the private device-channel update,
   erased local security state, and returned to sign-in; signing the same
@@ -544,6 +563,13 @@ Local evidence:
   checks against the selected production deployment
 - [x] Two-session encrypted sync latency and missed-broadcast recovery against
   the managed connected-test project
+- [x] Rendered bidirectional task editing, isolated offline outbox recovery,
+  and 2,003-record paginated hydration/search against the managed test project
+- [x] Rendered Brain Dump concurrent editing, offline/reconnect,
+  sustained-volume, and competing-compaction drills against the managed test
+  project
+- [ ] Repeat the rendered sync and large-account drills against production and
+  the supported release-browser matrix
 - [x] Device reminder ownership and revocation across live managed sessions
 - [x] Configure VAPID/function secrets and verify the active once-per-minute
   Web Push dispatcher schedule on the managed connected-test project
