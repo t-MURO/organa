@@ -6,7 +6,9 @@ const [
   appConfigText,
   packageText,
   gradleProperties,
+  androidAppBuildGradle,
   androidManifest,
+  workManagerPlugin,
   podfilePropertiesText,
   xcodeProject,
   platformSupport,
@@ -16,8 +18,16 @@ const [
   readFile(new URL("app.json", appRoot), "utf8"),
   readFile(new URL("package.json", appRoot), "utf8"),
   readFile(new URL("android/gradle.properties", appRoot), "utf8"),
+  readFile(new URL("android/app/build.gradle", appRoot), "utf8"),
   readFile(
     new URL("android/app/src/main/AndroidManifest.xml", appRoot),
+    "utf8",
+  ),
+  readFile(
+    new URL(
+      "plugins/with-android-work-manager-resolution.js",
+      appRoot,
+    ),
     "utf8",
   ),
   readFile(new URL("ios/Podfile.properties.json", appRoot), "utf8"),
@@ -52,6 +62,24 @@ ok(
   packageJson.dependencies.expo === "~57.0.8" &&
     packageJson.dependencies["expo-build-properties"] === "~57.0.7",
   "Expo and build-properties versions match the selected contract",
+);
+ok(
+  appConfig.plugins.includes(
+    "./plugins/with-android-work-manager-resolution",
+  ) &&
+    workManagerPlugin.includes(
+      'implementation "androidx.work:work-runtime:2.8.1"',
+    ) &&
+    workManagerPlugin.includes(
+      'implementation "androidx.work:work-runtime-ktx:2.8.1"',
+    ) &&
+    androidAppBuildGradle.includes(
+      'implementation "androidx.work:work-runtime:2.8.1"',
+    ) &&
+    androidAppBuildGradle.includes(
+      'implementation "androidx.work:work-runtime-ktx:2.8.1"',
+    ),
+  "source plugin and generated app align WorkManager runtime artifacts",
 );
 
 for (const property of [

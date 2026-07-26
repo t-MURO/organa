@@ -154,7 +154,8 @@
             "buildToolsVersion": "36.0.0"
           }
         }
-      ]
+      ],
+      "./plugins/with-android-work-manager-resolution"
     ],
     "experiments": {
       "typedRoutes": true
