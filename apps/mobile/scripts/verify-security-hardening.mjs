@@ -20,6 +20,10 @@ const [
   backupReader,
   payloadBoundsMigration,
   deviceApprovalExchangeMigration,
+  sealedData,
+  recordEncryption,
+  deviceApproval,
+  recoveryKey,
 ] = await Promise.all([
   readAppSource("src/security/device-bound-secure-store.ts"),
   readAppSource("src/auth/auth-storage.native.ts"),
@@ -52,6 +56,22 @@ const [
       "supabase/migrations/20260726180000_device_approval_exchange.sql",
       repoRoot,
     ),
+    "utf8",
+  ),
+  readFile(
+    new URL("packages/crypto/src/sealed-data.ts", repoRoot),
+    "utf8",
+  ),
+  readFile(
+    new URL("packages/crypto/src/record-encryption.ts", repoRoot),
+    "utf8",
+  ),
+  readFile(
+    new URL("packages/crypto/src/device-approval.ts", repoRoot),
+    "utf8",
+  ),
+  readFile(
+    new URL("packages/crypto/src/recovery-key.ts", repoRoot),
     "utf8",
   ),
 ]);
@@ -146,6 +166,19 @@ ok(
       "request_public_key = null",
     ),
   "device approval is bound to its exchange key and erases the handoff",
+);
+ok(
+  sealedData.includes(
+    "AESSealedData.fromCombined(toByteArray(combined))",
+  ) &&
+    [recordEncryption, deviceApproval, recoveryKey].every(
+      (source) =>
+        source.includes("sealedDataFromBase64(envelope.combined)") &&
+        !source.includes(
+          "AESSealedData.fromCombined(envelope.combined)",
+        ),
+    ),
+  "stored AES envelopes cross native boundaries as decoded bytes",
 );
 
 console.log(

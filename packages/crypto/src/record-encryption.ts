@@ -7,10 +7,10 @@ import {
   aesEncryptAsync,
   AESEncryptionKey,
   AESKeySize,
-  AESSealedData,
   randomUUID,
 } from "expo-crypto";
 
+import { sealedDataFromBase64 } from "./sealed-data";
 import type { ContentKey, EncryptedEnvelope } from "./types";
 
 export async function createContentKey(): Promise<ContentKey> {
@@ -97,7 +97,7 @@ export async function decryptJson<T>(
   }
 
   const key = await importContentKey(contentKey);
-  const sealed = AESSealedData.fromCombined(envelope.combined);
+  const sealed = sealedDataFromBase64(envelope.combined);
   const plaintext = await aesDecryptAsync(sealed, key, {
     additionalData: new TextEncoder().encode(expectedAad),
   });

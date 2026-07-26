@@ -3,12 +3,12 @@ import {
   aesEncryptAsync,
   AESEncryptionKey,
   AESKeySize,
-  AESSealedData,
   CryptoDigestAlgorithm,
   digestStringAsync,
 } from "expo-crypto";
 
 import { createContentKey } from "./record-encryption";
+import { sealedDataFromBase64 } from "./sealed-data";
 import type {
   ContentKey,
   KeyHierarchy,
@@ -57,7 +57,7 @@ export async function unwrapContentKey(
   }
 
   const recoveryKey = await AESEncryptionKey.import(recoverySecret, "hex");
-  const sealed = AESSealedData.fromCombined(envelope.combined);
+  const sealed = sealedDataFromBase64(envelope.combined);
   const plaintext = await aesDecryptAsync(sealed, recoveryKey, {
     additionalData: new TextEncoder().encode(recoveryAad(envelope.keyId)),
   });

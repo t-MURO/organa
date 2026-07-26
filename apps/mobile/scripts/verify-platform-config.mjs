@@ -71,6 +71,16 @@ ok(
   "EAS has a preview-configured standalone iOS Simulator profile",
 );
 ok(
+  easConfig.cli?.appVersionSource === "remote" &&
+    easConfig.cli.requireCommit === true &&
+    easConfig.build?.preview?.autoIncrement === true &&
+    easConfig.build.preview.environment === "preview" &&
+    easConfig.build.preview.android?.buildType === "apk" &&
+    easConfig.build?.production?.autoIncrement === true &&
+    easConfig.build.production.environment === "production",
+  "EAS preview and production builds require clean, incremented release artifacts",
+);
+ok(
   androidBuild?.minSdkVersion === 24 &&
     androidBuild.compileSdkVersion === 36 &&
     androidBuild.targetSdkVersion === 36 &&

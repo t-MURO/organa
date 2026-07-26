@@ -7,12 +7,12 @@ import {
   aesEncryptAsync,
   AESEncryptionKey,
   AESKeySize,
-  AESSealedData,
   CryptoDigestAlgorithm,
   digestStringAsync,
   getRandomBytes,
 } from "expo-crypto";
 
+import { sealedDataFromBase64 } from "./sealed-data";
 import type {
   ContentKey,
   DeviceApprovalEnvelope,
@@ -79,7 +79,7 @@ export async function unwrapDeviceApproval(
   }
 
   const transferKey = await AESEncryptionKey.import(transferSecret, "hex");
-  const sealed = AESSealedData.fromCombined(envelope.combined);
+  const sealed = sealedDataFromBase64(envelope.combined);
   const plaintext = await aesDecryptAsync(sealed, transferKey, {
     additionalData: new TextEncoder().encode(
       approvalAad(targetDeviceId, envelope.keyId),
@@ -190,7 +190,7 @@ export async function unwrapDeviceApprovalExchange(
       envelope.senderPublicKey,
     );
     const plaintext = await aesDecryptAsync(
-      AESSealedData.fromCombined(envelope.combined),
+      sealedDataFromBase64(envelope.combined),
       transferKey,
       {
         additionalData: new TextEncoder().encode(

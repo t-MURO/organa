@@ -180,6 +180,9 @@ importers:
       '@noble/hashes':
         specifier: 2.2.0
         version: 2.2.0
+      base64-js:
+        specifier: 1.5.1
+        version: 1.5.1
       expo-crypto:
         specifier: ~57.0.1
         version: 57.0.1(expo@57.0.8)
