@@ -12,12 +12,12 @@ or Web Push behavior, independent security review, or legal approval.
 | --- | --- |
 | EAS project | `@t-muro/organa` |
 | EAS project ID | `ae92cff5-050e-4972-808d-a393be8d67e3` |
-| Source commit | `73d367e5cf025610f333ebac80b3670a7632339a` |
+| Source commit | `8cd8dd5d2439db7e93d6586a76b5998e27af9511` |
 | EAS environment | `preview` |
-| Deployment ID | `utbk3m0udl` |
-| Immutable URL | `https://organa--utbk3m0udl.expo.app` |
+| Deployment ID | `zdolmmbgqi` |
+| Immutable URL | `https://organa--zdolmmbgqi.expo.app` |
 | Stable alias | `https://organa--preview.expo.app` |
-| Fingerprinted bundle | `entry-abbea49625c3788eb726e5548ef699f2.js` |
+| Fingerprinted bundle | `entry-da4de03067ebefac98cd377f61e94b08.js` |
 
 The clean source commit was pushed before deployment. The deployment command
 used a cache-cleared export built under the EAS `preview` environment and
@@ -49,7 +49,7 @@ Both of these commands pass all 17 checks:
 
 ```sh
 pnpm verify:web-deployment -- https://organa--preview.expo.app
-pnpm verify:web-deployment -- https://organa--utbk3m0udl.expo.app
+pnpm verify:web-deployment -- https://organa--zdolmmbgqi.expo.app
 ```
 
 Direct live evidence covers:
@@ -83,6 +83,10 @@ Direct live evidence covers:
 - the shared readable type scale is present in the hosted bundle; rendered
   inspection at 1280x720 confirms 12px labels, 13-15px supporting copy, a 47px
   headline, and no horizontal overflow
+- shared input and keyboard boundaries are present in the hosted bundle;
+  focused-field inspection confirms unchanged 1px border geometry, a 2px ring
+  with 1px offset, a theme-colored caret, visible entered text, and no
+  horizontal overflow
 
 [Expo Router server headers](https://docs.expo.dev/router/web/server-headers/)
 are encoded into `_expo/.routes.json` for EAS Hosting. EAS documents that it

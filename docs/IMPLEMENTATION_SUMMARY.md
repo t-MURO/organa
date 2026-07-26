@@ -2633,3 +2633,14 @@ must have direct evidence before production launch.
 - Strict TypeScript, the 28-check web export, iOS and Android Hermes exports,
   all 18 security checks, all 24 platform checks, and `git diff --check` pass.
   No test file was added, changed, or run.
+- Clean commit `8cd8dd5d2439db7e93d6586a76b5998e27af9511` is deployed from
+  the EAS `preview` environment as immutable deployment `zdolmmbgqi` and the
+  `https://organa--preview.expo.app` alias. Both URLs serve
+  `entry-da4de03067ebefac98cd377f61e94b08.js` and pass all 17 live
+  deployment checks.
+- Android preview build `ab87af86-5fee-4af9-b0d6-6f52d9f7e77f` completed
+  from the same clean commit as version `0.1.0` build `4`. The
+  111,770,938-byte APK passes ZIP integrity and Android `apksig` 8.12.0
+  verification with one valid v2 signer, no errors or warnings, and the same
+  signer certificate as the preceding installable preview. Its SHA-256 and EAS
+  record are in `docs/ANDROID_PREVIEW_EVIDENCE.md`.

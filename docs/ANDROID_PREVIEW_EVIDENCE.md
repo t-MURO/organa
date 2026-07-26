@@ -5,17 +5,17 @@ Status recorded on 2026-07-26.
 ## Successful Artifact
 
 - EAS project: `@t-muro/organa`
-- Build ID: `40f3cb8e-f3f2-49d3-828d-65b0e15e3d74`
-- Source commit: `ca648c4e59254834d914053fbaa2a26ddcad0abd`
+- Build ID: `ab87af86-5fee-4af9-b0d6-6f52d9f7e77f`
+- Source commit: `8cd8dd5d2439db7e93d6586a76b5998e27af9511`
 - Profile and distribution: `preview`, internal APK
-- App version and build: `0.1.0` (`2`)
+- App version and build: `0.1.0` (`4`)
 - Terminal status: `FINISHED`
-- Cloud build duration: 833 seconds
-- Artifact size: 111,768,030 bytes
+- Cloud build duration: 788 seconds
+- Artifact size: 111,770,938 bytes
 - Artifact SHA-256:
-  `ffcb09f1f3efc3b6a824c0e3fc651e8d3069f48585e2333ddea81c169bc4e6e2`
+  `55691f3e619b4819dd2ba900380205b45564e9c9b2e7df6f117a171cd5d478fd`
 - EAS record:
-  <https://expo.dev/accounts/t-muro/projects/organa/builds/40f3cb8e-f3f2-49d3-828d-65b0e15e3d74>
+  <https://expo.dev/accounts/t-muro/projects/organa/builds/ab87af86-5fee-4af9-b0d6-6f52d9f7e77f>
 
 The downloaded APK passes complete ZIP integrity validation. Android's
 `apksig` verifier `8.12.0` reports one signer, a valid APK Signature Scheme v2
@@ -31,7 +31,7 @@ environment independently passed the same preflight. This evidence records
 only validation status; no environment value or signing credential belongs in
 the repository.
 
-## Sync Recovery Purpose
+## Preview Purpose
 
 This replacement includes per-record isolation for task-type pulls, durable
 reconciliation pages, and same-timestamp pagination. One cloud record that
@@ -45,6 +45,12 @@ stored combined AES envelopes from base64 into bytes before handing them to
 Expo Crypto's Android parser. The shared boundary covers encrypted records,
 recovery, and both device-approval formats without changing AES-GCM metadata,
 key-ID, or additional-data validation.
+
+This build also includes the larger shared typography scale, stable checkbox
+and Undo action geometry, platform keyboard avoidance across app and modal
+input surfaces, explicit Android resize behavior, and themed cursor, selection,
+and focus treatment. The completed version-code-3 typography-only artifact was
+superseded before delivery so version 4 contains the full set of changes.
 
 ## Resolved Build Finding
 
@@ -67,7 +73,7 @@ duplicate-class task and completed release assembly and signing.
 
 - `pnpm typecheck` passes.
 - `pnpm verify:security` passes 18 checks.
-- `pnpm verify:platform` passes 23 source/generated checks.
+- `pnpm verify:platform` passes 24 source/generated checks.
 - `pnpm build:native` exports both iOS and Android Hermes bundles.
 - `pnpm build:web` passes 28 artifact checks with 23 precache URLs.
 - `pnpm audit --prod --json` reports zero findings at every severity.
