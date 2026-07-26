@@ -1,7 +1,6 @@
 import { type PropsWithChildren, useState } from "react";
 import {
   ActivityIndicator,
-  StyleSheet,
   Text,
   useColorScheme,
   View,
@@ -9,6 +8,7 @@ import {
 
 import { AccessiblePressable as Pressable } from "../accessibility/accessible-pressable";
 import { darkTheme, lightTheme } from "../theme";
+import { StyleSheet } from "../typography";
 import { useAppLock } from "./app-lock-context";
 
 export function AppLockBoundary({ children }: PropsWithChildren) {

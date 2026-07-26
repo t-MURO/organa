@@ -5,7 +5,6 @@ import {
 } from "react";
 import {
   ActivityIndicator,
-  StyleSheet,
   Text,
   useColorScheme,
   View,
@@ -13,6 +12,7 @@ import {
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { darkTheme, lightTheme } from "../../theme";
+import { StyleSheet } from "../../typography";
 import { useAccountLifecycle } from "./account-lifecycle-context";
 
 export function AccountLifecycleBoundary({ children }: PropsWithChildren) {

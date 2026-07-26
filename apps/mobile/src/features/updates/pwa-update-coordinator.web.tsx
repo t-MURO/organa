@@ -1,13 +1,9 @@
 import { useEffect, useReducer } from "react";
-import {
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from "react-native";
+import { Text, useColorScheme, View } from "react-native";
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { darkTheme, lightTheme } from "../../theme";
+import { StyleSheet } from "../../typography";
 import {
   activateWaitingPwaUpdate,
   hasWaitingPwaUpdate,

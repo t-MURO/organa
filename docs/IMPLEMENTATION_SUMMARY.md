@@ -38,6 +38,7 @@ Committed and verified milestones:
 - Protected browser session/device-proof persistence and a store-facing data map
 - Fail-closed public Supabase endpoint and publishable-key validation
 - Documented self-hosted Docker path for connected home-server testing
+- Shared responsive typography scaling across every application surface
 - Deterministic local performance checks against a 2,000-task dataset
 - Fail-closed encrypted-backup domain validation
 - Byte-for-byte encrypted-row preservation across database upgrades
@@ -2582,3 +2583,21 @@ must have direct evidence before production launch.
   verification with one valid v2 signer, no errors or warnings, and the same
   signer certificate as the preceding preview. Its SHA-256 and EAS record are
   in `docs/ANDROID_PREVIEW_EVIDENCE.md`.
+
+## Responsive Typography Milestone
+
+- A shared typography-aware `StyleSheet` now applies one coherent readable
+  type scale across authentication, navigation, tasks, planning, templates,
+  Focus, Check-In, Brain Dump, account, security, and web status surfaces.
+- Web receives the larger adjustment, especially for the previous 6-13px
+  labels and supporting copy. Native receives a smaller adjustment to preserve
+  compact phone layouts while improving the smallest text.
+- Explicit line heights increase with their font sizes so copy does not become
+  cramped. System text scaling remains uncapped.
+- The production web export renders 12px labels, 13-15px body and supporting
+  copy, and a 47px sign-in headline at the inspected entry screen.
+- Browser inspection at 1280x720 and 390x844 confirms no horizontal overflow.
+  The complete mobile sign-in layout remains visible at the phone viewport.
+- Strict TypeScript, the 28-check web export, iOS and Android Hermes exports,
+  all 18 security checks, all 23 platform checks, and `git diff --check` pass.
+  No test file was added, changed, or run.

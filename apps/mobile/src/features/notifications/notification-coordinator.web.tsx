@@ -1,12 +1,7 @@
 import { formatLocalDate, type Task } from "@organa/domain";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import {
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from "react-native";
+import { Text, useColorScheme, View } from "react-native";
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAuth } from "../../auth/auth-context";
@@ -20,6 +15,7 @@ import {
   taskSnoozeEvent,
   type TaskSnoozeEventDetail,
 } from "../../data/task-snooze-scheduler.types";
+import { StyleSheet } from "../../typography";
 import { useDevices } from "../account/device-context";
 import { useCheckIns } from "../check-in/check-in-context";
 import { useSettings } from "../settings/settings-context";

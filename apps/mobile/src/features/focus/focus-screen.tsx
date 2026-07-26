@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import {
   AppState,
   ScrollView,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -13,6 +12,7 @@ import { useAuth } from "../../auth/auth-context";
 import { useAppTheme } from "../../components/app-shell";
 import { createTaskSnoozeScheduler } from "../../data/create-task-snooze-scheduler";
 import type { OrganaTheme } from "../../theme";
+import { StyleSheet } from "../../typography";
 import { useDevices } from "../account/device-context";
 import { useTasks } from "../tasks/task-context";
 

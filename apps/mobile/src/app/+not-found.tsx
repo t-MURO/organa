@@ -1,9 +1,10 @@
 import { useRouter } from "expo-router";
-import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Text, useWindowDimensions, View } from "react-native";
 
 import { AccessiblePressable as Pressable } from "../accessibility/accessible-pressable";
 import { useAppTheme } from "../components/app-shell";
 import type { OrganaTheme } from "../theme";
+import { StyleSheet } from "../typography";
 
 export default function NotFoundScreen() {
   const router = useRouter();

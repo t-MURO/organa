@@ -8,7 +8,6 @@ import {
 import Head from "expo-router/head";
 import {
   ActivityIndicator,
-  StyleSheet,
   Text,
   useColorScheme,
   View,
@@ -36,6 +35,7 @@ import { AppLockBoundary } from "../security/app-lock-boundary";
 import { AppLockProvider } from "../security/app-lock-context";
 import { SyncProvider } from "../sync/sync-context";
 import { darkTheme, lightTheme } from "../theme";
+import { StyleSheet } from "../typography";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

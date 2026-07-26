@@ -9,7 +9,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
@@ -20,6 +19,7 @@ import { AccessiblePressable as Pressable } from "../../accessibility/accessible
 import { useAppTheme } from "../../components/app-shell";
 import { checkInReminderCapability } from "../../data/create-check-in-reminder-scheduler";
 import type { OrganaTheme } from "../../theme";
+import { StyleSheet } from "../../typography";
 import { useSettings } from "../settings/settings-context";
 import { useCheckIns } from "./check-in-context";
 

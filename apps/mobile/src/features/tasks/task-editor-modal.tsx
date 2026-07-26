@@ -12,7 +12,6 @@ import { useEffect, useState } from "react";
 import {
   Modal,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
@@ -24,6 +23,7 @@ import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import { notificationCapability } from "../../data/create-notification-scheduler";
 import type { OrganaTheme } from "../../theme";
+import { StyleSheet } from "../../typography";
 import {
   createTaskDeadline,
   materializeInheritedSubtaskReminders,

@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
@@ -17,6 +16,7 @@ import {
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
+import { StyleSheet } from "../../typography";
 import { useBrainDump } from "./brain-dump-context";
 
 export function BrainDumpScreen() {

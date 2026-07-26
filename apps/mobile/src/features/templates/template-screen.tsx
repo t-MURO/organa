@@ -14,7 +14,6 @@ import {
   ActivityIndicator,
   Modal,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
@@ -25,6 +24,7 @@ import { AccessiblePressable as Pressable } from "../../accessibility/accessible
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
+import { StyleSheet } from "../../typography";
 import { useTasks } from "../tasks/task-context";
 import { useTemplates } from "./template-context";
 

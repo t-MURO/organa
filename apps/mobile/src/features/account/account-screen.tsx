@@ -2,7 +2,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
@@ -22,6 +21,7 @@ import { useTemplates } from "../templates/template-context";
 import { useSecurity } from "../../security/security-context";
 import { useAppLock } from "../../security/app-lock-context";
 import type { OrganaTheme } from "../../theme";
+import { StyleSheet } from "../../typography";
 import { useAccountLifecycle } from "./account-lifecycle-context";
 import { useDevices } from "./device-context";
 import {

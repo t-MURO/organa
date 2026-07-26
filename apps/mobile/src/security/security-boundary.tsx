@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   useColorScheme,
@@ -14,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AccessiblePressable as Pressable } from "../accessibility/accessible-pressable";
 import { useAuth } from "../auth/auth-context";
 import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
+import { StyleSheet } from "../typography";
 import { useSecurity } from "./security-context";
 
 export function SecurityBoundary({ children }: PropsWithChildren) {

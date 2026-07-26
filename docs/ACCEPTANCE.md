@@ -56,6 +56,8 @@ The criterion-by-criterion status and evidence boundary is recorded in
   AA light/dark theme token contrast
 - [x] Shared native hit areas, WCAG-sized web controls, coarse-pointer
   expansion, and uncapped system text scaling
+- [x] Shared responsive typography raises small labels and supporting copy,
+  with proportional line-height adjustment and no desktop or phone overflow
 - [x] Source-pinned iOS 16.4+ and Android 7+/API 36 build targets plus a
   documented browser and platform capability matrix
 - [x] Native OAuth callback recovery across attached browser sessions, app

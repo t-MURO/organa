@@ -11,7 +11,6 @@ import {
   Animated,
   Easing,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   useWindowDimensions,
@@ -23,6 +22,7 @@ import { AccessiblePressable as Pressable } from "../../accessibility/accessible
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import type { OrganaTheme } from "../../theme";
+import { StyleSheet } from "../../typography";
 import { PlanningCalendar } from "./planning-calendar";
 import { TaskInbox } from "./task-inbox";
 import { useTasks } from "./task-context";

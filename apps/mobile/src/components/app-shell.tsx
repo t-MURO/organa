@@ -3,7 +3,6 @@ import { StatusBar } from "expo-status-bar";
 import { createContext, useContext } from "react";
 import {
   Platform,
-  StyleSheet,
   Text,
   useColorScheme,
   useWindowDimensions,
@@ -16,6 +15,7 @@ import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
 import { useSync } from "../sync/sync-context";
 import { useSettings } from "../features/settings/settings-context";
 import { useTasks } from "../features/tasks/task-context";
+import { StyleSheet } from "../typography";
 
 interface NavItem {
   href: "/" | "/check-in" | "/brain-dump" | "/templates" | "/account";
