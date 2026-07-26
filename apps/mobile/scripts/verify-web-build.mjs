@@ -11,6 +11,7 @@ const [
   serviceWorkerRegistration,
   serviceWorker,
   hostingHeaders,
+  routesText,
 ] = await Promise.all([
   readFile(new URL("index.html", distRoot), "utf8"),
   readFile(new URL("manifest.json", distRoot), "utf8"),
@@ -18,8 +19,10 @@ const [
   readFile(new URL("register-service-worker.js", distRoot), "utf8"),
   readFile(new URL("sw.js", distRoot), "utf8"),
   readFile(new URL("_headers", distRoot), "utf8"),
+  readFile(new URL("_expo/.routes.json", distRoot), "utf8"),
 ]);
 const manifest = JSON.parse(manifestText);
+const routes = JSON.parse(routesText);
 const checks = [];
 const policy = readContentSecurityPolicy(html);
 
@@ -63,7 +66,8 @@ ok(
   html.includes('src="/register-service-worker.js"') &&
     serviceWorkerRegistration.includes("organa:update-ready") &&
     serviceWorkerRegistration.includes("registration.waiting") &&
-    serviceWorkerRegistration.includes("navigator.serviceWorker.controller"),
+    serviceWorkerRegistration.includes("navigator.serviceWorker.controller") &&
+    serviceWorkerRegistration.includes('updateViaCache: "none"'),
   "application shell announces only a waiting replacement worker",
 );
 ok(
@@ -110,6 +114,25 @@ ok(
     policy.directives.get("style-src") === "'self' 'unsafe-inline'" &&
     policy.directives.get("worker-src") === "'self' blob:",
   "scripts allow only same-origin assets and the exact Expo hydration hash",
+);
+const routeHeaders = routes.headers ?? {};
+ok(
+  Object.keys(routeHeaders).length === 9 &&
+    routeHeaders["Cache-Control"] ===
+      "no-cache, no-store, must-revalidate" &&
+    routeHeaders["Content-Security-Policy"] ===
+      `${policy.content}; frame-ancestors 'none'` &&
+    routeHeaders["Cross-Origin-Opener-Policy"] ===
+      "same-origin-allow-popups" &&
+    routeHeaders["Cross-Origin-Resource-Policy"] === "same-origin" &&
+    routeHeaders["Permissions-Policy"] ===
+      "camera=(), geolocation=(), microphone=(), payment=(), usb=()" &&
+    routeHeaders["Referrer-Policy"] ===
+      "strict-origin-when-cross-origin" &&
+    routeHeaders["Strict-Transport-Security"] === "max-age=31536000" &&
+    routeHeaders["X-Content-Type-Options"] === "nosniff" &&
+    routeHeaders["X-Frame-Options"] === "DENY",
+  "Expo route metadata carries the exact document security policy",
 );
 ok(
   hostingHeaders.includes(

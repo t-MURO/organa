@@ -1,7 +1,7 @@
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
     navigator.serviceWorker
-      .register("/sw.js")
+      .register("/sw.js", { updateViaCache: "none" })
       .then(function (registration) {
         function announceWaitingWorker() {
           if (registration.waiting && navigator.serviceWorker.controller) {

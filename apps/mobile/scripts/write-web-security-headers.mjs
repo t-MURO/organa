@@ -1,35 +1,39 @@
 import { readFile, writeFile } from "node:fs/promises";
 
+import webSecurityPolicy from "../src/web-security-policy.js";
+
 const distRoot = new URL("../dist/", import.meta.url);
 const html = await readFile(new URL("index.html", distRoot), "utf8");
 const policy = readContentSecurityPolicy(html);
+const responseHeaders =
+  webSecurityPolicy.createWebResponseHeaders(policy);
 const output = `/*
-  Content-Security-Policy: ${policy}; frame-ancestors 'none'
-  Cross-Origin-Opener-Policy: same-origin-allow-popups
-  Cross-Origin-Resource-Policy: same-origin
-  Permissions-Policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()
-  Referrer-Policy: strict-origin-when-cross-origin
-  Strict-Transport-Security: max-age=31536000
-  X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
+  Content-Security-Policy: ${responseHeaders["Content-Security-Policy"]}
+  Cross-Origin-Opener-Policy: ${responseHeaders["Cross-Origin-Opener-Policy"]}
+  Cross-Origin-Resource-Policy: ${responseHeaders["Cross-Origin-Resource-Policy"]}
+  Permissions-Policy: ${responseHeaders["Permissions-Policy"]}
+  Referrer-Policy: ${responseHeaders["Referrer-Policy"]}
+  Strict-Transport-Security: ${responseHeaders["Strict-Transport-Security"]}
+  X-Content-Type-Options: ${responseHeaders["X-Content-Type-Options"]}
+  X-Frame-Options: ${responseHeaders["X-Frame-Options"]}
 
 /
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: ${responseHeaders["Cache-Control"]}
 
 /*.html
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: ${responseHeaders["Cache-Control"]}
 
 /manifest.json
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: ${responseHeaders["Cache-Control"]}
 
 /push-handler.js
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: ${responseHeaders["Cache-Control"]}
 
 /register-service-worker.js
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: ${responseHeaders["Cache-Control"]}
 
 /sw.js
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: ${responseHeaders["Cache-Control"]}
 
 /_expo/static/*
   Cache-Control: public, max-age=31536000, immutable

@@ -1,8 +1,8 @@
 import { ScrollViewStyleReset } from "expo-router/html";
 import type { PropsWithChildren } from "react";
 
-const expoHydrationScriptHash =
-  "'sha256-67fhrP0+BkBqmgGGXTtgiVO/9EQs3QruYNU/7fnRkI8='";
+import { createContentSecurityPolicy } from "../web-security-policy";
+
 const contentSecurityPolicy = createContentSecurityPolicy(
   process.env.EXPO_PUBLIC_SUPABASE_URL,
 );
@@ -72,56 +72,3 @@ const accessibilityCss = `
     }
   }
 `;
-
-function createContentSecurityPolicy(supabaseUrl: string | undefined) {
-  const connectSources = new Set(["'self'"]);
-  const supabaseOrigin = parseConnectOrigin(supabaseUrl);
-  if (supabaseOrigin) {
-    connectSources.add(supabaseOrigin.http);
-    connectSources.add(supabaseOrigin.webSocket);
-  }
-
-  return [
-    "default-src 'self'",
-    "base-uri 'self'",
-    `connect-src ${[...connectSources].join(" ")}`,
-    "font-src 'self' data:",
-    "form-action 'self'",
-    "frame-src 'none'",
-    "img-src 'self' data: blob:",
-    "manifest-src 'self'",
-    "media-src 'self'",
-    "object-src 'none'",
-    `script-src 'self' ${expoHydrationScriptHash}`,
-    "style-src 'self' 'unsafe-inline'",
-    "worker-src 'self' blob:",
-  ].join("; ");
-}
-
-function parseConnectOrigin(value: string | undefined) {
-  if (!value) return undefined;
-  try {
-    const url = new URL(value.trim());
-    const loopback =
-      url.hostname === "localhost" ||
-      url.hostname === "127.0.0.1" ||
-      url.hostname === "[::1]";
-    if (
-      (url.protocol !== "https:" &&
-        !(url.protocol === "http:" && loopback)) ||
-      url.username ||
-      url.password ||
-      url.pathname !== "/" ||
-      url.search ||
-      url.hash
-    ) {
-      return undefined;
-    }
-    return {
-      http: url.origin,
-      webSocket: `${url.protocol === "https:" ? "wss:" : "ws:"}//${url.host}`,
-    };
-  } catch {
-    return undefined;
-  }
-}
