@@ -496,16 +496,23 @@ Local evidence:
   one-hour scheduler and cascade evidence after rerunning the connected
   baseline. It has not been run against a connected backend in this workspace,
   so the corresponding row remains unchecked.
-- `pnpm verify:connected:acceptance` prepares direct private-channel evidence
-  for primary ownership, explicit secondary opt-in, target revocation, proof
-  denial, refresh-session invalidation, encrypted Brain Dump delta latency,
-  missed-event recovery, convergence, compaction, and delete-versus-update
-  safety. It remains unclaimed until the connected command and rendered-client
-  cleanup/editing drills pass.
-- `pnpm verify:connected:acceptance:web-push` is prepared to rerun the baseline
-  and observe a real cron-authorized claim and retry through a VAPID-validated
-  dispatcher. It has not been run against a connected backend, so
-  function/scheduler and browser-delivery rows remain unchecked.
+- On 2026-07-26,
+  `pnpm verify:connected:acceptance:backend:web-push` passed from clean commit
+  `eb13fe3430c2471b7fb1ca97a6693d98609de5b3` against the managed EU test
+  project. Its 119-check backend phase directly exercised cross-account RLS,
+  unauthorized and proof-gated RPCs, trusted-device approval and revocation,
+  live reminder ownership, private Realtime latency, durable missed-event
+  recovery, ciphertext-only reads, and encrypted Brain Dump convergence,
+  compaction, and delete-versus-update cleanup.
+- The same commit-bound run passed the real once-per-minute Web Push cron path
+  in 43 seconds. The deployed dispatcher claimed the due synthetic schedule,
+  rejected its reserved `.invalid` host before outbound access, and removed
+  both the reminder and subscription. This proves scheduler and egress-rejection
+  behavior, not permission-granted browser delivery.
+- Current Supabase `realtime.send()` adds a generated UUID to database
+  Broadcast JSON. The verifier accepts only the expected opaque application
+  hint plus that canonical UUID when it matches the message metadata; any
+  other payload field still fails.
 - Connected phases record each exact synthetic email before account creation,
   reconcile transport-ambiguous creations for 20 seconds, verify exact-email
   absence after cleanup, and fail rather than printing success when cleanup or
@@ -531,12 +538,17 @@ Local evidence:
   managed EU connected-test project
 - [ ] Repeat migration application and lint against the selected production
   deployment
+- [x] Cross-account RLS, unauthorized RPC, and trusted-device approval checks
+  against the managed connected-test project
 - [ ] Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
-  checks against the connected test instance and production deployment
-- [ ] Two-client encrypted sync latency and missed-broadcast recovery
-- [ ] Device reminder ownership and revocation across live sessions
+  checks against the selected production deployment
+- [x] Two-session encrypted sync latency and missed-broadcast recovery against
+  the managed connected-test project
+- [x] Device reminder ownership and revocation across live managed sessions
 - [x] Configure VAPID/function secrets and verify the active once-per-minute
   Web Push dispatcher schedule on the managed connected-test project
+- [x] Run a due synthetic schedule through the real managed Web Push cron and
+  prove fail-closed rejection/removal before outbound access
 - [ ] Permission-granted closed-app Web Push delivery, deep-link,
   replacement, cancellation, denial fallback, and sign-out drill in every
   supported release browser; iOS/iPadOS uses an installed Home Screen PWA

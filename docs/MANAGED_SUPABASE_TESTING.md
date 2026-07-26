@@ -87,8 +87,8 @@ interchangeable.
 ## Remaining Auth Configuration
 
 The baseline connected verifier intentionally checks public Auth settings
-before creating synthetic accounts. Its backend phase remains blocked until
-the project has:
+before creating synthetic accounts. The provider-qualified phase remains
+blocked until the project has:
 
 - Google OAuth enabled
 - GitHub OAuth enabled
@@ -112,6 +112,36 @@ This scope verifies the deployed RLS/RPC, encrypted Realtime/durable recovery,
 Brain Dump convergence, reminder ownership, and revocation contracts. Its
 phase and evidence scope are explicitly `backend-only`; release readiness
 cannot count it as provider acceptance.
+
+## Captured Backend Evidence
+
+On 2026-07-26, the managed test project passed
+`pnpm verify:connected:acceptance:backend:web-push` from clean commit
+`eb13fe3430c2471b7fb1ca97a6693d98609de5b3`.
+
+- The backend phase passed 119 checks, including cross-account RLS,
+  unauthorized and proof-gated RPCs, trusted-device approval/revocation,
+  reminder ownership across live sessions, private Realtime delivery within
+  one second, durable missed-event recovery, ciphertext-only reads, and
+  encrypted Brain Dump convergence/compaction/deletion races.
+- The current
+  [Supabase Realtime migration](https://github.com/supabase/realtime/blob/40be3de33aacc782bb60879c6bcf54c871847e15/lib/realtime/tenants/repo/migrations/20251103001201_broadcast_send_include_payload_id.ex)
+  includes a generated UUID in payloads created by `realtime.send()`. The
+  verifier permits only the expected opaque record or device hint plus a
+  canonical UUID that matches Broadcast metadata.
+- The real once-per-minute Web Push cron processed the due synthetic probe in
+  43 seconds. The deployed dispatcher rejected its reserved `.invalid` host
+  before outbound access and removed both the reminder and subscription.
+- The ignored sanitized evidence is bound to the managed project ref,
+  migration `20260725120000`, runner version 5, and the exact clean commit.
+  Both temporary drill consents were disabled again after the run.
+- Synthetic accounts were deleted by the verifier. No API key, scheduler
+  bearer, session, device proof, ciphertext, Push capability, or user content
+  was serialized into evidence.
+
+This evidence does not prove OAuth redirects, email delivery, permission-granted
+browser Push, physical-device behavior, the one-hour deletion deadline, or a
+production deployment repeat.
 
 After Auth is configured, run the full provider-qualified scope:
 

@@ -1151,8 +1151,8 @@ silently creating an authentication client:
   subscriptions/reminders.
 - The long deletion verifier uses bounded requests, conservative near-deadline
   polling, safe progress output, and a separate interruption cleanup client.
-  It is prepared but has not been run because no private connected operator
-  configuration is available in this workspace.
+  It remains prepared but unrun; the managed operator config now exists, while
+  its separate one-hour deletion consent remains disabled.
 - Shared-script syntax, JSON syntax, secret-file fail-closed behavior, strict
   TypeScript, and the production web/PWA build with all 18 artifact checks pass.
   No tests were added, changed, or run for this milestone.
@@ -1166,15 +1166,15 @@ silently creating an authentication client:
   content-free metadata against the non-resolving `.invalid` namespace, and
   waits without invoking the function for the real cron path to claim once and
   remove the disallowed capability plus its reminder without outbound access.
-- The Web Push scheduler command is prepared but unrun because this workspace
-  has no private connected operator configuration. Actual browser delivery
-  remains explicitly unclaimed.
+- The Web Push scheduler command was initially prepared without connected
+  credentials. The later managed drill passed its real cron and egress-rejection
+  path; actual browser delivery remains explicitly unclaimed.
 - Script and JSON syntax, mode-600 connected-config rejection, Edge Function
   TypeScript transpilation, canonical P-256 VAPID key derivation, strict
   repository TypeScript, and the production web/PWA build with all 18 artifact
   checks pass. No tests were added, changed, or run for this milestone.
 - Keeps decrypted UI propagation, field/CRDT conflict behavior, provider
-  redirects, SMTP, functions, Push, and physical clients unclaimed until their
+  redirects, SMTP, Push delivery, and physical clients unclaimed until their
   separate connected drills run.
 - Makes the Organa Compose override authoritative for asymmetric authentication
   instead of relying on the upstream key script's best-effort in-place
@@ -1199,9 +1199,9 @@ silently creating an authentication client:
 - Uncached strict TypeScript, the production web/PWA build with all 18 artifact
   checks, iOS and Android Hermes exports, and the production dependency audit
   pass. No tests were added, changed, or run.
-- The runbook is prepared but no home server has been connected in this
-  workspace yet; all connected rows remain unchecked until real evidence is
-  captured.
+- No self-hosted home server has been connected in this workspace. The later
+  managed-project run captures the independent backend and scheduler evidence
+  documented below without claiming a self-hosted or production repeat.
 
 ## Brain Dump Compaction Milestone
 
@@ -2099,12 +2099,46 @@ No tests were added, changed, or run for this milestone.
   the repository, and writes only the ignored mode-600 operator file without
   exposing key material.
 - Google and GitHub setup remain external Auth gates before the synthetic
-  connected baseline can run. Custom SMTP and real email-code delivery remain
-  a separate provider-acceptance gate. No tests were added, changed, or run
-  for this milestone.
+  provider-qualified baseline can run. Custom SMTP and real email-code delivery
+  remain a separate provider-acceptance gate. No tests were added, changed, or
+  run for this milestone.
 - The mode-600 config preflight, strict TypeScript, all 19 platform checks,
   configured production web export, iOS and Android Hermes exports, script
   syntax checks, and a 609-package production audit with zero advisories pass.
+
+## Managed Backend Acceptance Evidence
+
+- Added a backend-only connected evidence scope so missing external OAuth
+  providers do not block independent RLS, RPC, encrypted sync, device, and
+  Brain Dump evidence. Backend-only output is explicitly ineligible for the
+  provider-qualified release-readiness gate.
+- Current Supabase `realtime.send()` inserts a generated UUID into database
+  Broadcast JSON. The verifier now accepts either an older payload with only
+  the opaque application hint or that exact hint plus a canonical UUID matching
+  Broadcast metadata; malformed IDs, mismatches, and any other fields fail.
+- Connected ciphertext comparisons now use structural JSON equality because
+  PostgreSQL `jsonb` does not preserve object key order. Every envelope value
+  still has to match exactly.
+- On 2026-07-26, clean commit
+  `eb13fe3430c2471b7fb1ca97a6693d98609de5b3` passed all 119 managed backend
+  checks. Direct evidence covers cross-account RLS, unauthorized and
+  proof-gated RPCs, trusted-device lifecycle and revocation, reminder ownership
+  across live sessions, private Realtime delivery within one second, durable
+  missed-event recovery, ciphertext-only rows, and encrypted Brain Dump
+  convergence, compaction, and delete-versus-update cleanup.
+- The same commit-bound run passed the deployed once-per-minute Web Push cron
+  in 43 seconds. Its reserved `.invalid` endpoint remained outside the host
+  allowlist; the dispatcher rejected it before outbound access and removed the
+  synthetic reminder and subscription.
+- Synthetic accounts were removed, the ignored evidence contains no secret or
+  user payload, and both destructive consent flags were disabled afterward.
+  Provider redirects, custom-SMTP email codes, permission-granted browser Push,
+  physical devices, one-hour deletion, external review, and production repeat
+  remain unclaimed. No tests were added, changed, or run.
+- Strict TypeScript, all 19 platform checks, the production web export with 18
+  artifact checks, eight routes, and 22 precache URLs, iOS and Android Hermes
+  exports, Node syntax, and diff hygiene pass. The live 609-package production
+  dependency audit reports zero advisories at every severity.
 
 ## Remaining Acceptance Gates
 
@@ -2112,13 +2146,10 @@ Connected Supabase project:
 
 - Configure and exercise hosted Google, GitHub, and email-code
   providers.
-- Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
-  tests against the deployed project.
-- Measure two-client encrypted sync and missed-broadcast recovery.
-- Validate live reminder-device ownership and revocation against the hosted
-  project with the guarded connected verifier and rendered clients.
-- Pass the guarded connected Web Push scheduler drill with a synthetic
-  subscription.
+- Repeat cross-account RLS, unauthorized RPC, trusted-device, encrypted sync,
+  and Web Push scheduler checks against the selected production deployment.
+- Complete rendered-client large-account, network-transition, reminder-device
+  cleanup, and two-client editing drills.
 - Validate permission-granted Web Push delivery, replacement, cancellation,
   deep links, denial fallback, and sign-out in every supported release browser.
 - Repeat the scheduled deletion finalizer drill against the hosted project.
