@@ -398,14 +398,13 @@ Local evidence:
   is ready, explicitly respects silent mode, does not play in the background,
   and mixes rather than interrupting other audio; a live preview with sounds
   enabled created and completed a task without a runtime failure
-- the last production dependency audit reported no known vulnerabilities
-  before the opaque-ID crypto dependency was added; the current lockfile's
-  online advisory audit remains a release gate because sandboxed npm audit
-  could not resolve the registry and unsandboxed dependency-graph disclosure
-  was not authorized
-- the installed `@noble/hashes` `2.2.0` manifest and lock entry identify one
-  integrity-pinned MIT package with no runtime dependencies; this targeted
-  inspection does not replace the pending full production audit
+- `pnpm audit --prod --json` queried the live advisory registry for the current
+  lockfile and reported 609 production dependencies with zero critical, high,
+  moderate, low, or informational findings and no muted advisories; the
+  lockfile digest and tool versions are recorded in `docs/DEPENDENCY_AUDIT.md`
+- the audit includes the integrity-pinned `@noble/hashes` `2.2.0` production
+  dependency; a clean advisory result does not replace the independent
+  cryptographic and application security review
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks

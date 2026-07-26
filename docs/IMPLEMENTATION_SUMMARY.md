@@ -1879,9 +1879,8 @@ No tests were added, changed, or run for this milestone.
 - Strict TypeScript, the unchanged 151-test suite, the 18-check production web
   build with eight static routes and 22 precache URLs, both native Hermes
   exports, and all 19 platform checks pass. No test file was added or changed.
-- A current production dependency advisory audit remains unresolved:
-  sandboxed npm registry lookup failed, and unsandboxed disclosure of the
-  dependency graph was not authorized. No workaround was used.
+- The previously unresolved production advisory query is now closed by the
+  current live-registry audit recorded in `docs/DEPENDENCY_AUDIT.md`.
 
 ## Accessible Startup Fallback
 
@@ -2009,6 +2008,22 @@ No tests were added, changed, or run for this milestone.
   EAS project link, missing connected config, missing production manifest, and
   missing matching three-phase evidence. JavaScript syntax and
   `git diff --check` pass; no tests were added, changed, or run.
+
+## Current Production Dependency Audit
+
+- `pnpm audit --prod --audit-level high` and
+  `pnpm audit --prod --json` both completed successfully against the live
+  registry.
+- The machine-readable result covers 609 production dependencies and reports
+  zero critical, high, moderate, low, or informational advisories, zero muted
+  findings, and no remediation actions.
+- `docs/DEPENDENCY_AUDIT.md` binds the result to the audited source commit,
+  pnpm/Node versions, and SHA-256 of `pnpm-lock.yaml`.
+- No dependency changed. The independent cryptographic/application security
+  review and release-candidate audit repeat remain mandatory production gates.
+- Strict TypeScript, all 19 platform checks, the 18-check production PWA export
+  with eight static routes and 22 precache URLs, and both native Hermes exports
+  pass. No tests were added, changed, or run.
 
 ## Remaining Acceptance Gates
 
