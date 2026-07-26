@@ -2329,6 +2329,10 @@ No tests were added, changed, or run for this milestone.
   exact production-build browser replay passes, and the live bundle contains
   the recovery behavior. Maileroo tracking remains a provider-side setting to
   disable before accepting link-based security flows.
+- A subsequent live preview walkthrough received the Maileroo-delivered
+  six-digit code and completed sign-in successfully. Managed-test email OTP is
+  therefore accepted; Google, GitHub, and the production provider repeat
+  remain open.
 - Managed Supabase now uses the stable alias for its Site URL and exact web
   redirect. The old immutable callback was removed, and both the provisioning
   command and immediate read-only repeat pass.
@@ -2378,8 +2382,8 @@ No tests were added, changed, or run for this milestone.
 
 Connected Supabase project:
 
-- Configure and exercise hosted Google and GitHub, and exercise the configured
-  Maileroo email-code provider end to end.
+- Configure and exercise hosted Google and GitHub, then repeat the confirmed
+  Maileroo email-code flow against production.
 - Repeat cross-account RLS, unauthorized RPC, trusted-device, encrypted sync,
   and Web Push scheduler checks against the selected production deployment.
 - Complete rendered reminder-device cleanup, then repeat large-account,

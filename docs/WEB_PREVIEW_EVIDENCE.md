@@ -112,7 +112,8 @@ security flows are accepted.
   the same live verifier against the production origin.
 - Exercise install, offline restart, service-worker replacement, and
   permission-granted Web Push in every supported release browser.
-- Exercise Google, GitHub, and Maileroo-delivered email codes.
+- Exercise Google and GitHub; repeat the confirmed Maileroo email-code flow
+  against production.
 - Complete the connected production repeat, physical-device matrix,
   independent security review, legal review, signing, and store evidence.
 

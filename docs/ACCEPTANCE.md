@@ -585,8 +585,9 @@ Local evidence:
   confirmation and returning-user email templates
 - [ ] Disable Maileroo click/open tracking for the Auth sending domain before
   accepting any link-based security email flow
-- [ ] Google, GitHub, and end-to-end email OTP delivery/sign-in against
-  configured connected providers
+- [x] Complete Maileroo-delivered six-digit email OTP sign-in against the live
+  managed-test preview
+- [ ] Google and GitHub sign-in against configured connected providers
 - [x] Apply all ten migrations and pass linked database lint against the
   managed EU connected-test project
 - [ ] Repeat migration application and lint against the selected production
