@@ -1774,7 +1774,8 @@ No tests were added, changed, or run for this milestone.
 - Adds a server-side connected-config preparer that reads only the public
   origin and modern publishable/administrator keys from the already-private
   self-hosted environment. It requires the exact recorded Supabase revision
-  and an explicit synthetic-account creation/deletion consent flag.
+  and current migration version plus an explicit synthetic-account
+  creation/deletion consent flag.
 - The preparer writes a mode-600 JSON file through a private temporary file,
   refuses existing outputs and placeholder origins, mirrors the verifier's
   key-shape boundary, removes partial output on conventional termination
@@ -2076,21 +2077,49 @@ No tests were added, changed, or run for this milestone.
   exports pass. Shell and Node syntax checks pass for the modified backend
   verifiers. No tests were added, changed, or run.
 
+## Managed Supabase Deployment Evidence
+
+- The managed free-tier `organa` project is linked in `eu-west-2` and reported
+  `ACTIVE_HEALTHY`. All nine checked-in migrations are applied through
+  `20260725120000`, and linked database lint passes without schema errors.
+- Both scheduled Edge Functions are active. Direct live probes proved missing
+  scheduler authorization returns `401` and the configured scheduler bearer
+  returns `200` with a valid zero-work result.
+- `pg_cron` has active once-per-minute account-deletion and Web Push jobs.
+  Three consecutive runs of each reported `succeeded`, and the corresponding
+  `pg_net` responses returned `200` without timeout or transport error.
+- Scheduler bearers are stored in Supabase Vault and Edge Function
+  configuration. The temporary local scheduler SQL and secret bundle were
+  removed after verification.
+- Connected and release evidence no longer invent a self-hosted source SHA for
+  a managed project. The v2 deployment identity binds managed evidence to the
+  exact project ref plus applied migration version; self-hosted evidence binds
+  to source Git revision plus migration version.
+- A pinned managed-config preparer retrieves exactly one modern publishable and
+  secret key in memory, matches the complete linked remote migration list to
+  the repository, and writes only the ignored mode-600 operator file without
+  exposing key material.
+- Google and GitHub setup remain external Auth gates before the synthetic
+  connected baseline can run. Custom SMTP and real email-code delivery remain
+  a separate provider-acceptance gate. No tests were added, changed, or run
+  for this milestone.
+- The mode-600 config preflight, strict TypeScript, all 19 platform checks,
+  configured production web export, iOS and Android Hermes exports, script
+  syntax checks, and a 609-package production audit with zero advisories pass.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
 
 - Configure and exercise hosted Google, GitHub, and email-code
   providers.
-- Apply and lint the proven migrations against the selected EU Supabase
-  project.
 - Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
   tests against the deployed project.
 - Measure two-client encrypted sync and missed-broadcast recovery.
 - Validate live reminder-device ownership and revocation against the hosted
   project with the guarded connected verifier and rendered clients.
-- Configure the VAPID pair, trusted Push-host allowlist, and once-per-minute
-  dispatcher, then pass the guarded connected scheduler drill.
+- Pass the guarded connected Web Push scheduler drill with a synthetic
+  subscription.
 - Validate permission-granted Web Push delivery, replacement, cancellation,
   deep links, denial fallback, and sign-out in every supported release browser.
 - Repeat the scheduled deletion finalizer drill against the hosted project.

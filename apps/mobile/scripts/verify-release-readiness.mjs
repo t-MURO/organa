@@ -12,6 +12,10 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readConnectedSupabaseConfig } from "./connected-supabase-config.mjs";
+import {
+  supabaseDeploymentsMatch,
+  validateSupabaseDeployment,
+} from "./supabase-deployment.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const [manifestArgument, ...unexpectedArguments] = process.argv.slice(2);
@@ -92,23 +96,24 @@ try {
 if (connectedConfig && releaseEvidenceValid) {
   const inputsMatch =
     connectedConfig.supabaseUrl === releaseEvidence.backend.origin &&
-    connectedConfig.supabaseSourceRevision ===
-      releaseEvidence.backend.migrationRevision;
+    supabaseDeploymentsMatch(
+      connectedConfig.deployment,
+      releaseEvidence.backend.deployment,
+    );
   record(
     "Backend evidence binding",
     inputsMatch,
     inputsMatch
       ? "operator config matches the production evidence manifest"
-      : "The connected config origin and migration revision must match the production manifest.",
+      : "The connected config origin and deployment identity must match the production manifest.",
   );
 }
 
 const connectedEvidence = findPassedConnectedEvidence({
   commit,
+  deployment:
+    releaseEvidence?.backend?.deployment ?? connectedConfig?.deployment,
   origin: releaseEvidence?.backend?.origin ?? connectedConfig?.supabaseUrl,
-  sourceRevision:
-    releaseEvidence?.backend?.migrationRevision ??
-    connectedConfig?.supabaseSourceRevision,
 });
 record(
   "Connected three-phase evidence",
@@ -153,7 +158,7 @@ function validateReleaseEvidence(value, context) {
     "manifest",
     errors,
   );
-  if (value.format !== "organa-controlled-beta-release-evidence-v1") {
+  if (value.format !== "organa-controlled-beta-release-evidence-v2") {
     errors.push("format is invalid.");
   }
   if (value.candidate !== "production") {
@@ -203,8 +208,8 @@ function validateBackend(value, errors) {
   requireExactKeys(
     value,
     [
+      "deployment",
       "euRegionEvidence",
-      "migrationRevision",
       "origin",
       "productionRepeatEvidence",
       "providerEvidence",
@@ -215,8 +220,14 @@ function validateBackend(value, errors) {
   if (!isHttpsOrigin(value.origin)) {
     errors.push("backend.origin must be a public HTTPS origin.");
   }
-  if (!/^[0-9a-f]{40}$/.test(value.migrationRevision ?? "")) {
-    errors.push("backend.migrationRevision must be a 40-character revision.");
+  try {
+    validateSupabaseDeployment(value.deployment, "backend.deployment");
+  } catch (error) {
+    errors.push(
+      error instanceof Error
+        ? error.message
+        : "backend.deployment is invalid.",
+    );
   }
   for (const field of [
     "euRegionEvidence",
@@ -300,10 +311,15 @@ function requireExactKeys(value, expected, label, errors) {
 
 function findPassedConnectedEvidence({
   commit: revision,
+  deployment,
   origin,
-  sourceRevision,
 }) {
-  if (!isHttpsOrigin(origin) || !/^[0-9a-f]{40}$/.test(sourceRevision ?? "")) {
+  if (!isHttpsOrigin(origin)) {
+    return undefined;
+  }
+  try {
+    validateSupabaseDeployment(deployment);
+  } catch {
     return undefined;
   }
   const directory = resolve(repositoryRoot, ".organa-connected-evidence");
@@ -328,13 +344,16 @@ function findPassedConnectedEvidence({
       continue;
     }
     if (
-      evidence.runnerVersion !== 3 ||
+      evidence.runnerVersion !== 4 ||
       evidence.status !== "passed" ||
       evidence.organaCommit !== revision ||
       evidence.organaCommitConfirmedAtFinish !== true ||
       evidence.connectedConfigConfirmedAtFinish !== true ||
       evidence.supabaseOrigin !== origin ||
-      evidence.supabaseSourceRevision !== sourceRevision ||
+      !supabaseDeploymentsMatch(
+        evidence.supabaseDeployment,
+        deployment,
+      ) ||
       !hasPassedPhases(evidence.phases)
     ) {
       continue;

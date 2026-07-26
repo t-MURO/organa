@@ -1,12 +1,16 @@
 {
-  "format": "organa-controlled-beta-release-evidence-v1",
+  "format": "organa-controlled-beta-release-evidence-v2",
   "candidate": "production",
   "organaCommit": "replace_with_current_40_character_commit",
   "easProjectId": "replace_with_eas_project_uuid",
   "sourceGateEvidence": "replace_with_typecheck_test_build_and_audit_output_reference",
   "backend": {
     "origin": "https://supabase.example.net",
-    "migrationRevision": "replace_with_40_character_supabase_revision",
+    "deployment": {
+      "type": "managed",
+      "projectRef": "replace_with_project_ref",
+      "migrationVersion": "replace_with_14_digit_migration_version"
+    },
     "euRegionEvidence": "replace_with_region_reference",
     "providerEvidence": "replace_with_google_github_email_drill_reference",
     "productionRepeatEvidence": "replace_with_production_repeat_reference"

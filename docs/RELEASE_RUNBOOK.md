@@ -7,8 +7,9 @@ store artifacts. It does not replace the connected-backend, physical-device,
 security, legal, or store review gates in `docs/ACCEPTANCE.md`.
 The engineering disclosure inventory and unresolved declaration decisions are
 in `docs/PRIVACY_DATA_MAP.md`.
-Connected functional testing may use the isolated Docker path in
-`docs/SELF_HOSTED_TESTING.md`; production artifacts still require the reviewed
+Connected functional testing currently uses the managed path in
+`docs/MANAGED_SUPABASE_TESTING.md`; the isolated Docker alternative remains in
+`docs/SELF_HOSTED_TESTING.md`. Production artifacts still require the reviewed
 release backend and every gate in this runbook.
 
 ## Release Boundaries
@@ -127,6 +128,9 @@ install -m 600 .organa-release-evidence.example.json .organa-release-evidence.js
 Replace every placeholder only after the corresponding direct evidence exists.
 The manifest is ignored by Git. Do not put provider credentials, tokens,
 sessions, device proofs, encryption material, or user content in it.
+The v2 backend identity records managed deployments by project ref and applied
+migration version. A self-hosted deployment instead records its exact Supabase
+source Git revision and applied migration version.
 
 Run all connected backend phases into one commit-bound evidence file:
 
@@ -229,7 +233,7 @@ Every candidate must record:
 | iOS build | Build ID, build number, artifact checksum |
 | Android build | Build ID, version code, artifact checksum |
 | Web deployment | Immutable deployment ID and artifact checksum |
-| Backend | EU project reference and migration revision |
+| Backend | EU origin, deployment type, managed project ref or self-host source revision, and migration version |
 | Review | Security, legal, privacy, and store-review status |
 | Privacy | Reviewed data-map revision, policy URL, and store declaration exports |
 | Devices | Model, OS version, and completed physical checks |

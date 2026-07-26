@@ -471,12 +471,14 @@ in a `finally` cleanup.
 
 Create its ignored mode-600 configuration from the initialized server
 environment. On the server, pass the exact revision recorded when the official
-Supabase repository was copied:
+Supabase repository was copied and the newest applied Organa migration
+version:
 
 ```sh
 cd "$HOME/organa-supabase"
 sh prepare-connected-acceptance-config.sh \
   --source-revision RECORDED_40_CHARACTER_LOWERCASE_GIT_REVISION \
+  --migration-version APPLIED_14_DIGIT_ORGANA_MIGRATION_VERSION \
   --allow-synthetic-account-creation-and-deletion
 ```
 
@@ -508,12 +510,13 @@ drill. Then run the guarded baseline:
 pnpm verify:connected:acceptance
 ```
 
-The runner requires a clean Organa commit and a recorded Supabase revision. It
-refuses placeholder/insecure URLs, legacy or swapped key types, unsupported
-configuration fields, oversized files, credential files not owned by the
-current operator, symlinked or non-private credential files, and missing
-destructive-test consent. Before creating users it confirms email, Google,
-and GitHub are enabled and phone Auth is disabled through the public
+The runner requires a clean Organa commit and a deployment identity containing
+the recorded Supabase source revision and current 14-digit migration version.
+It refuses placeholder/insecure URLs, stale migration heads, legacy or swapped
+key types, unsupported configuration fields, oversized files, credential files
+not owned by the current operator, symlinked or non-private credential files,
+and missing destructive-test consent. Before creating users it confirms email,
+Google, and GitHub are enabled and phone Auth is disabled through the public
 settings endpoint. Its output contains check labels and counts only, never
 keys, sessions, proofs, or payloads.
 
@@ -532,7 +535,8 @@ and current-user-owned `.organa-connected-evidence/` directory. The evidence
 records the exact Organa commit, confirmation that the same clean commit was
 still present before every phase and after all phases, confirmation that the
 same private operator configuration remained in use, declared Supabase source
-revision, public origin, runtime, timestamps, duration, interruption signal,
+revision and migration version, public origin, runtime, timestamps, duration,
+interruption signal,
 sanitized process error code, and pass/fail status for each completed phase.
 A source/config change, spawn failure, interruption, failed cleanup, or failed
 phase prevents passing evidence. Config equality is checked in memory; no key

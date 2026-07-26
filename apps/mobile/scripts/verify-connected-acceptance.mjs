@@ -9,6 +9,7 @@ import { relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { readConnectedSupabaseConfig } from "./connected-supabase-config.mjs";
+import { supabaseDeploymentsMatch } from "./supabase-deployment.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
@@ -208,11 +209,11 @@ const evidencePath = writeEvidence({
     organaCommitConfirmedAtFinish,
     phases: phaseEvidence,
     platform: `${process.platform}-${process.arch}`,
-    runnerVersion: 3,
+    runnerVersion: 4,
     startedAt: startedAt.toISOString(),
     status: runFailure ? "failed" : "passed",
+    supabaseDeployment: config.deployment,
     supabaseOrigin: config.supabaseUrl,
-    supabaseSourceRevision: config.supabaseSourceRevision,
   },
   startedAt,
 });
@@ -307,7 +308,7 @@ function connectedConfigsMatch(left, right) {
     left.allowWebPushSchedulerDrill === right.allowWebPushSchedulerDrill &&
     left.publishableKey === right.publishableKey &&
     left.secretKey === right.secretKey &&
-    left.supabaseSourceRevision === right.supabaseSourceRevision &&
+    supabaseDeploymentsMatch(left.deployment, right.deployment) &&
     left.supabaseUrl === right.supabaseUrl
   );
 }

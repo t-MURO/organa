@@ -5,9 +5,12 @@ import {
   lstatSync,
   openSync,
   readFileSync,
+  readdirSync,
 } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { validateSupabaseDeployment } from "./supabase-deployment.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const MAX_CONFIG_BYTES = 16 * 1_024;
@@ -15,10 +18,10 @@ const allowedConfigKeys = new Set([
   "allowOneHourDeletionDrill",
   "allowSyntheticAccountCreationAndDeletion",
   "allowWebPushSchedulerDrill",
+  "deployment",
   "publishableKey",
   "purpose",
   "secretKey",
-  "supabaseSourceRevision",
   "supabaseUrl",
 ]);
 
@@ -123,9 +126,13 @@ export function readConnectedSupabaseConfig(configPath) {
   }
 
   const supabaseUrl = validateConnectedUrl(config.supabaseUrl);
-  const supabaseSourceRevision = validateSourceRevision(
-    config.supabaseSourceRevision,
-  );
+  const deployment = validateSupabaseDeployment(config.deployment);
+  const currentMigrationVersion = readCurrentMigrationVersion();
+  if (deployment.migrationVersion !== currentMigrationVersion) {
+    throw new Error(
+      `deployment.migrationVersion must match the current migration head ${currentMigrationVersion}.`,
+    );
+  }
   requireConnectedKey(config.publishableKey, "sb_publishable_", "publishableKey");
   requireConnectedKey(config.secretKey, "sb_secret_", "secretKey");
   if (config.publishableKey === config.secretKey) {
@@ -136,20 +143,30 @@ export function readConnectedSupabaseConfig(configPath) {
     allowOneHourDeletionDrill: config.allowOneHourDeletionDrill === true,
     allowWebPushSchedulerDrill:
       config.allowWebPushSchedulerDrill === true,
+    deployment,
     publishableKey: config.publishableKey,
     secretKey: config.secretKey,
-    supabaseSourceRevision,
     supabaseUrl,
   };
 }
 
-function validateSourceRevision(value) {
-  if (typeof value !== "string" || !/^[0-9a-f]{40}$/.test(value)) {
+function readCurrentMigrationVersion() {
+  let versions;
+  try {
+    versions = readdirSync(resolve(repositoryRoot, "supabase/migrations"))
+      .map((file) => /^(\d{14})_.+\.sql$/.exec(file)?.[1])
+      .filter(Boolean)
+      .sort();
+  } catch {
     throw new Error(
-      "supabaseSourceRevision must be the recorded 40-character lowercase Git revision.",
+      "The current Supabase migration head could not be inspected.",
     );
   }
-  return value;
+  const current = versions.at(-1);
+  if (!current) {
+    throw new Error("The repository does not contain a Supabase migration.");
+  }
+  return current;
 }
 
 function validateConnectedUrl(value) {

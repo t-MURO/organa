@@ -8,7 +8,7 @@ fail() {
 }
 
 usage() {
-  fail "usage: sh prepare-connected-acceptance-config.sh --source-revision REVISION --allow-synthetic-account-creation-and-deletion [--output PATH]"
+  fail "usage: sh prepare-connected-acceptance-config.sh --source-revision REVISION --migration-version VERSION --allow-synthetic-account-creation-and-deletion [--output PATH]"
 }
 
 value_from() {
@@ -24,6 +24,7 @@ value_from() {
 }
 
 source_revision=""
+migration_version=""
 output_path=".organa-connected-supabase.json"
 consent=false
 
@@ -32,6 +33,11 @@ while [ "$#" -gt 0 ]; do
     --source-revision)
       [ "$#" -ge 2 ] || usage
       source_revision="$2"
+      shift 2
+      ;;
+    --migration-version)
+      [ "$#" -ge 2 ] || usage
+      migration_version="$2"
       shift 2
       ;;
     --output)
@@ -54,6 +60,9 @@ done
 printf '%s\n' "$source_revision" |
   grep -Eq '^[0-9a-f]{40}$' ||
   fail "the Supabase source revision must be 40 lowercase hexadecimal characters"
+printf '%s\n' "$migration_version" |
+  grep -Eq '^[0-9]{14}$' ||
+  fail "the Organa migration version must be 14 digits"
 
 for command in awk dirname grep jq mktemp stat tr; do
   command -v "$command" >/dev/null 2>&1 ||
@@ -133,6 +142,7 @@ trap 'exit 143' TERM
 
 jq -n \
   --arg source_revision "$source_revision" \
+  --arg migration_version "$migration_version" \
   --arg supabase_url "$supabase_url" \
   --arg publishable_key "$publishable_key" \
   --arg secret_key "$secret_key" \
@@ -141,7 +151,11 @@ jq -n \
     allowSyntheticAccountCreationAndDeletion: true,
     allowOneHourDeletionDrill: false,
     allowWebPushSchedulerDrill: false,
-    supabaseSourceRevision: $source_revision,
+    deployment: {
+      type: "self-hosted",
+      sourceRevision: $source_revision,
+      migrationVersion: $migration_version
+    },
     supabaseUrl: $supabase_url,
     publishableKey: $publishable_key,
     secretKey: $secret_key

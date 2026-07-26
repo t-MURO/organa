@@ -527,14 +527,16 @@ Local evidence:
   drill.
 - [ ] Google, GitHub, and email OTP against configured connected
   providers
-- [ ] Apply and lint the proven migrations against the self-hosted test
-  instance, then repeat against the selected production deployment
+- [x] Apply all nine migrations and pass linked database lint against the
+  managed EU connected-test project
+- [ ] Repeat migration application and lint against the selected production
+  deployment
 - [ ] Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
   checks against the connected test instance and production deployment
 - [ ] Two-client encrypted sync latency and missed-broadcast recovery
 - [ ] Device reminder ownership and revocation across live sessions
-- [ ] Configure VAPID/function secrets and the once-per-minute Web Push
-  dispatcher schedule
+- [x] Configure VAPID/function secrets and verify the active once-per-minute
+  Web Push dispatcher schedule on the managed connected-test project
 - [ ] Permission-granted closed-app Web Push delivery, deep-link,
   replacement, cancellation, denial fallback, and sign-out drill in every
   supported release browser; iOS/iPadOS uses an installed Home Screen PWA

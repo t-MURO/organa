@@ -4,6 +4,11 @@ Organa uses Supabase for authentication, encrypted synchronization, private
 Realtime signals, trusted-device metadata, browser reminder delivery, and
 delayed account deletion.
 
+For the current managed connected-test project, follow
+`docs/MANAGED_SUPABASE_TESTING.md`. It records the non-secret deployment
+identity, migration/function/scheduler state, private config preparation, and
+remaining Auth gates.
+
 For a Docker instance on a home server used only for connected testing, follow
 `docs/SELF_HOSTED_TESTING.md`. It covers TLS, generated publishable/asymmetric
 keys, Auth/SMTP/OAuth, private migration access, self-hosted functions,
