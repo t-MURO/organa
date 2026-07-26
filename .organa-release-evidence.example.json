@@ -8,7 +8,7 @@
     "origin": "https://supabase.example.net",
     "migrationRevision": "replace_with_40_character_supabase_revision",
     "euRegionEvidence": "replace_with_region_reference",
-    "providerEvidence": "replace_with_google_apple_github_email_drill_reference",
+    "providerEvidence": "replace_with_google_github_email_drill_reference",
     "productionRepeatEvidence": "replace_with_production_repeat_reference"
   },
   "artifacts": {

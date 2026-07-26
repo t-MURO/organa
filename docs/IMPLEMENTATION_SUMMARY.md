@@ -93,7 +93,7 @@ Latest verified task-type work:
   verifier, iOS and Android Hermes exports, the production PWA export with all
   18 artifact checks, the production dependency audit, and `git diff --check`
   pass.
-- Hosted Google, Apple, GitHub, and email provider configuration and live
+- Hosted Google, GitHub, and email provider configuration and live
   redirect drills remain a connected-project gate.
 
 ## Interaction Feedback Contract Milestone
@@ -504,7 +504,7 @@ Implemented user-facing areas:
 
 ## Authentication And Security
 
-- Supabase Auth adapters support Google, Apple, GitHub, and email verification
+- Supabase Auth adapters support Google, GitHub, and email verification
   codes.
 - Native PKCE callbacks recover through browser completion, app resume, and
   cold start while strict redirect matching and exchange deduplication prevent
@@ -1060,7 +1060,7 @@ silently creating an authentication client:
 - Uses generated asymmetric signing material plus the `sb_publishable_` client
   key expected by Organa, while keeping database, secret/service-role, OAuth,
   SMTP, scheduler, and VAPID private material server-side.
-- Defines self-hosted email OTP templates, Google/Apple/GitHub callbacks,
+- Defines self-hosted email OTP templates, Google/GitHub callbacks,
   migration push/lint over a private database path, Edge Function installation,
   scheduler setup, and the exact public client environment.
 - Corrects the monorepo setup path to `apps/mobile/.env.local`, where Expo
@@ -1100,8 +1100,8 @@ silently creating an authentication client:
   credential helper that pins Supabase CLI `2.109.1`, exposes only a
   passwordless process argument, uses a private temporary libpq password file,
   separates plan/apply intent, and cleans credentials on completion or signal.
-- Adds a private Auth environment template and Compose wiring for Google,
-  Apple, and GitHub, with provider callbacks derived from the validated public
+- Adds a private Auth environment template and Compose wiring for Google and
+  GitHub, with provider callbacks derived from the validated public
   Auth URL instead of copied by hand.
 - Serves the six-digit email-code template through an internal-only Caddy
   service and applies it to both first-time confirmation and returning-user
@@ -1114,10 +1114,10 @@ silently creating an authentication client:
   `8e75147f0c2a24202e0d53c75cddc5e3e06c531d`, and the isolated template
   service starts and serves the checked-in token template. Real SMTP and OAuth
   flows remain unclaimed until the home server is connected.
-- Adds a guarded connected mode to the 54-check Supabase authorization
+- Adds a guarded connected mode to the 53-check Supabase authorization
   verifier. It reads a git-ignored mode-600 operator file, accepts only an
   HTTPS origin plus modern publishable/secret key types, requires explicit
-  synthetic-account deletion consent, checks the four intended Auth methods,
+  synthetic-account deletion consent, checks the three intended Auth methods,
   and always attempts to remove created accounts.
 - Documents exactly which connected acceptance rows that verifier can support
   and leaves provider redirects, SMTP, app-level sync merging, functions, Push,
@@ -2057,11 +2057,30 @@ No tests were added, changed, or run for this milestone.
   export with eight routes and 22 precache URLs pass. No tests were added,
   changed, or run.
 
+## Apple Authentication Removal
+
+- Apple sign-in is no longer part of the Organa account contract. The sign-in
+  screen and OAuth type boundary now expose Google and GitHub only, alongside
+  the separate email verification-code flow.
+- Connected Auth verification, self-hosted provider templates, Compose
+  callbacks, and the secret-safe server preflight now require Google and GitHub
+  without expecting Apple OAuth credentials.
+- Requirements, acceptance matrices, privacy inventory, security notes, and
+  release evidence placeholders consistently describe the three supported
+  methods: Google, GitHub, and email code.
+- Apple platform support remains unchanged. The iOS app, App Store privacy
+  work, iOS widgets, Apple Push endpoints, and Safari/PWA behavior are not
+  authentication-provider dependencies.
+- Strict TypeScript, all 19 platform checks, the 18-check configured web export
+  with eight routes and 22 precache URLs, and both configured native Hermes
+  exports pass. Shell and Node syntax checks pass for the modified backend
+  verifiers. No tests were added, changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
 
-- Configure and exercise hosted Google, Apple, GitHub, and email-code
+- Configure and exercise hosted Google, GitHub, and email-code
   providers.
 - Apply and lint the proven migrations against the selected EU Supabase
   project.

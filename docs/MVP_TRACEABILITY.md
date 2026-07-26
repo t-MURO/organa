@@ -15,7 +15,7 @@ Status meanings:
 
 | # | Acceptance criterion | Status | Current evidence | Evidence still required |
 | --- | --- | --- | --- | --- |
-| 1 | Google, Apple, GitHub, or email account creation | Partial | `apps/mobile/src/auth/auth-boundary.tsx`, `apps/mobile/src/auth/auth-context.tsx`, native OAuth callback handling, and local email-code sign-in | Exercise all four providers against the connected deployment |
+| 1 | Google, GitHub, or email account creation | Partial | `apps/mobile/src/auth/auth-boundary.tsx`, `apps/mobile/src/auth/auth-context.tsx`, native OAuth callback handling, and local email-code sign-in | Exercise all three methods against the connected deployment |
 | 2 | Recovery-key confirmation and trusted-device enrollment | Partial | `apps/mobile/src/security/security-boundary.tsx`, strict native/web stored-identity parsing, a connected untrusted-device erasure/recovery-boundary drill, encrypted restore into a separately enrolled clean browser origin, `packages/crypto/src/recovery-key.ts`, `packages/crypto/src/device-approval.ts`, and the local two-origin approval drill | Repeat enrollment, approval, rejection, expiry, malformed/missing identity, and physical-device recovery on home-server and production clients |
 | 3 | Task creation, editing, scheduling, recurrence, completion, and search | Local | `apps/mobile/src/features/tasks`, `packages/domain/src/tasks.ts`, and the 2026-07-24 browser walkthrough | None for local product behavior |
 | 4 | One-off, routine, and medication behavior | Local | Task editor/domain invariants, medication dose confirmation, recurrence/grace handling, and browser drills recorded in `docs/ACCEPTANCE.md` | None for local product behavior |

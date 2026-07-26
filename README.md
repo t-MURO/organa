@@ -19,7 +19,7 @@ iOS, Android, responsive web, and installable PWA from one Expo codebase.
 - SQLite persistence on native and IndexedDB persistence on web
 - Encrypted outbox sync, field-level merge, private Realtime broadcasts, and
   seven-day encrypted record history
-- Google, Apple, GitHub, and email-code authentication
+- Google, GitHub, and email-code authentication
 - Recovery key onboarding, trusted reminder devices, local app lock, export,
   and one-hour account deletion
 - Native local notifications plus Web Push and active-tab web fallback

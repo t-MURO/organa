@@ -525,7 +525,7 @@ Local evidence:
   allowlist and removes unlisted subscriptions before network access. Actual
   release-browser endpoint compatibility remains part of the browser-delivery
   drill.
-- [ ] Google, Apple, GitHub, and email OTP against configured connected
+- [ ] Google, GitHub, and email OTP against configured connected
   providers
 - [ ] Apply and lint the proven migrations against the self-hosted test
   instance, then repeat against the selected production deployment

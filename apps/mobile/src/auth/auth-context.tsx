@@ -20,7 +20,7 @@ import {
 
 WebBrowser.maybeCompleteAuthSession();
 
-type OAuthProvider = Extract<Provider, "google" | "apple" | "github">;
+type OAuthProvider = Extract<Provider, "google" | "github">;
 
 interface AuthContextValue {
   configurationIssue: string;

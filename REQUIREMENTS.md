@@ -368,7 +368,6 @@ Because content is end-to-end encrypted, the server must not maintain a plaintex
 Supabase Auth will provide:
 
 - Google sign-in
-- Apple sign-in
 - GitHub sign-in
 - Email verification-code sign-in
 
@@ -661,7 +660,7 @@ Encrypted payloads and server-readable synchronization metadata must be separate
 
 The MVP is ready for controlled beta when:
 
-1. A user can create an account with Google, Apple, GitHub, or email.
+1. A user can create an account with Google, GitHub, or email.
 2. Recovery-key confirmation and trusted-device enrollment work.
 3. Tasks can be created, edited, scheduled, repeated, completed, and searched.
 4. One-off, habit, and medication task behaviors are implemented.

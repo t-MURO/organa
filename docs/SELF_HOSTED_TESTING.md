@@ -209,15 +209,13 @@ confirmation and magic-link paths, because new and returning addresses can
 take different Auth flows. It also fixes the OTP length at six digits and the
 lifetime at 900 seconds so the app and email copy remain accurate.
 
-Google, Apple, and GitHub are separate provider drills. Each provider must use:
+Google and GitHub are separate provider drills. Each provider must use:
 
 ```text
 https://supabase.example.net/auth/v1/callback
 ```
 
-Register that exact callback in every provider console. Apple OAuth
-additionally needs an Apple Developer Services ID and a client-secret JWT that
-is rotated before its six-month expiry.
+Register that exact callback in both provider consoles.
 
 Copy the secret-free Auth template and fill every empty client ID and secret
 on the server:
@@ -399,14 +397,13 @@ curl --fail --silent --show-error \
     .external.email == true
     and .external.phone == false
     and .external.google == true
-    and .external.apple == true
     and .external.github == true
   ' >/dev/null
 unset ORGANA_SUPABASE_URL ORGANA_PUBLISHABLE_KEY
 ```
 
 This check is silent on success and exposes neither the key nor the settings
-payload. Run an actual email-code sign-in before trying the three external
+payload. Run an actual email-code sign-in before trying the two external
 providers so SMTP and both OTP template paths are exercised first.
 
 Run both scheduler-authenticated functions once. Success is silent; failures
@@ -516,7 +513,7 @@ refuses placeholder/insecure URLs, legacy or swapped key types, unsupported
 configuration fields, oversized files, credential files not owned by the
 current operator, symlinked or non-private credential files, and missing
 destructive-test consent. Before creating users it confirms email, Google,
-Apple, and GitHub are enabled and phone Auth is disabled through the public
+and GitHub are enabled and phone Auth is disabled through the public
 settings endpoint. Its output contains check labels and counts only, never
 keys, sessions, proofs, or payloads.
 
@@ -674,7 +671,7 @@ before checking the connected deletion acceptance row. Preparing the command
 does not count as evidence, and this drill does not cover encrypted-export
 restore on a separate clean device.
 
-1. Sign in by email OTP, then Google, Apple, and GitHub as each provider is
+1. Sign in by email OTP, then Google and GitHub as each provider is
    configured.
 2. Confirm recovery-key setup and approve a second clean browser/device.
 3. Apply cross-account read/write/RPC probes and confirm RLS isolation.

@@ -354,7 +354,7 @@ for file in \
 done
 
 require_private_file .env.auth
-for provider in GOOGLE APPLE GITHUB; do
+for provider in GOOGLE GITHUB; do
   require_exact_value \
     .env.auth \
     "GOTRUE_EXTERNAL_${provider}_ENABLED" \
@@ -401,10 +401,8 @@ docker compose config --format json |
     | ($auth.GOTRUE_JWT_KEYS | fromjson) as $signing
     | ($services.rest.environment.PGRST_JWT_SECRET | fromjson) as $jwks
     | ($auth.GOTRUE_EXTERNAL_GOOGLE_ENABLED == "true")
-      and ($auth.GOTRUE_EXTERNAL_APPLE_ENABLED == "true")
       and ($auth.GOTRUE_EXTERNAL_GITHUB_ENABLED == "true")
       and ($auth.GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI == $callback)
-      and ($auth.GOTRUE_EXTERNAL_APPLE_REDIRECT_URI == $callback)
       and ($auth.GOTRUE_EXTERNAL_GITHUB_REDIRECT_URI == $callback)
       and ($auth.GOTRUE_MAILER_OTP_EXP == "900")
       and ($auth.GOTRUE_MAILER_OTP_LENGTH == "6")

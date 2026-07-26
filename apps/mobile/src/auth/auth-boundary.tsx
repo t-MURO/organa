@@ -151,27 +151,25 @@ function SignInScreen() {
               {auth.configured ? (
                 <>
                   <View style={styles.providerGrid}>
-                    {(["google", "apple", "github"] as const).map(
-                      (provider) => (
-                        <Pressable
-                          key={provider}
-                          accessibilityLabel={`Continue with ${provider}`}
-                          accessibilityRole="button"
-                          disabled={Boolean(busy)}
-                          style={styles.providerButton}
-                          onPress={() =>
-                            void run(provider, () =>
-                              auth.signInWithOAuth(provider),
-                            )
-                          }
-                        >
-                          <View style={styles.providerGlyph} />
-                          <Text style={styles.providerText}>
-                            {capitalize(provider)}
-                          </Text>
-                        </Pressable>
-                      ),
-                    )}
+                    {(["google", "github"] as const).map((provider) => (
+                      <Pressable
+                        key={provider}
+                        accessibilityLabel={`Continue with ${provider}`}
+                        accessibilityRole="button"
+                        disabled={Boolean(busy)}
+                        style={styles.providerButton}
+                        onPress={() =>
+                          void run(provider, () =>
+                            auth.signInWithOAuth(provider),
+                          )
+                        }
+                      >
+                        <View style={styles.providerGlyph} />
+                        <Text style={styles.providerText}>
+                          {capitalize(provider)}
+                        </Text>
+                      </Pressable>
+                    ))}
                   </View>
 
                   <View style={styles.dividerRow}>

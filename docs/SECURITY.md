@@ -42,7 +42,7 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
 
 ## Authentication
 
-- Supabase Auth uses PKCE for Google, Apple, and GitHub OAuth. Passwordless
+- Supabase Auth uses PKCE for Google and GitHub OAuth. Passwordless
   email access uses a six-digit verification code.
 - Native authentication state and the PKCE verifier use Expo SecureStore.
   Web authentication state uses origin-scoped browser storage.

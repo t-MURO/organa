@@ -86,7 +86,7 @@ available without these values so the setup-required boundary can be checked.
 
 Confirm that both Supabase values point to the selected EU project. Confirm
 that hosted Auth allows the exact web origins and the `organa://**` native
-callback. Configure Google, Apple, and GitHub secrets only in Supabase and
+callback. Configure Google and GitHub secrets only in Supabase and
 their provider consoles. The app rejects non-HTTPS remote endpoints, URL
 credentials, placeholders, and any key that is not an `sb_publishable_` client
 key; do not weaken that runtime boundary to make a build appear configured.

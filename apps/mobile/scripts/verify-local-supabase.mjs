@@ -115,7 +115,6 @@ async function verifyConnectedAuthSettings() {
   ok(external.email === true, "email authentication is enabled");
   ok(external.phone === false, "phone authentication is disabled");
   ok(external.google === true, "Google authentication is enabled");
-  ok(external.apple === true, "Apple authentication is enabled");
   ok(external.github === true, "GitHub authentication is enabled");
 }
 

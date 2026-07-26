@@ -30,7 +30,6 @@ its JWT expires, even after its refresh token is revoked.
 Enable:
 
 - Google
-- Apple
 - GitHub
 - Email OTP
 
