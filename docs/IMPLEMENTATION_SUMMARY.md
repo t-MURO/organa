@@ -1934,6 +1934,23 @@ No tests were added, changed, or run for this milestone.
   platform checks, and `git diff --check` pass. No tests were added, changed,
   or run.
 
+## Wider Web Content Layout
+
+- Today now fills its available content column and uses a `1560px` desktop
+  canvas. Check-In, Brain Dump, Library, and Account share a wider `1480px`
+  maximum while their text measures, Focus layout, and modal widths remain
+  intentionally constrained.
+- At a `1920px` viewport, direct browser measurement showed a `250px` sidebar,
+  `1670px` main column, centered `1560px` Today canvas, and centered `1480px`
+  standard canvas. Check-In's two-column layout and Brain Dump's visual
+  hierarchy remained balanced.
+- At `390px`, Brain Dump retained its compact header and bottom navigation,
+  and document client/scroll widths both measured `390px`, proving the desktop
+  caps introduced no horizontal overflow.
+- Strict TypeScript, the 18-check production PWA export with eight static
+  routes and 22 precache URLs, and `git diff --check` pass. No tests were
+  added, changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

@@ -372,6 +372,13 @@ Local evidence:
 - a separate fresh preview directly proves Home's source and accessibility
   order is Priority lane, Time lane, Quick Capture, then Task Inbox, keeping
   today's active work ahead of capture as required
+- an authenticated responsive-layout drill at a `1920px` viewport directly
+  measured the `250px` sidebar, `1670px` main column, centered `1560px` Today
+  canvas, and centered `1480px` standard page canvas; Check-In retained its
+  two-column composition and Brain Dump retained its capture/note hierarchy
+- the same Brain Dump route at a `390px` viewport measured equal document
+  client and scroll widths, retained the compact header and bottom navigation,
+  and introduced no horizontal overflow
 - recovery setup/restore, app lock, and deletion safety screens expose a main
   landmark, a heading, and non-interruptive loading status; the deletion
   countdown remains readable on demand without announcing every second
