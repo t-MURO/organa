@@ -17,6 +17,9 @@ release backend and every gate in this runbook.
 - Run EAS commands from `apps/mobile`, the Expo application root.
 - `preview` creates an internally distributed iOS build and an installable
   Android APK for physical-device acceptance checks.
+- `preview-simulator` compiles a standalone iOS Simulator `.app` with the
+  preview environment and without an Apple Developer account. It is a native
+  compilation check, not physical-device or signing evidence.
 - `production` creates store-distribution artifacts and increments the remote
   iOS build number or Android version code.
 - EAS refuses to build from an uncommitted worktree.
@@ -84,6 +87,21 @@ EAS also runs the same dependency-free validator automatically through the
 job before dependency installation, and validation output names fields without
 printing their values. Local development exports intentionally remain
 available without these values so the setup-required boundary can be checked.
+
+Before requesting physical iOS signing, compile the generated iOS app and both
+widget targets with the standalone simulator profile:
+
+```sh
+cd apps/mobile
+npx eas-cli@21.2.0 build \
+  --platform ios \
+  --profile preview-simulator \
+  --non-interactive
+```
+
+This profile deliberately reuses the preview environment. A successful
+simulator artifact does not satisfy notification, widget interaction,
+VoiceOver, dynamic-type, offline-process, or physical-device rows.
 
 Confirm that both Supabase values point to the selected EU project. Confirm
 that hosted Auth allows the exact web origins and the `organa://**` native

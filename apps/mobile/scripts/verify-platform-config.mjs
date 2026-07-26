@@ -5,6 +5,7 @@ const repoRoot = new URL("../../../", import.meta.url);
 const [
   appConfigText,
   packageText,
+  easConfigText,
   gradleProperties,
   androidAppBuildGradle,
   androidManifest,
@@ -17,6 +18,7 @@ const [
 ] = await Promise.all([
   readFile(new URL("app.json", appRoot), "utf8"),
   readFile(new URL("package.json", appRoot), "utf8"),
+  readFile(new URL("eas.json", appRoot), "utf8"),
   readFile(new URL("android/gradle.properties", appRoot), "utf8"),
   readFile(new URL("android/app/build.gradle", appRoot), "utf8"),
   readFile(
@@ -42,6 +44,7 @@ const [
 
 const appConfig = JSON.parse(appConfigText).expo;
 const packageJson = JSON.parse(packageText);
+const easConfig = JSON.parse(easConfigText);
 const podfileProperties = JSON.parse(podfilePropertiesText);
 const checks = [];
 
@@ -51,6 +54,12 @@ const buildPropertiesEntry = appConfig.plugins.find(
 const androidBuild = buildPropertiesEntry?.[1]?.android;
 
 ok(appConfig.ios.deploymentTarget === "16.4", "source pins iOS 16.4");
+ok(
+  easConfig.build?.["preview-simulator"]?.extends === "preview" &&
+    easConfig.build["preview-simulator"].environment === "preview" &&
+    easConfig.build["preview-simulator"].ios?.simulator === true,
+  "EAS has a preview-configured standalone iOS Simulator profile",
+);
 ok(
   androidBuild?.minSdkVersion === 24 &&
     androidBuild.compileSdkVersion === 36 &&
