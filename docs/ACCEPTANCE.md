@@ -265,6 +265,9 @@ Local evidence:
 - the source is linked to live EAS project `@t-muro/organa`
   (`ae92cff5-050e-4972-808d-a393be8d67e3`), and non-interactive
   `project:info` resolves the same account, slug, and opaque project ID
+- EAS preview and production jobs fail before dependency installation when
+  their public Supabase or Web Push client configuration is missing, malformed,
+  local-only, or placeholder-shaped; validation never prints values
 - the EAS profile JSON and resolved public Expo configuration validate locally;
   strict TypeScript, the production PWA export, both Hermes exports, and the
   production dependency audit pass; no tests were added, changed, or run for

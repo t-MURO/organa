@@ -72,7 +72,17 @@ Before each build, inspect the selected environment:
 ```sh
 npx eas-cli@21.2.0 env:list --environment preview
 npx eas-cli@21.2.0 env:list --environment production
+npx eas-cli@21.2.0 env:exec preview \
+  "pnpm verify:release:client-config"
+npx eas-cli@21.2.0 env:exec production \
+  "pnpm verify:release:client-config"
 ```
+
+EAS also runs the same dependency-free validator automatically through the
+`eas-build-pre-install` lifecycle hook. A missing or malformed value stops the
+job before dependency installation, and validation output names fields without
+printing their values. Local development exports intentionally remain
+available without these values so the setup-required boundary can be checked.
 
 Confirm that both Supabase values point to the selected EU project. Confirm
 that hosted Auth allows the exact web origins and the `organa://**` native

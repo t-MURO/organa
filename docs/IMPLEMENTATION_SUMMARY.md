@@ -2037,6 +2037,26 @@ No tests were added, changed, or run for this milestone.
 - The 19-check platform verifier and strict TypeScript pass. No tests were
   added, changed, or run.
 
+## Fail-Closed EAS Client Configuration
+
+- EAS preview and production jobs now run a dependency-free pre-install
+  validator before installing packages, so an empty environment cannot consume
+  a full build only to produce an unusable sign-in boundary.
+- The guard requires the public Supabase HTTPS origin, an `sb_publishable_`
+  client key, and a canonical Web Push P-256 public key. It rejects
+  credentials, paths, query/fragment additions, local-only or placeholder
+  origins, secret-key shapes, and malformed VAPID values.
+- Validation output names only invalid fields and never prints values.
+  Operators can run the same check through `eas env:exec` for both configured
+  environments before queuing a build.
+- Local development exports remain available without release values so the
+  setup-required boundary can still be rendered. Direct probes accept a
+  generated P-256 public key and reject a same-length invalid curve point; both
+  currently empty remote EAS environments reject all three missing values.
+- Strict TypeScript, all 19 platform checks, and the 18-check production web
+  export with eight routes and 22 precache URLs pass. No tests were added,
+  changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

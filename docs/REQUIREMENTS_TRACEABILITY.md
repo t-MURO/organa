@@ -83,6 +83,9 @@ Status meanings:
 - `apps/mobile/app.json` links the source to live EAS project
   `@t-muro/organa` (`ae92cff5-050e-4972-808d-a393be8d67e3`);
   non-interactive EAS project inspection resolves the same owner, slug, and ID
+- EAS preview and production builds run a dependency-free pre-install guard
+  that rejects missing, malformed, local-only, or placeholder Supabase and
+  Web Push client values without printing them
 
 ## Completion Boundary
 
