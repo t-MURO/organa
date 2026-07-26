@@ -16,12 +16,15 @@ import {
   taskMatchesInboxFilter,
   type InboxFilter,
 } from "./task-inbox-model";
+import { CompletionCollapse } from "./completion-collapse";
 
 export function TaskInbox({
   tasks,
+  temporarilyVisibleTaskIds,
   onEdit,
 }: {
   tasks: Task[];
+  temporarilyVisibleTaskIds: string[];
   onEdit(task: Task): void;
 }) {
   const theme = useAppTheme();
@@ -31,7 +34,19 @@ export function TaskInbox({
   const [query, setQuery] = useState("");
   const compact = width < 620;
   const now = new Date();
-  const filtered = filterTasksForInbox(tasks, filter, query, now);
+  const temporarilyVisible = new Set(temporarilyVisibleTaskIds);
+  const filterCandidates = tasks.map((task) =>
+    temporarilyVisible.has(task.id)
+      ? { ...task, completedAt: undefined }
+      : task,
+  );
+  const tasksById = new Map(tasks.map((task) => [task.id, task]));
+  const filtered = filterTasksForInbox(
+    filterCandidates,
+    filter,
+    query,
+    now,
+  ).map((task) => tasksById.get(task.id) ?? task);
 
   return (
     <View style={styles.wrap}>
@@ -72,7 +87,7 @@ export function TaskInbox({
 
       <View style={styles.filterRow}>
         {(["upcoming", "overdue", "completed"] as const).map((item) => {
-          const count = tasks.filter((task) =>
+          const count = filterCandidates.filter((task) =>
             taskMatchesInboxFilter(task, item, now),
           ).length;
 
@@ -104,37 +119,44 @@ export function TaskInbox({
       <View style={styles.list}>
         {filtered.length > 0 ? (
           filtered.map((task) => (
-            <View key={task.id} style={styles.taskRow}>
-              <View
-                style={[
-                  styles.kindDot,
-                  { backgroundColor: kindColor(theme, task) },
-                ]}
-              />
-              <View style={styles.taskCopy}>
-                <Text
+            <CompletionCollapse
+              key={task.id}
+              completed={
+                Boolean(task.completedAt) && temporarilyVisible.has(task.id)
+              }
+            >
+              <View style={styles.taskRow}>
+                <View
                   style={[
-                    styles.taskTitle,
-                    task.completedAt ? styles.taskTitleCompleted : undefined,
+                    styles.kindDot,
+                    { backgroundColor: kindColor(theme, task) },
                   ]}
+                />
+                <View style={styles.taskCopy}>
+                  <Text
+                    style={[
+                      styles.taskTitle,
+                      task.completedAt ? styles.taskTitleCompleted : undefined,
+                    ]}
+                  >
+                    {task.title}
+                  </Text>
+                  <Text style={styles.taskMeta}>
+                    {inboxTaskMeta(task, now)}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${task.completedAt ? "View" : "Edit"} ${task.title} from inbox`}
+                  style={styles.actionButton}
+                  onPress={() => onEdit(task)}
                 >
-                  {task.title}
-                </Text>
-                <Text style={styles.taskMeta}>
-                  {inboxTaskMeta(task, now)}
-                </Text>
+                  <Text style={styles.actionText}>
+                    {task.completedAt ? "View" : "Edit"}
+                  </Text>
+                </Pressable>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${task.completedAt ? "View" : "Edit"} ${task.title} from inbox`}
-                style={styles.actionButton}
-                onPress={() => onEdit(task)}
-              >
-                <Text style={styles.actionText}>
-                  {task.completedAt ? "View" : "Edit"}
-                </Text>
-              </Pressable>
-            </View>
+            </CompletionCollapse>
           ))
         ) : (
           <View style={styles.empty}>

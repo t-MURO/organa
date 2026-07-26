@@ -27,6 +27,10 @@ import { PlanningCalendar } from "./planning-calendar";
 import { TaskInbox } from "./task-inbox";
 import { useTasks } from "./task-context";
 import { TaskEditorModal } from "./task-editor-modal";
+import {
+  CompletionCollapse,
+  COMPLETION_TRANSITION_MS,
+} from "./completion-collapse";
 
 const priorities: Array<{
   key: TaskPriority;
@@ -37,8 +41,6 @@ const priorities: Array<{
   { key: "should", label: "Should do", hint: "Helpful, not urgent" },
   { key: "nice", label: "Nice to do", hint: "Only if there is room" },
 ];
-
-const COMPLETION_TRANSITION_MS = 5_000;
 
 export function TodayScreen() {
   const router = useRouter();
@@ -256,25 +258,30 @@ export function TodayScreen() {
           <View style={styles.timelineCard}>
             {visibleTimed.length > 0 ? (
               visibleTimed.map((task, index) => (
-                <View key={task.id} style={styles.timelineRow}>
-                  <View style={styles.timelineTimeWrap}>
-                    <Text style={styles.timelineTime}>
-                      {task.scheduledTime}
-                    </Text>
-                    {index < visibleTimed.length - 1 ? (
-                      <View style={styles.timelineLine} />
-                    ) : null}
+                <CompletionCollapse
+                  key={task.id}
+                  completed={Boolean(task.completedAt)}
+                >
+                  <View style={styles.timelineRow}>
+                    <View style={styles.timelineTimeWrap}>
+                      <Text style={styles.timelineTime}>
+                        {task.scheduledTime}
+                      </Text>
+                      {index < visibleTimed.length - 1 ? (
+                        <View style={styles.timelineLine} />
+                      ) : null}
+                    </View>
+                    <TimelineTask
+                      styles={styles}
+                      task={task}
+                      theme={theme}
+                      onEdit={openTask}
+                      onFocus={focusTask}
+                      onConfirmDose={confirmDose}
+                      onToggle={toggleTaskWithGrace}
+                    />
                   </View>
-                  <TimelineTask
-                    styles={styles}
-                    task={task}
-                    theme={theme}
-                    onEdit={openTask}
-                    onFocus={focusTask}
-                    onConfirmDose={confirmDose}
-                    onToggle={toggleTaskWithGrace}
-                  />
-                </View>
+                </CompletionCollapse>
               ))
             ) : (
               <View style={styles.emptyTime}>
@@ -351,7 +358,11 @@ export function TodayScreen() {
           </View>
         ) : null}
       </View>
-      <TaskInbox tasks={tasks} onEdit={openTask} />
+      <TaskInbox
+        tasks={tasks}
+        temporarilyVisibleTaskIds={recentlyCompletedIds}
+        onEdit={openTask}
+      />
       <TaskEditorModal
         defaultPlannedFor={selectedDate}
         task={editingTask}
@@ -564,104 +575,107 @@ function PriorityTask({
   const fade = useCompletionFade(Boolean(task.completedAt));
 
   return (
-    <View style={styles.taskRow}>
-      <Animated.View style={[styles.taskMain, { opacity: fade }]}>
-        <Pressable
-          accessibilityRole="checkbox"
-          accessibilityLabel={task.title}
-          accessibilityState={{ checked: Boolean(task.completedAt) }}
-          aria-checked={Boolean(task.completedAt)}
-          style={({ pressed }) => [
-            styles.taskCheck,
-            { borderColor: colors.strong },
-            task.completedAt
-              ? { backgroundColor: colors.strong }
-              : undefined,
-            pressed ? styles.taskCheckPressed : undefined,
-          ]}
-          onPress={() => onToggle(task)}
-        >
-          {task.completedAt ? (
-            <Text style={styles.taskCheckText}>✓</Text>
-          ) : null}
-        </Pressable>
-        <View style={styles.taskContent}>
-          <View style={styles.taskCopy}>
-            <Text
-              style={[
-                styles.taskTitle,
-                task.completedAt ? styles.taskTitleCompleted : undefined,
-              ]}
-            >
-              {task.title}
-            </Text>
-            <Text
-              style={[
-                styles.taskMeta,
-                task.completedAt ? styles.taskMetaCompleted : undefined,
-              ]}
-            >
-              {formatTaskMeta(task)}
-            </Text>
-          </View>
-          {!task.completedAt && task.subtasks.length > 0 ? (
-            <View style={styles.subtaskList}>
-              {task.subtasks.map((subtask) => (
-                <View key={subtask.id} style={styles.subtaskItem}>
-                  <Pressable
-                    accessibilityRole="checkbox"
-                    accessibilityLabel={subtask.title}
-                    accessibilityState={{
-                      checked: Boolean(subtask.completedAt),
-                    }}
-                    aria-checked={Boolean(subtask.completedAt)}
-                    style={[
-                      styles.subtaskCheck,
-                      subtask.completedAt
-                        ? { backgroundColor: colors.strong }
-                        : { borderColor: colors.strong },
-                    ]}
-                    onPress={() => onToggleSubtask(task, subtask.id)}
-                  >
-                    {subtask.completedAt ? (
-                      <Text style={styles.subtaskCheckText}>✓</Text>
-                    ) : null}
-                  </Pressable>
-                  <Text
-                    style={[
-                      styles.subtaskItemTitle,
-                      subtask.completedAt
-                        ? styles.subtaskItemTitleCompleted
-                        : undefined,
-                    ]}
-                  >
-                    {subtask.title}
-                  </Text>
-                </View>
-              ))}
+    <CompletionCollapse completed={Boolean(task.completedAt)}>
+      <View style={styles.taskRow}>
+        <Animated.View style={[styles.taskMain, { opacity: fade }]}>
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityLabel={task.title}
+            accessibilityState={{ checked: Boolean(task.completedAt) }}
+            aria-checked={Boolean(task.completedAt)}
+            style={({ pressed }) => [
+              styles.taskCheck,
+              { borderColor: colors.strong },
+              task.completedAt
+                ? { backgroundColor: colors.strong }
+                : undefined,
+              pressed ? styles.taskCheckPressed : undefined,
+            ]}
+            onPress={() => onToggle(task)}
+          >
+            {task.completedAt ? (
+              <Text style={styles.taskCheckText}>✓</Text>
+            ) : null}
+          </Pressable>
+          <View style={styles.taskContent}>
+            <View style={styles.taskCopy}>
+              <Text
+                style={[
+                  styles.taskTitle,
+                  task.completedAt ? styles.taskTitleCompleted : undefined,
+                ]}
+              >
+                {task.title}
+              </Text>
+              <Text
+                style={[
+                  styles.taskMeta,
+                  task.completedAt ? styles.taskMetaCompleted : undefined,
+                ]}
+              >
+                {formatTaskMeta(task)}
+              </Text>
             </View>
-          ) : null}
-        </View>
-      </Animated.View>
-      {task.completedAt ? (
-        <View style={styles.completedActions}>
-          <DoseConfirmationButton
-            styles={styles}
-            task={task}
-            onConfirm={onConfirmDose}
-          />
-          <UndoButton styles={styles} task={task} onToggle={onToggle} />
-        </View>
-      ) : (
-        <View style={styles.taskActions}>
-          <Text style={[styles.taskKind, { color: colors.strong }]}>
-            {formatKind(task.kind)}
-          </Text>
-          <EditButton styles={styles} task={task} onEdit={onEdit} />
-          <FocusButton styles={styles} task={task} onFocus={onFocus} />
-        </View>
-      )}
-    </View>
+            {task.subtasks.length > 0 ? (
+              <View style={styles.subtaskList}>
+                {task.subtasks.map((subtask) => (
+                  <View key={subtask.id} style={styles.subtaskItem}>
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityLabel={subtask.title}
+                      accessibilityState={{
+                        checked: Boolean(subtask.completedAt),
+                      }}
+                      aria-checked={Boolean(subtask.completedAt)}
+                      disabled={Boolean(task.completedAt)}
+                      style={[
+                        styles.subtaskCheck,
+                        subtask.completedAt
+                          ? { backgroundColor: colors.strong }
+                          : { borderColor: colors.strong },
+                      ]}
+                      onPress={() => onToggleSubtask(task, subtask.id)}
+                    >
+                      {subtask.completedAt ? (
+                        <Text style={styles.subtaskCheckText}>✓</Text>
+                      ) : null}
+                    </Pressable>
+                    <Text
+                      style={[
+                        styles.subtaskItemTitle,
+                        subtask.completedAt
+                          ? styles.subtaskItemTitleCompleted
+                          : undefined,
+                      ]}
+                    >
+                      {subtask.title}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        </Animated.View>
+        {task.completedAt ? (
+          <View style={styles.completedActions}>
+            <DoseConfirmationButton
+              styles={styles}
+              task={task}
+              onConfirm={onConfirmDose}
+            />
+            <UndoButton styles={styles} task={task} onToggle={onToggle} />
+          </View>
+        ) : (
+          <View style={styles.taskActions}>
+            <Text style={[styles.taskKind, { color: colors.strong }]}>
+              {formatKind(task.kind)}
+            </Text>
+            <EditButton styles={styles} task={task} onEdit={onEdit} />
+            <FocusButton styles={styles} task={task} onFocus={onFocus} />
+          </View>
+        )}
+      </View>
+    </CompletionCollapse>
   );
 }
 
@@ -856,7 +870,7 @@ function useCompletionFade(completed: boolean) {
       return;
     }
     Animated.timing(fade, {
-      duration: COMPLETION_TRANSITION_MS,
+      duration: COMPLETION_TRANSITION_MS - 100,
       easing: Easing.linear,
       toValue: 0.25,
       useNativeDriver: false,
@@ -1205,6 +1219,7 @@ function createStyles(theme: OrganaTheme) {
     },
     taskList: {
       gap: 7,
+      minHeight: 58,
     },
     taskRow: {
       alignItems: "center",
