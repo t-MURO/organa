@@ -9,6 +9,8 @@ import { readConnectedSupabaseConfig } from "./connected-supabase-config.mjs";
 import { createSyntheticAccountTracker } from "./synthetic-account-tracker.mjs";
 
 const repositoryRoot = fileURLToPath(new URL("../../..", import.meta.url));
+const canonicalUuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const verificationEnvironment = readVerificationEnvironment();
 const apiUrl = verificationEnvironment.apiUrl;
 const publishableKey = verificationEnvironment.publishableKey;
@@ -759,12 +761,13 @@ async function verifyEncryptedBrainDumpContract({
         .channel(`organa:${userId}:encrypted-records`, {
           config: { private: true },
         })
-        .on("broadcast", { event: "changed" }, ({ payload }) => {
+        .on("broadcast", { event: "changed" }, ({ meta, payload }) => {
           if (
             payload?.recordId === leftUpdate.id &&
             payload?.recordType === "brain_dump_update"
           ) {
             resolveSignal({
+              messageId: meta?.id,
               payload,
               receivedAt: performance.now(),
             });
@@ -820,11 +823,12 @@ async function verifyEncryptedBrainDumpContract({
       ok(
         signal.payload.recordId === leftUpdate.id &&
           signal.payload.recordType === "brain_dump_update" &&
-          sameJson(Object.keys(signal.payload).sort(), [
-            "recordId",
-            "recordType",
-          ]),
-        "Brain Dump broadcast exposes only the expected record hint",
+          hasOnlyBroadcastHint(
+            signal.payload,
+            ["recordId", "recordType"],
+            signal.messageId,
+          ),
+        "Brain Dump broadcast exposes only the expected record hint and protocol ID",
       );
       const latencyMilliseconds = Math.round(
         signal.receivedAt - leftMutationStartedAt,
@@ -1356,8 +1360,12 @@ async function verifyConnectedReminderDeviceSessions({
       .channel(`organa:${userId}:devices`, {
         config: { private: true },
       })
-      .on("broadcast", { event: "changed" }, ({ payload }) => {
-        const signal = { payload, receivedAt: performance.now() };
+      .on("broadcast", { event: "changed" }, ({ meta, payload }) => {
+        const signal = {
+          messageId: meta?.id,
+          payload,
+          receivedAt: performance.now(),
+        };
         const waiterIndex = signalWaiters.findIndex(
           (waiter) =>
             waiter.deviceId === payload?.deviceId &&
@@ -1591,9 +1599,13 @@ async function verifyConnectedReminderDeviceSessions({
       signals.every(
         (signal) =>
           expectedDeviceIds.includes(signal.payload?.deviceId) &&
-          sameJson(Object.keys(signal.payload ?? {}).sort(), ["deviceId"]),
+          hasOnlyBroadcastHint(
+            signal.payload,
+            ["deviceId"],
+            signal.messageId,
+          ),
       ),
-      `${label} broadcasts expose only device identifiers`,
+      `${label} broadcasts expose only device identifiers and protocol IDs`,
     );
     const latencyMilliseconds = Math.round(
       Math.max(...signals.map((signal) => signal.receivedAt)) -
@@ -1642,12 +1654,13 @@ async function verifyRealtimeAndDurableReconciliation({
       .channel(`organa:${userId}:encrypted-records`, {
         config: { private: true },
       })
-      .on("broadcast", { event: "changed" }, ({ payload }) => {
+      .on("broadcast", { event: "changed" }, ({ meta, payload }) => {
         if (
           payload?.recordId === realtimeRecordId &&
           payload?.recordType === "task"
         ) {
           resolveSignal({
+            messageId: meta?.id,
             payload,
             receivedAt: performance.now(),
           });
@@ -1706,11 +1719,12 @@ async function verifyRealtimeAndDurableReconciliation({
     ok(
       signal.payload.recordId === realtimeRecordId &&
         signal.payload.recordType === "task" &&
-        sameJson(Object.keys(signal.payload).sort(), [
-          "recordId",
-          "recordType",
-        ]),
-      "Realtime broadcast exposes only the expected record hint",
+        hasOnlyBroadcastHint(
+          signal.payload,
+          ["recordId", "recordType"],
+          signal.messageId,
+        ),
+      "Realtime broadcast exposes only the expected record hint and protocol ID",
     );
     const latencyMilliseconds = Math.round(
       signal.receivedAt - mutationStartedAt,
@@ -1849,6 +1863,23 @@ function overlapSyncCursor(cursor) {
 
 function sameJson(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function hasOnlyBroadcastHint(payload, applicationKeys, messageId) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return false;
+  }
+
+  const actualKeys = Object.keys(payload).sort();
+  const expectedKeys = [...applicationKeys].sort();
+  if (sameJson(actualKeys, expectedKeys)) return true;
+
+  return (
+    sameJson(actualKeys, [...applicationKeys, "id"].sort()) &&
+    typeof payload.id === "string" &&
+    canonicalUuidPattern.test(payload.id) &&
+    payload.id === messageId
+  );
 }
 
 async function withTimeout(promise, timeoutMilliseconds, message) {
