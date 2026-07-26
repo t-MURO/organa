@@ -99,19 +99,18 @@ const remoteConnectSources = connectSources.filter(
 const remoteConnectUrls = remoteConnectSources.map(parseUrl);
 ok(
   connectSources[0] === "'self'" &&
-    (remoteConnectSources.length === 0 ||
-      (remoteConnectSources.length === 2 &&
-        remoteConnectUrls.every(Boolean) &&
-        isAllowedHttpWebSocketPair(remoteConnectUrls))),
-  "content security policy allows only self or one paired Supabase HTTP/WebSocket origin",
+    remoteConnectSources.length === 2 &&
+    remoteConnectUrls.every(Boolean) &&
+    isManagedSupabasePair(remoteConnectUrls),
+  "content security policy allows only self and one managed Supabase HTTPS/WebSocket origin",
 );
 const configuredHttpOrigin = remoteConnectUrls.find(
   (url) => url?.protocol === "http:" || url?.protocol === "https:",
 );
 ok(
   Boolean(applicationBundle) &&
-    (!configuredHttpOrigin ||
-      applicationBundle.includes(configuredHttpOrigin.origin)) &&
+    Boolean(configuredHttpOrigin) &&
+    applicationBundle.includes(configuredHttpOrigin.origin) &&
     !hasDifferentSupabaseCloudOrigin(applicationBundle, configuredHttpOrigin),
   "application bundle Supabase origin matches the content security policy",
 );
@@ -282,21 +281,16 @@ function parseUrl(value) {
   }
 }
 
-function isAllowedHttpWebSocketPair(urls) {
+function isManagedSupabasePair(urls) {
   const http = urls.find(
-    (url) => url.protocol === "https:" || url.protocol === "http:",
+    (url) => url.protocol === "https:",
   );
-  const webSocket = urls.find(
-    (url) => url.protocol === "wss:" || url.protocol === "ws:",
-  );
+  const webSocket = urls.find((url) => url.protocol === "wss:");
   return (
     http &&
     webSocket &&
     http.host === webSocket.host &&
-    (http.protocol === "https:"
-      ? webSocket.protocol === "wss:"
-      : webSocket.protocol === "ws:" &&
-        ["localhost", "127.0.0.1", "[::1]"].includes(http.hostname))
+    /^[a-z0-9]{20}\.supabase\.co$/.test(http.hostname)
   );
 }
 

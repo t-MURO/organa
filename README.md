@@ -99,8 +99,6 @@ pnpm verify:supabase
 See [supabase/README.md](./supabase/README.md) for production setup,
 [docs/MANAGED_SUPABASE_TESTING.md](./docs/MANAGED_SUPABASE_TESTING.md) for
 the current managed connected-test deployment,
-[docs/SELF_HOSTED_TESTING.md](./docs/SELF_HOSTED_TESTING.md) for the
-optional Docker home-server testing path,
 [docs/PLATFORM_SUPPORT.md](./docs/PLATFORM_SUPPORT.md) for the release
 compatibility contract, and [docs/ACCEPTANCE.md](./docs/ACCEPTANCE.md) for the
 controlled-beta checklist. The requirement-by-requirement evidence map is in

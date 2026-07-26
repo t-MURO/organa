@@ -85,7 +85,7 @@ function readSupabaseConfiguration(
   if (!url) {
     return {
       issue:
-        "Use an HTTPS Supabase project URL. Loopback HTTP is supported only for local development.",
+        "Use the managed project's HTTPS URL in the form https://PROJECT_REF.supabase.co.",
     };
   }
 
@@ -105,17 +105,11 @@ function readSupabaseConfiguration(
 function parseSupabaseUrl(value: string) {
   try {
     const url = new URL(value);
-    const loopback =
-      url.hostname === "localhost" ||
-      url.hostname === "127.0.0.1" ||
-      url.hostname === "[::1]";
-    const allowedProtocol =
-      url.protocol === "https:" || (url.protocol === "http:" && loopback);
     if (
-      !allowedProtocol ||
+      url.protocol !== "https:" ||
+      !/^[a-z0-9]{20}\.supabase\.co$/.test(url.hostname) ||
       url.username ||
       url.password ||
-      url.hostname.includes("your-project-ref") ||
       (url.pathname !== "/" && url.pathname !== "") ||
       url.search ||
       url.hash

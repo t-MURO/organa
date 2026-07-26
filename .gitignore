@@ -23,6 +23,5 @@ apps/mobile/ios/
 .organa-connected-evidence/
 .organa-managed-oauth.json
 .organa-release-evidence.json
-.organa-self-hosted-db-url
 supabase/.branches/
 supabase/.temp/

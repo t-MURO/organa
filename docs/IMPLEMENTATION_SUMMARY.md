@@ -2488,3 +2488,22 @@ Production:
 The source implementation is suitable for local controlled-beta preparation,
 but the unchecked connected, physical-device, security, legal, and store gates
 must have direct evidence before production launch.
+
+## Managed-Only Supabase And Reload Persistence Milestone
+
+- Removed the optional self-hosted Supabase Docker deployment, setup scripts,
+  connected-evidence mode, ignored database URL, and operational runbook.
+- Client runtime validation, CSP generation, release configuration, connected
+  evidence, and deployment verification now accept only managed
+  `https://PROJECT_REF.supabase.co` origins with paired `wss://` Realtime.
+- Loopback, custom-domain, remote HTTP, credential-bearing, and path-bearing
+  Supabase endpoints fail closed before the app creates a client.
+- Web auth sessions now use durable origin storage so Supabase refresh tokens
+  survive ordinary page reloads. Existing sessions migrate once from the
+  previous protected browser vault and that stale copy is removed.
+- Content keys, device proofs, device identity, and approval private keys keep
+  their existing protected IndexedDB/Web Crypto storage. Native secrets remain
+  in device-bound SecureStore.
+- The exact managed project configuration passes the release validator while
+  loopback and custom HTTPS Supabase origins are deliberately rejected. No
+  tests were added, changed, or run.

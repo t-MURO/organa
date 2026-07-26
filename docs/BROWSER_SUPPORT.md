@@ -24,14 +24,12 @@ Core web use requires:
 - service workers for installed/offline PWA behavior
 - modern JavaScript modules
 
-If durable CryptoKey storage is unavailable, Organa keeps the key in memory and
-the user must restore with the recovery code after that browser session.
-Supported browsers also encrypt auth sessions and per-device proof secrets
-with non-extractable wrapping keys in IndexedDB. Existing plaintext
-`localStorage` values migrate on first use. If protected storage is blocked,
-Organa may retain the current session through the browser's complete Storage
-implementation; that degraded path requires explicit release-browser
-acceptance and is not an XSS defense.
+If durable CryptoKey storage is unavailable, Organa keeps the content key in
+memory and the user must restore with the recovery code after that browser
+session. Device proof secrets remain protected by non-extractable wrapping
+keys in IndexedDB. Auth sessions use durable origin `localStorage` so Supabase
+refresh tokens survive reloads consistently; the exact script CSP and
+same-origin integrity are required parts of that credential boundary.
 
 ## Capability Matrix
 

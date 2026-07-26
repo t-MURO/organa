@@ -212,6 +212,7 @@ function isHttpsWebSocketPair(values) {
       https &&
       webSocket &&
       https.host === webSocket.host &&
+      /^[a-z0-9]{20}\.supabase\.co$/.test(https.hostname) &&
       urls.every(
         (url) =>
           !url.username &&

@@ -55,21 +55,9 @@ function validateSupabaseUrl(value) {
   }
 
   const hostname = url.hostname.toLowerCase();
-  if (
-    hostname === "example.com" ||
-    hostname.endsWith(".example.com") ||
-    hostname === "example.net" ||
-    hostname.endsWith(".example.net") ||
-    hostname === "example.org" ||
-    hostname.endsWith(".example.org") ||
-    hostname.endsWith(".example") ||
-    hostname.endsWith(".invalid") ||
-    hostname.endsWith(".test") ||
-    hostname === "localhost" ||
-    hostname.endsWith(".localhost")
-  ) {
+  if (!/^[a-z0-9]{20}\.supabase\.co$/.test(hostname)) {
     errors.push(
-      `${supabaseUrlName} must not use a placeholder or local-only hostname.`,
+      `${supabaseUrlName} must be a managed https://PROJECT_REF.supabase.co origin.`,
     );
   }
 }

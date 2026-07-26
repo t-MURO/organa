@@ -4,7 +4,9 @@ const appRoot = new URL("../", import.meta.url);
 const repoRoot = new URL("../../../", import.meta.url);
 const [
   deviceBoundStore,
-  authStorage,
+  authStorageNative,
+  authStorageWeb,
+  supabaseClient,
   contentKeyVaultNative,
   deviceApprovalKeyVaultNative,
   deviceIdentity,
@@ -21,6 +23,8 @@ const [
 ] = await Promise.all([
   readAppSource("src/security/device-bound-secure-store.ts"),
   readAppSource("src/auth/auth-storage.native.ts"),
+  readAppSource("src/auth/auth-storage.web.ts"),
+  readAppSource("src/auth/supabase.ts"),
   readAppSource("src/security/content-key-vault.native.ts"),
   readAppSource("src/security/device-approval-key-vault.native.ts"),
   readAppSource("src/security/device-identity.native.ts"),
@@ -61,7 +65,7 @@ ok(
 );
 
 for (const [label, source] of [
-  ["auth storage", authStorage],
+  ["auth storage", authStorageNative],
   ["content-key vault", contentKeyVaultNative],
   ["device-approval key", deviceApprovalKeyVaultNative],
   ["device identity", deviceIdentity],
@@ -76,6 +80,21 @@ for (const [label, source] of [
     `${label} uses the device-bound SecureStore adapter`,
   );
 }
+
+ok(
+  authStorageWeb.includes('typeof localStorage === "undefined"') &&
+    authStorageWeb.includes("getProtectedBrowserValue") &&
+    authStorageWeb.includes("removeProtectedBrowserValue") &&
+    !authStorageWeb.includes("setProtectedBrowserValue"),
+  "browser auth sessions persist durably and migrate the previous vault entry",
+);
+ok(
+  supabaseClient.includes('url.protocol !== "https:"') &&
+    supabaseClient.includes("\\.supabase\\.co$") &&
+    !supabaseClient.includes('"localhost"') &&
+    !supabaseClient.includes('"127.0.0.1"'),
+  "client accepts only managed HTTPS Supabase origins",
+);
 
 ok(
   contentKeyVaultWeb.includes("version?: 2") &&

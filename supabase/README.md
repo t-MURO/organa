@@ -9,11 +9,8 @@ For the current managed connected-test project, follow
 identity, migration/function/scheduler state, private config preparation, and
 remaining Auth gates.
 
-For a Docker instance on a home server used only for connected testing, follow
-`docs/SELF_HOSTED_TESTING.md`. It covers TLS, generated publishable/asymmetric
-keys, Auth/SMTP/OAuth, private migration access, self-hosted functions,
-schedulers, backup responsibility, and which production gates remain open.
-The production instructions below continue to assume a reviewed EU deployment.
+Organa supports managed Supabase projects only. Client builds reject local,
+custom-domain, and self-hosted Supabase origins.
 
 ## 1. Create The Project
 

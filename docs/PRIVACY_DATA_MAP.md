@@ -23,14 +23,6 @@ Expo EAS is a build and artifact service, not an application runtime
 processor. No analytics, advertising, crash-reporting, or session-recording
 SDK is included in the release source.
 
-During self-hosted testing, the home-server operator controls Supabase Auth,
-database, Realtime, Edge Functions, reverse-proxy, SMTP, scheduler, backup, and
-request-log infrastructure. Use synthetic test accounts and content until
-access controls, retention, encrypted backups, restore, monitoring, and
-incident handling are reviewed. Self-hosting changes the operator and
-processor inventory; it does not change Organa's client-side content
-encryption or minimize the operational metadata visible to that operator.
-
 ## Local-Only Data
 
 The following plaintext is required locally for offline use and is not sent
@@ -49,16 +41,14 @@ encryption, operating-system account security, and the optional Organa app
 lock protect local plaintext; end-to-end encryption does not protect an
 already unlocked compromised device.
 
-Native content keys, device proof secrets, and short-lived approval private
-keys use SecureStore. In supported browsers, content keys, auth sessions,
+Native content keys, auth sessions, device proof secrets, and short-lived
+approval private keys use SecureStore. In supported browsers, content keys,
 device proof secrets, and approval private keys are encrypted at rest with
-non-extractable Web Crypto wrapping keys stored through IndexedDB. This blocks
-plaintext storage inspection but does not make an origin with active malicious
-script safe. If durable CryptoKey cloning is blocked, the content key is
-memory-only; auth/device storage may fall back to the browser's complete
-`Storage` implementation so the current session can survive. Such a browser is
-outside the controlled-beta capability contract until its recovery and storage
-behavior is explicitly accepted.
+non-extractable Web Crypto wrapping keys stored through IndexedDB. Browser
+auth sessions use the origin's durable `localStorage`, matching Supabase's
+supported persistence model so refresh tokens survive reloads. The strict CSP,
+short token lifetime, sign-out erasure, and origin security are therefore
+critical; same-origin malicious script could act as the signed-in user.
 
 Content-free authorization, account-deletion deadline, PWA update, and pending
 Push-schedule caches may use local storage. They contain booleans, timestamps,

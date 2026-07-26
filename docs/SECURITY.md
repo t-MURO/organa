@@ -185,13 +185,13 @@ and optional app lock. End-to-end encryption protects synchronized cloud
 payloads; it does not make a compromised unlocked device safe.
 
 Native auth sessions and per-device proof secrets use platform secure storage.
-On supported web clients, auth sessions and device proof secrets migrate out
-of plaintext local storage into AES-GCM records with non-extractable wrapping
-keys cloned through IndexedDB. Record keys are authenticated as additional
-data to prevent record swapping. This is at-rest hardening, not an XSS
-boundary: malicious same-origin script can still act as the signed-in user.
-Browsers that reject durable CryptoKey storage use a memory or legacy Storage
-fallback and require explicit release-browser validation.
+On supported web clients, device proof secrets use record-bound AES-GCM
+entries with non-extractable wrapping keys cloned through IndexedDB. Auth
+sessions use durable origin `localStorage` so Supabase refresh tokens reliably
+survive reloads; the adapter migrates sessions from the earlier protected
+store on first read. This makes the exact script CSP and origin integrity part
+of the credential boundary because malicious same-origin script can act as
+the signed-in user.
 
 ## Server-Readable Metadata
 

@@ -66,9 +66,9 @@ The criterion-by-criterion status and evidence boundary is recorded in
   record IDs derived from the account content key with
   HKDF/HMAC-SHA-256; calendar dates remain inside encrypted fields while
   same-day multi-device writes still converge
-- [x] Browser auth sessions and device proof secrets migrate from plaintext
-  local storage into record-bound AES-GCM IndexedDB entries with
-  non-extractable wrapping keys where supported
+- [x] Browser auth sessions persist through the durable Supabase storage
+  contract while device proof secrets remain in record-bound AES-GCM
+  IndexedDB entries with non-extractable wrapping keys
 - [x] Client backend setup rejects remote HTTP, URL credentials/placeholders,
   and non-publishable or secret-style Supabase keys without reflecting values
   in the setup UI
@@ -537,10 +537,6 @@ Local evidence:
   permission-granted closed-app delivery remains a release-browser gate
 
 ## Requires Connected Backend Validation
-
-- A self-hosted Docker instance may provide functional evidence for this
-  section when it follows `docs/SELF_HOSTED_TESTING.md`. It does not replace
-  the final region, operations, legal, or independent-review gates.
 - `pnpm verify:connected:acceptance:deletion` is prepared to capture the real
   one-hour scheduler and cascade evidence after rerunning the connected
   baseline. It has not been run against a connected backend in this workspace,

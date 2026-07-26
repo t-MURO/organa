@@ -51,7 +51,7 @@ function readOperatorInput(read) {
         : "Connected acceptance configuration is invalid.";
     console.error(`Connected acceptance cannot start: ${message}`);
     console.error(
-      "Prepare the private config with the managed or self-hosted helper documented in docs/MANAGED_SUPABASE_TESTING.md and docs/SELF_HOSTED_TESTING.md.",
+      "Prepare the private config with the managed helper documented in docs/MANAGED_SUPABASE_TESTING.md.",
     );
     process.exit(1);
   }

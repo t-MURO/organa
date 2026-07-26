@@ -1,6 +1,5 @@
 const migrationVersionPattern = /^\d{14}$/;
 const projectRefPattern = /^[a-z0-9]{20}$/;
-const sourceRevisionPattern = /^[0-9a-f]{40}$/;
 
 export function validateSupabaseDeployment(value, label = "deployment") {
   if (!isRecord(value)) {
@@ -26,26 +25,7 @@ export function validateSupabaseDeployment(value, label = "deployment") {
     };
   }
 
-  if (value.type === "self-hosted") {
-    requireExactKeys(
-      value,
-      ["migrationVersion", "sourceRevision", "type"],
-      label,
-    );
-    if (!sourceRevisionPattern.test(value.sourceRevision ?? "")) {
-      throw new Error(
-        `${label}.sourceRevision must be a 40-character lowercase Git revision.`,
-      );
-    }
-    requireMigrationVersion(value.migrationVersion, label);
-    return {
-      migrationVersion: value.migrationVersion,
-      sourceRevision: value.sourceRevision,
-      type: "self-hosted",
-    };
-  }
-
-  throw new Error(`${label}.type must be "managed" or "self-hosted".`);
+  throw new Error(`${label}.type must be "managed".`);
 }
 
 export function supabaseDeploymentsMatch(left, right) {
@@ -55,9 +35,7 @@ export function supabaseDeploymentsMatch(left, right) {
     return (
       normalizedLeft.type === normalizedRight.type &&
       normalizedLeft.migrationVersion === normalizedRight.migrationVersion &&
-      (normalizedLeft.type === "managed"
-        ? normalizedLeft.projectRef === normalizedRight.projectRef
-        : normalizedLeft.sourceRevision === normalizedRight.sourceRevision)
+      normalizedLeft.projectRef === normalizedRight.projectRef
     );
   } catch {
     return false;
