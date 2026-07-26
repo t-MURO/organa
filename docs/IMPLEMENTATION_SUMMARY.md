@@ -2547,3 +2547,38 @@ must have direct evidence before production launch.
   retained one retry signal. Strict TypeScript, the 28-check web export, the
   Android Hermes export, 17 security checks, and 22 platform checks pass. No
   tests were added, changed, or run.
+
+## Native AES Envelope Compatibility Milestone
+
+- A user-confirmed retry on Android showed that per-record isolation kept the
+  queue moving but did not repair the underlying native read failure.
+- Sanitized managed inspection found seven task rows for the account. Every
+  encrypted field used AES-256-GCM version 1, the current key ID, exact
+  record-and-field AAD, valid base64, and a complete durable field snapshot.
+  No identifier, ciphertext, key, proof, session, or task content was printed.
+- The installed Expo Crypto web API accepts a base64 string in
+  `AESSealedData.fromCombined`, while its Android native method receives a
+  `ByteArray`. Organa previously passed stored base64 strings directly through
+  that platform boundary in record, recovery, and device-approval decryption.
+- A shared crypto helper now decodes combined base64 into `Uint8Array` before
+  Expo Crypto parses it. AES-GCM algorithm, version, key-ID, and AAD validation
+  remain unchanged.
+- The red boundary diagnostic found four direct string crossings; the fixed
+  diagnostic finds none and confirms all four envelope paths use decoded
+  bytes. A new security verifier check prevents regression.
+- EAS preview artifacts now auto-increment their developer-facing build
+  number, preventing another version-code-1 replacement ambiguity.
+- Strict TypeScript, 18 security checks, 23 platform checks, Android and iOS
+  Hermes exports, the 28-check/23-URL web export, and the live dependency audit
+  pass. No tests were added, changed, or run.
+- Clean commit `ca648c4e59254834d914053fbaa2a26ddcad0abd` is deployed from
+  the EAS `preview` environment as immutable deployment `tdszx5hikw` and the
+  `https://organa--preview.expo.app` alias. Both URLs serve
+  `entry-8d21a9944ff26dbb1866ab86777e2d73.js` and pass all 17 live
+  deployment checks.
+- Android preview build `40f3cb8e-f3f2-49d3-828d-65b0e15e3d74` completed
+  from the same clean commit as version `0.1.0` build `2`. The
+  111,768,030-byte APK passes ZIP integrity and Android `apksig` 8.12.0
+  verification with one valid v2 signer, no errors or warnings, and the same
+  signer certificate as the preceding preview. Its SHA-256 and EAS record are
+  in `docs/ANDROID_PREVIEW_EVIDENCE.md`.
