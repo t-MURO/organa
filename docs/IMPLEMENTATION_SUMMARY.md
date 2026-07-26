@@ -2051,8 +2051,9 @@ No tests were added, changed, or run for this milestone.
   environments before queuing a build.
 - Local development exports remain available without release values so the
   setup-required boundary can still be rendered. Direct probes accept a
-  generated P-256 public key and reject a same-length invalid curve point; both
-  currently empty remote EAS environments reject all three missing values.
+  generated P-256 public key and reject a same-length invalid curve point. Both
+  remote EAS environments are now configured and pass the same value-redacting
+  three-field preflight.
 - Strict TypeScript, all 19 platform checks, and the 18-check production web
   export with eight routes and 22 precache URLs pass. No tests were added,
   changed, or run.
@@ -2196,6 +2197,28 @@ No tests were added, changed, or run for this milestone.
 - Strict TypeScript, Node syntax, diff hygiene, and the configured production
   web export pass. The export has eight routes, 26 artifact/CSP/header checks,
   and 23 precached URLs. No tests were added, changed, or run.
+
+## Signed Android Preview Milestone
+
+- Both EAS preview and production environments contain the complete public
+  client configuration and pass the release validator without printing values.
+- The first clean Android preview build reached Gradle and exposed a real
+  duplicate-class conflict: Expo Widgets' Glance dependency requested
+  WorkManager KTX `2.7.1`, while the React Native Android widget library
+  requested runtime `2.8.1`.
+- Added an idempotent Expo config plugin that aligns both WorkManager artifacts
+  at `2.8.1` in every generated Android app build. The source/generated
+  platform verifier now guards the exact coordinates.
+- Retry build `812d5e0c-5e26-40a5-9652-a95332fd23c3` completed from clean
+  commit `4faf6e6e2f4369a1cb95adb19146879b1a8d1ede` as internal APK version
+  `0.1.0` build `1`.
+- The 111,653,938-byte APK passes archive integrity and Android `apksig` 9.3.1
+  verification with one valid v2 signer. Its SHA-256 and EAS record are in
+  `docs/ANDROID_PREVIEW_EVIDENCE.md`; the local installable copy remains
+  ignored.
+- Strict TypeScript, 20 platform checks, and both native Hermes exports pass.
+  Physical Android behavior remains unclaimed. No tests were added, changed,
+  or run.
 
 ## Remaining Acceptance Gates
 

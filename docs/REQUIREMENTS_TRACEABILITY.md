@@ -43,7 +43,8 @@ Status meanings:
 
 - Native source targets are pinned to iOS 16.4+ and Android 7+ (API 24) with
   Android compile/target API 36.
-- `pnpm verify:platform`: 19 source/generated target, sensitive Android
+- `pnpm verify:platform`: 20 source/generated target, WorkManager alignment,
+  sensitive Android
   manifest, browser-policy, and dual-platform widget checks pass
 - `pnpm verify:performance`: Quick Add, recurring completion, Today planning,
   and search pass a 100 ms median budget against 2,000 local tasks on the
@@ -85,6 +86,9 @@ Status meanings:
   explicit EAS environments, remote build-number management, and draft
   Android internal-track submission; `docs/RELEASE_RUNBOOK.md` defines the
   credential, artifact, physical-check, and evidence handoff
+- both remote EAS client environments pass the value-redacting release
+  preflight, and `docs/ANDROID_PREVIEW_EVIDENCE.md` records a signed,
+  checksum-bound internal Android APK from commit `4faf6e6`
 - `apps/mobile/app.json` links the source to live EAS project
   `@t-muro/organa` (`ae92cff5-050e-4972-808d-a393be8d67e3`);
   non-interactive EAS project inspection resolves the same owner, slug, and ID

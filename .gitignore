@@ -3,6 +3,7 @@ node_modules/
 .expo/
 dist/
 apps/mobile/dist-*/
+artifacts/
 coverage/
 *.log
 .DS_Store

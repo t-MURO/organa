@@ -288,6 +288,13 @@ Local evidence:
 - EAS preview and production jobs fail before dependency installation when
   their public Supabase or Web Push client configuration is missing, malformed,
   local-only, or placeholder-shaped; validation never prints values
+- both configured EAS environments pass the three-field, value-redacting
+  client preflight; a signed internal Android APK from commit `4faf6e6` is
+  recorded in `docs/ANDROID_PREVIEW_EVIDENCE.md`
+- the first Android preview build exposed incompatible WorkManager runtime/KTX
+  versions across the two widget stacks; an idempotent native-generation
+  plugin aligns both at `2.8.1`, the retry passed duplicate-class resolution,
+  and the resulting APK verifies with one APK Signature Scheme v2 signer
 - the EAS profile JSON and resolved public Expo configuration validate locally;
   strict TypeScript, the production PWA export, both Hermes exports, and the
   production dependency audit pass; no tests were added, changed, or run for
