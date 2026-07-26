@@ -192,17 +192,18 @@ export function BrainDumpProvider({ children }: PropsWithChildren) {
         applyAction({ type: "loaded", bullets });
       }
       await Promise.all(bullets.map((bullet) => repository.upsert(bullet)));
+      if (active) sync.reportLocalReadSuccess("brain_dump");
     }
 
     const loading = load();
     hydration.current = loading.catch(() => undefined);
     void loading.catch(() => {
-      if (active) sync.reportLocalReadFailure();
+      if (active) sync.reportLocalReadFailure("brain_dump");
     });
     return () => {
       active = false;
     };
-  }, [repository]);
+  }, [repository, sync.localRetryGeneration]);
 
   useEffect(
     () =>

@@ -243,6 +243,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
 
       if (active) {
         dispatch({ type: "loaded", tasks });
+        sync.reportLocalReadSuccess("tasks");
         const authorization = reminderAuthorizationRef.current;
         tasks.forEach((task) =>
           syncNotifications(
@@ -260,12 +261,17 @@ export function TaskProvider({ children }: PropsWithChildren) {
     const loading = load();
     hydration.current = loading.catch(() => undefined);
     void loading.catch(() => {
-      if (active) sync.reportLocalReadFailure();
+      if (active) sync.reportLocalReadFailure("tasks");
     });
     return () => {
       active = false;
     };
-  }, [auth.localPreview, namespace, repository]);
+  }, [
+    auth.localPreview,
+    namespace,
+    repository,
+    sync.localRetryGeneration,
+  ]);
 
   useEffect(() => {
     if (!devices.reminderAuthorizationReady) return;

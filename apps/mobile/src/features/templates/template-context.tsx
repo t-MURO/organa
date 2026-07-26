@@ -181,17 +181,20 @@ export function TemplateProvider({ children }: PropsWithChildren) {
     async function load() {
       await repository.initialize();
       const templates = await repository.list();
-      if (active) dispatch({ type: "loaded", templates });
+      if (active) {
+        dispatch({ type: "loaded", templates });
+        sync.reportLocalReadSuccess("templates");
+      }
     }
     const loading = load();
     hydration.current = loading.catch(() => undefined);
     void loading.catch(() => {
-      if (active) sync.reportLocalReadFailure();
+      if (active) sync.reportLocalReadFailure("templates");
     });
     return () => {
       active = false;
     };
-  }, [repository]);
+  }, [repository, sync.localRetryGeneration]);
 
   useEffect(
     () =>

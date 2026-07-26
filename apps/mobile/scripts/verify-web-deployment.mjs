@@ -121,12 +121,22 @@ ok(
 );
 if (applicationBundle) {
   const response = await fetchSameOrigin(origin, applicationBundle);
-  await response.body?.cancel();
+  const bundleText = await response.text();
   ok(
     isImmutable(response.headers.get("cache-control")) ||
       (isEasHostingOrigin &&
         hasBoundedEasAssetCache(response.headers.get("cache-control"))),
     "the fingerprinted app bundle is immutable or uses the bounded EAS asset cache",
+  );
+  const configuredHttpOrigin = connectSources
+    .slice(1)
+    .map((source) => new URL(source))
+    .find((url) => url.protocol === "https:");
+  ok(
+    Boolean(configuredHttpOrigin) &&
+      bundleText.includes(configuredHttpOrigin.origin) &&
+      !hasDifferentSupabaseCloudOrigin(bundleText, configuredHttpOrigin),
+    "the deployed bundle uses the Supabase origin allowed by CSP",
   );
 }
 
@@ -214,6 +224,15 @@ function isHttpsWebSocketPair(values) {
   } catch {
     return false;
   }
+}
+
+function hasDifferentSupabaseCloudOrigin(bundle, configuredOrigin) {
+  const origins = [
+    ...bundle.matchAll(
+      /https:\/\/[a-z0-9-]+\.supabase\.co/gi,
+    ),
+  ].map((match) => new URL(match[0]));
+  return origins.some((origin) => origin.host !== configuredOrigin.host);
 }
 
 function hasDirective(value, expected) {

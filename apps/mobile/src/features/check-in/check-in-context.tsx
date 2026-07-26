@@ -113,18 +113,19 @@ export function CheckInProvider({ children }: PropsWithChildren) {
           type: "loaded",
           entries: migrated ? normalizedEntries : storedEntries,
         });
+        sync.reportLocalReadSuccess("check_in");
       }
     }
 
     const loading = load();
     hydration.current = loading.catch(() => undefined);
     void loading.catch(() => {
-      if (active) sync.reportLocalReadFailure();
+      if (active) sync.reportLocalReadFailure("check_in");
     });
     return () => {
       active = false;
     };
-  }, [repository]);
+  }, [repository, sync.localRetryGeneration]);
 
   useEffect(
     () =>

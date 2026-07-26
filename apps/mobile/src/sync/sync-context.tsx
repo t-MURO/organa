@@ -69,9 +69,12 @@ interface SyncContextValue {
   error: string;
   lastSyncedAt?: string;
   localReadFailed: boolean;
+  localRetryGeneration: number;
   localSaveFailed: boolean;
   pending: number;
-  reportLocalReadFailure(): void;
+  reportLocalReadFailure(source: LocalReadSource): void;
+  reportLocalReadSuccess(source: LocalReadSource): void;
+  retry(): void;
   status: "local" | "offline" | "syncing" | "synced" | "error";
   commit(changes: SyncCommitChange[]): Promise<boolean>;
   commitDelete(
@@ -97,6 +100,13 @@ interface SyncContextValue {
     listener: RemoteRecordListener<T>,
   ): () => void;
 }
+
+type LocalReadSource =
+  | "brain_dump"
+  | "check_in"
+  | "settings"
+  | "tasks"
+  | "templates";
 
 const SyncContext = createContext<SyncContextValue | undefined>(undefined);
 
@@ -164,9 +174,23 @@ export function SyncProvider({ children }: PropsWithChildren) {
     useState<SyncContextValue["status"]>("local");
   const [outboxError, setOutboxError] = useState("");
   const [readError, setReadError] = useState("");
-  const [localReadError, setLocalReadError] = useState("");
+  const [localReadFailures, setLocalReadFailures] = useState<
+    Set<LocalReadSource>
+  >(() => new Set());
+  const [localRetryGeneration, setLocalRetryGeneration] = useState(0);
   const [storageError, setStorageError] = useState("");
   const [lastSyncedAt, setLastSyncedAt] = useState<string>();
+  const localReadError =
+    localReadFailures.size > 0 ? localReadErrorMessage : "";
+
+  useEffect(() => {
+    if (localReadFailures.size === 0) return;
+    const timeout = setTimeout(
+      () => setLocalRetryGeneration((generation) => generation + 1),
+      5_000,
+    );
+    return () => clearTimeout(timeout);
+  }, [localReadFailures, localRetryGeneration]);
 
   useEffect(() => {
     let active = true;
@@ -593,6 +617,35 @@ export function SyncProvider({ children }: PropsWithChildren) {
     }
   }
 
+  function retry() {
+    setReadError("");
+    setOutboxError("");
+    setLocalRetryGeneration((generation) => generation + 1);
+    for (const recordType of subscribers.current.keys()) {
+      void pullRecordType(recordType);
+    }
+    void flush();
+    void reconcile();
+  }
+
+  function reportLocalReadFailure(source: LocalReadSource) {
+    setLocalReadFailures((current) => {
+      if (current.has(source)) return current;
+      const next = new Set(current);
+      next.add(source);
+      return next;
+    });
+  }
+
+  function reportLocalReadSuccess(source: LocalReadSource) {
+    setLocalReadFailures((current) => {
+      if (!current.has(source)) return current;
+      const next = new Set(current);
+      next.delete(source);
+      return next;
+    });
+  }
+
   function subscribe<T>(
     recordType: SyncRecordType,
     listener: RemoteRecordListener<T>,
@@ -872,10 +925,12 @@ export function SyncProvider({ children }: PropsWithChildren) {
         flush,
         lastSyncedAt,
         localReadFailed: Boolean(localReadError),
+        localRetryGeneration,
         localSaveFailed: Boolean(storageError),
         pending,
-        reportLocalReadFailure: () =>
-          setLocalReadError(localReadErrorMessage),
+        reportLocalReadFailure,
+        reportLocalReadSuccess,
+        retry,
         status: localReadError || storageError || readError
           ? "error"
           : auth.localPreview

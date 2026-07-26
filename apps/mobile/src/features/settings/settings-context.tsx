@@ -105,6 +105,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
         settingsRef.current = stored;
         setSettings(stored);
         setLoading(false);
+        sync.reportLocalReadSuccess("settings");
         if (devices.reminderAuthorizationReady) {
           void syncCheckInReminder(
             reminderSettings(stored, devices.remindersAllowed),
@@ -116,12 +117,12 @@ export function SettingsProvider({ children }: PropsWithChildren) {
       });
     hydration.current = loading.catch(() => undefined);
     void loading.catch(() => {
-      if (active) sync.reportLocalReadFailure();
+      if (active) sync.reportLocalReadFailure("settings");
     });
     return () => {
       active = false;
     };
-  }, [namespace, repository]);
+  }, [namespace, repository, sync.localRetryGeneration]);
 
   useEffect(() => {
     if (!devices.reminderAuthorizationReady) return;

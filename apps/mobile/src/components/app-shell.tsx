@@ -130,8 +130,20 @@ export function AppShell() {
             <Text style={styles.syncNoticeText}>
               {sync.localSaveFailed
                 ? "A recent change could not be saved safely on this device. Keep Organa open and review the change before closing the app."
-                : "Encrypted sync needs attention. Your changes remain safe on this device while Organa retries."}
+                : sync.localReadFailed
+                  ? "Saved data could not be reopened on this device. Organa will retry automatically."
+                  : "Encrypted sync needs attention. Your changes remain safe on this device while Organa retries."}
             </Text>
+            {!sync.localSaveFailed ? (
+              <Pressable
+                accessibilityLabel="Retry encrypted sync"
+                accessibilityRole="button"
+                style={styles.syncNoticeButton}
+                onPress={sync.retry}
+              >
+                <Text style={styles.syncNoticeButtonText}>Retry sync</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
         {pathname === "/focus" ? (
@@ -454,14 +466,33 @@ function createStyles(theme: OrganaTheme, isWide: boolean) {
       fontSize: 12,
     },
     syncNotice: {
+      alignItems: "center",
       backgroundColor: theme.mustSoft,
       borderBottomColor: theme.must,
       borderBottomWidth: 1,
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 10,
+      justifyContent: "center",
       paddingHorizontal: isWide ? 28 : 16,
       paddingVertical: 10,
     },
+    syncNoticeButton: {
+      alignItems: "center",
+      backgroundColor: theme.must,
+      borderRadius: 10,
+      justifyContent: "center",
+      minHeight: 36,
+      paddingHorizontal: 13,
+    },
+    syncNoticeButtonText: {
+      color: theme.surface,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 11,
+    },
     syncNoticeText: {
       color: theme.text,
+      flexShrink: 1,
       fontFamily: "Manrope_600SemiBold",
       fontSize: 13,
       lineHeight: 19,

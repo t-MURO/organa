@@ -25,6 +25,12 @@ const manifest = JSON.parse(manifestText);
 const routes = JSON.parse(routesText);
 const checks = [];
 const policy = readContentSecurityPolicy(html);
+const applicationBundlePath = html.match(
+  /<script[^>]+\bsrc="(\/_expo\/static\/js\/web\/entry-[a-f0-9]+\.js)"/,
+)?.[1];
+const applicationBundle = applicationBundlePath
+  ? await readFile(new URL(applicationBundlePath.slice(1), distRoot), "utf8")
+  : "";
 
 ok(
   /<title[^>]*>Organa<\/title>/.test(html),
@@ -55,7 +61,8 @@ ok(
   "manifest includes a maskable icon",
 );
 ok(
-  /_expo\/static\/js\/web\/entry-[a-f0-9]+\.js/.test(serviceWorker),
+  Boolean(applicationBundlePath) &&
+    serviceWorker.includes(applicationBundlePath.slice(1)),
   "service worker precaches the application bundle",
 );
 ok(
@@ -97,6 +104,16 @@ ok(
         remoteConnectUrls.every(Boolean) &&
         isAllowedHttpWebSocketPair(remoteConnectUrls))),
   "content security policy allows only self or one paired Supabase HTTP/WebSocket origin",
+);
+const configuredHttpOrigin = remoteConnectUrls.find(
+  (url) => url?.protocol === "http:" || url?.protocol === "https:",
+);
+ok(
+  Boolean(applicationBundle) &&
+    (!configuredHttpOrigin ||
+      applicationBundle.includes(configuredHttpOrigin.origin)) &&
+    !hasDifferentSupabaseCloudOrigin(applicationBundle, configuredHttpOrigin),
+  "application bundle Supabase origin matches the content security policy",
 );
 
 const inlineScripts = [
@@ -281,4 +298,14 @@ function isAllowedHttpWebSocketPair(urls) {
       : webSocket.protocol === "ws:" &&
         ["localhost", "127.0.0.1", "[::1]"].includes(http.hostname))
   );
+}
+
+function hasDifferentSupabaseCloudOrigin(bundle, configuredOrigin) {
+  const configuredHost = configuredOrigin?.host;
+  const origins = [
+    ...bundle.matchAll(
+      /https:\/\/[a-z0-9-]+\.supabase\.co/gi,
+    ),
+  ].map((match) => new URL(match[0]));
+  return origins.some((origin) => origin.host !== configuredHost);
 }
