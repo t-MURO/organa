@@ -60,17 +60,17 @@ its 10-second broadcast deadline. Its RPC had succeeded, cleanup completed,
 and the immediate clean rerun passed all 119 checks. The failed and passing
 sanitized phase records remain in the ignored evidence directory.
 
-`pnpm verify:migrations` was attempted but Docker was unavailable. Its
-isolated-schema preservation result is therefore not claimed for this source
-state. No test file was added, changed, or run.
+With Docker `28.5.2` healthy, `pnpm verify:migrations` passed all six
+isolated-schema upgrade checks. The verifier preserved every seeded
+encrypted/account row across the full ten-migration chain and removed its
+disposable schema and synthetic Auth user. No test file was added, changed, or
+run.
 
 ## Remaining Gates
 
 - Commission the independent cryptographic and application security review.
 - Exercise migrated device-bound storage on physical iOS and Android devices,
   including backup/restore and biometric/device-PIN behavior.
-- Run the Docker-backed migration-preservation verifier when Docker is
-  available.
 - Repeat the database lint, abuse probes, dependency audit, and web response
   verification against the production release candidate.
 - Resolve every critical or high finding from the independent review before

@@ -453,9 +453,9 @@ Local evidence:
 - managed migration `20260726120000` applies encrypted payload and field
   metadata bounds; the linked project matches all ten local migrations and
   linked schema lint reports no errors
-- the Docker-backed migration-preservation verifier was attempted but Docker
-  was unavailable, so no fresh isolated-schema result is claimed for this
-  milestone
+- with Docker `28.5.2` healthy, the Docker-backed migration-preservation
+  verifier passes all six isolated-schema upgrade checks across the complete
+  ten-migration chain
 - browser walkthrough passed task, Undo/fade, checkbox-only reopening, separate
   medication dose confirmation, editor, Check-In, Brain Dump, templates,
   navigation, accessibility-tree, and focus-indicator checks

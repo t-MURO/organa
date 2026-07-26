@@ -2386,11 +2386,12 @@ No tests were added, changed, or run for this milestone.
   missed one Realtime broadcast deadline after the mutation RPC succeeded;
   cleanup completed, and the immediate clean rerun passed. Both sanitized
   phase records remain private.
-- The Docker-backed migration-preservation verifier was attempted but Docker
-  was unavailable, so that isolated-schema result remains unclaimed. No test
-  file was added, changed, or run. Full details and remaining physical,
-  production, and independent-review gates are in
-  `docs/INTERNAL_SECURITY_AUDIT.md`.
+- With Docker `28.5.2` healthy, the Docker-backed migration-preservation
+  verifier passes all six isolated-schema upgrade checks across the complete
+  ten-migration chain while preserving seeded encrypted/account rows and
+  cleaning its disposable state. No test file was added, changed, or run.
+  Full details and remaining physical, production, and independent-review
+  gates are in `docs/INTERNAL_SECURITY_AUDIT.md`.
 
 ## Remaining Acceptance Gates
 
