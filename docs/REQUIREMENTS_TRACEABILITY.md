@@ -92,7 +92,7 @@ Status meanings:
   credential, artifact, physical-check, and evidence handoff
 - both remote EAS client environments pass the value-redacting release
   preflight, and `docs/ANDROID_PREVIEW_EVIDENCE.md` records a signed,
-  checksum-bound internal Android APK from commit `4faf6e6`
+  checksum-bound internal Android APK from commit `6e8bd96`
 - `apps/mobile/app.json` links the source to live EAS project
   `@t-muro/organa` (`ae92cff5-050e-4972-808d-a393be8d67e3`);
   non-interactive EAS project inspection resolves the same owner, slug, and ID

@@ -2535,8 +2535,13 @@ must have direct evidence before production launch.
 - The sync notice now explains that other records continue syncing while the
   affected cloud change is retried. The existing manual Retry sync action and
   five-second local-hydration retry remain available.
-- The latest installable Android preview predates these fixes at source commit
-  `4faf6e6e2f4369a1cb95adb19146879b1a8d1ede`; a replacement APK is required.
+- Replacement build `a02997e0-e61a-4498-8b9d-161de2a38369` completed from
+  clean source commit `6e8bd96dee7ed3f927ed25804dbbe727d8495c7a` as internal
+  Android APK version `0.1.0` build `1`.
+- The 111,767,690-byte replacement passes ZIP integrity and Android `apksig`
+  8.12.0 verification with one valid v2 signer, no errors or warnings, and the
+  same signer certificate as the previous preview. Its SHA-256 and EAS record
+  are in `docs/ANDROID_PREVIEW_EVIDENCE.md`.
 - The red diagnostic reproduced one first-row failure blocking five later
   tasks. The isolated-delivery diagnostic preserved all five valid rows and
   retained one retry signal. Strict TypeScript, the 28-check web export, the

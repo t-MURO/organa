@@ -297,8 +297,8 @@ Local evidence:
   their public Supabase or Web Push client configuration is missing, malformed,
   local-only, or placeholder-shaped; validation never prints values
 - both configured EAS environments pass the three-field, value-redacting
-  client preflight; a signed internal Android APK from commit `4faf6e6` is
-  recorded in `docs/ANDROID_PREVIEW_EVIDENCE.md`
+  client preflight; the signed internal Android sync-recovery APK from commit
+  `6e8bd96` is recorded in `docs/ANDROID_PREVIEW_EVIDENCE.md`
 - the first Android preview build exposed incompatible WorkManager runtime/KTX
   versions across the two widget stacks; an idempotent native-generation
   plugin aligns both at `2.8.1`, the retry passed duplicate-class resolution,
