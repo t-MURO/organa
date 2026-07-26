@@ -21,7 +21,10 @@ export function AuthBoundary({ children }: PropsWithChildren) {
   const auth = useAuth();
   const theme = useColorScheme() === "dark" ? darkTheme : lightTheme;
 
-  if (auth.loading) {
+  if (
+    auth.loading ||
+    (!auth.session && !auth.localPreview && auth.oauthProvidersLoading)
+  ) {
     return (
       <SafeAreaView
         accessibilityLabel="Opening Organa"
@@ -144,39 +147,45 @@ function SignInScreen() {
               </Text>
               <Text style={styles.cardText}>
                 {auth.configured
-                  ? "Choose a sign-in method. Organa does not require a password."
+                  ? auth.oauthProviders.length > 0
+                    ? "Choose a sign-in method. Organa does not require a password."
+                    : "Enter your email and Organa will send a one-time verification code."
                   : auth.configurationIssue}
               </Text>
 
               {auth.configured ? (
                 <>
-                  <View style={styles.providerGrid}>
-                    {(["google", "github"] as const).map((provider) => (
-                      <Pressable
-                        key={provider}
-                        accessibilityLabel={`Continue with ${provider}`}
-                        accessibilityRole="button"
-                        disabled={Boolean(busy)}
-                        style={styles.providerButton}
-                        onPress={() =>
-                          void run(provider, () =>
-                            auth.signInWithOAuth(provider),
-                          )
-                        }
-                      >
-                        <View style={styles.providerGlyph} />
-                        <Text style={styles.providerText}>
-                          {capitalize(provider)}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
+                  {auth.oauthProviders.length > 0 ? (
+                    <>
+                      <View style={styles.providerGrid}>
+                        {auth.oauthProviders.map((provider) => (
+                          <Pressable
+                            key={provider}
+                            accessibilityLabel={`Continue with ${provider}`}
+                            accessibilityRole="button"
+                            disabled={Boolean(busy)}
+                            style={styles.providerButton}
+                            onPress={() =>
+                              void run(provider, () =>
+                                auth.signInWithOAuth(provider),
+                              )
+                            }
+                          >
+                            <View style={styles.providerGlyph} />
+                            <Text style={styles.providerText}>
+                              {capitalize(provider)}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
 
-                  <View style={styles.dividerRow}>
-                    <View style={styles.divider} />
-                    <Text style={styles.dividerText}>OR USE EMAIL</Text>
-                    <View style={styles.divider} />
-                  </View>
+                      <View style={styles.dividerRow}>
+                        <View style={styles.divider} />
+                        <Text style={styles.dividerText}>OR USE EMAIL</Text>
+                        <View style={styles.divider} />
+                      </View>
+                    </>
+                  ) : null}
 
                   <Text style={styles.fieldLabel}>Email address</Text>
                   <TextInput

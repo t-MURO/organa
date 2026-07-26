@@ -16,20 +16,24 @@ import {
   parseOAuthCallback,
 } from "./oauth-callback";
 import {
+  type ConfiguredOAuthProvider,
   isSupabaseConfigured,
+  readConfiguredOAuthProviders,
   supabase,
   supabaseConfigurationIssue,
 } from "./supabase";
 
 WebBrowser.maybeCompleteAuthSession();
 
-type OAuthProvider = Extract<Provider, "google" | "github">;
+type OAuthProvider = Extract<Provider, ConfiguredOAuthProvider>;
 
 interface AuthContextValue {
   configurationIssue: string;
   configured: boolean;
   loading: boolean;
   localPreview: boolean;
+  oauthProviders: OAuthProvider[];
+  oauthProvidersLoading: boolean;
   session: Session | null;
   user: User | null;
   callbackError: string;
@@ -49,6 +53,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [localPreview, setLocalPreview] = useState(false);
   const [callbackError, setCallbackError] = useState("");
+  const [oauthProviders, setOauthProviders] = useState<OAuthProvider[]>([]);
+  const [oauthProvidersLoading, setOauthProvidersLoading] = useState(
+    isSupabaseConfigured,
+  );
   const [authRedirectUrl] = useState(() => Linking.createURL("/"));
   const [oauthCallbackCoordinator] = useState(() => {
     const client = supabase;
@@ -74,6 +82,29 @@ export function AuthProvider({ children }: PropsWithChildren) {
       `${window.location.pathname}${window.location.search}`,
     );
   }, [authRedirectUrl]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setOauthProvidersLoading(false);
+      return;
+    }
+
+    let active = true;
+    void readConfiguredOAuthProviders()
+      .then((providers) => {
+        if (active) setOauthProviders(providers);
+      })
+      .catch(() => {
+        if (active) setOauthProviders([]);
+      })
+      .finally(() => {
+        if (active) setOauthProvidersLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const client = supabase;
@@ -249,6 +280,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
         isCurrentUser,
         loading,
         localPreview,
+        oauthProviders,
+        oauthProvidersLoading,
         session,
         user: session?.user ?? null,
         startLocalPreview: () => setLocalPreview(true),
