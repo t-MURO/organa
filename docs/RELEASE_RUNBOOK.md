@@ -176,6 +176,11 @@ policy. Each destructive consent is explicit and per-run; the configuration
 command changes only those booleans through an atomic, mode-preserving
 replacement and never prints credentials.
 
+Production evidence schema version 7 also requires the private connected
+config purpose to be `organa-production`. The connected runner records that
+purpose, rechecks it after every phase, and the release verifier rejects
+otherwise valid evidence created with a controlled-beta test purpose.
+
 After every source, connected, physical-device, browser, artifact, audit, and
 review gate is complete, run:
 

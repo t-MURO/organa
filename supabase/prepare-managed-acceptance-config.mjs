@@ -41,6 +41,10 @@ requireNewPrivateOutput(outputPath);
 
 const migrationVersion = readAndVerifyRemoteMigrations();
 const keys = readModernApiKeys(projectRef);
+const purpose =
+  options.purpose === "production"
+    ? "organa-production"
+    : "organa-controlled-beta-test";
 const config = {
   allowOneHourDeletionDrill: false,
   allowSyntheticAccountCreationAndDeletion: true,
@@ -51,7 +55,7 @@ const config = {
     type: "managed",
   },
   publishableKey: keys.publishableKey,
-  purpose: "organa-controlled-beta-test",
+  purpose,
   secretKey: keys.secretKey,
   supabaseUrl: `https://${projectRef}.supabase.co`,
 };
@@ -216,6 +220,7 @@ function parseArguments(argumentsList) {
     allowSyntheticAccountCreationAndDeletion: false,
     output: undefined,
     projectRef: undefined,
+    purpose: "controlled-beta-test",
   };
   for (let index = 0; index < argumentsList.length; index += 1) {
     const argument = argumentsList[index];
@@ -225,6 +230,8 @@ function parseArguments(argumentsList) {
       parsed.projectRef = requireValue(argumentsList, ++index, argument);
     } else if (argument === "--output") {
       parsed.output = requireValue(argumentsList, ++index, argument);
+    } else if (argument === "--purpose") {
+      parsed.purpose = requireValue(argumentsList, ++index, argument);
     } else if (
       argument === "--allow-synthetic-account-creation-and-deletion"
     ) {
@@ -232,6 +239,12 @@ function parseArguments(argumentsList) {
     } else {
       usage();
     }
+  }
+  if (
+    parsed.purpose !== "controlled-beta-test" &&
+    parsed.purpose !== "production"
+  ) {
+    usage();
   }
   return parsed;
 }
@@ -244,7 +257,7 @@ function requireValue(argumentsList, index, option) {
 
 function usage() {
   fail(
-    "usage: node supabase/prepare-managed-acceptance-config.mjs --project-ref REF --allow-synthetic-account-creation-and-deletion [--output PATH]",
+    "usage: node supabase/prepare-managed-acceptance-config.mjs --project-ref REF --allow-synthetic-account-creation-and-deletion [--purpose controlled-beta-test|production] [--output PATH]",
   );
 }
 

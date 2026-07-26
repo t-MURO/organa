@@ -58,7 +58,11 @@ try {
   connectedConfig = readConnectedSupabaseConfig(
     ".organa-connected-supabase.json",
   );
-  record("Connected operator config", true, "private config is valid");
+  record(
+    "Connected operator config",
+    true,
+    `private config is valid for ${connectedConfig.purpose}`,
+  );
 } catch (error) {
   record(
     "Connected operator config",
@@ -66,6 +70,14 @@ try {
     error instanceof Error ? error.message : "Private config is invalid.",
   );
 }
+
+record(
+  "Production backend designation",
+  connectedConfig?.purpose === "organa-production",
+  connectedConfig?.purpose === "organa-production"
+    ? "operator config explicitly designates the connected backend as production"
+    : "Set the private connected config purpose to organa-production before recording production evidence.",
+);
 
 let releaseEvidence;
 let releaseEvidenceValid = false;
@@ -95,6 +107,7 @@ try {
 
 if (connectedConfig && releaseEvidenceValid) {
   const inputsMatch =
+    connectedConfig.purpose === "organa-production" &&
     connectedConfig.supabaseUrl === releaseEvidence.backend.origin &&
     supabaseDeploymentsMatch(
       connectedConfig.deployment,
@@ -114,6 +127,7 @@ const connectedEvidence = findPassedConnectedEvidence({
   deployment:
     releaseEvidence?.backend?.deployment ?? connectedConfig?.deployment,
   origin: releaseEvidence?.backend?.origin ?? connectedConfig?.supabaseUrl,
+  purpose: connectedConfig?.purpose,
 });
 record(
   "Connected three-phase evidence",
@@ -313,8 +327,9 @@ function findPassedConnectedEvidence({
   commit: revision,
   deployment,
   origin,
+  purpose,
 }) {
-  if (!isHttpsOrigin(origin)) {
+  if (!isHttpsOrigin(origin) || purpose !== "organa-production") {
     return undefined;
   }
   try {
@@ -344,13 +359,14 @@ function findPassedConnectedEvidence({
       continue;
     }
     if (
-      evidence.runnerVersion !== 6 ||
+      evidence.runnerVersion !== 7 ||
       evidence.scope !== "full" ||
       evidence.status !== "passed" ||
       evidence.organaCommit !== revision ||
       evidence.organaCommitConfirmedAtFinish !== true ||
       evidence.connectedConfigConfirmedAtFinish !== true ||
       evidence.supabaseOrigin !== origin ||
+      evidence.supabasePurpose !== "organa-production" ||
       !supabaseDeploymentsMatch(
         evidence.supabaseDeployment,
         deployment,

@@ -477,6 +477,11 @@ Local evidence:
   per-row-auth, or missing-foreign-key-index findings. The remaining security
   notices cover the intentional authenticated security-definer RPC boundary
   and password leak protection in a passwordless-only controlled beta
+- the same healthy managed EU project is now explicitly designated as
+  Organa's production backend; its Auth Site URL is the stable production web
+  origin, its allowlist contains only that origin plus the native and
+  documented local callbacks, and production-purpose connected evidence uses
+  schema version 7
 - with Docker `28.5.2` healthy, the Docker-backed migration-preservation
   verifier passes all six isolated-schema upgrade checks across the complete
   twelve-migration chain
@@ -613,14 +618,14 @@ Local evidence:
 - Deferred post-beta: configure and exercise Google and GitHub before enabling
   the retained social OAuth path
 - [x] Apply all twelve migrations and pass linked database lint and targeted
-  security/performance advisor checks against the
-  managed EU connected-test project
-- [ ] Repeat migration application and lint against the selected production
-  deployment
+  security/performance advisor checks against the selected managed EU
+  production backend
+- [x] Confirm the exact migration chain, lint, and advisor state after
+  production designation
 - [x] Cross-account RLS, unauthorized RPC, and trusted-device approval checks
   against the managed connected-test project
-- [ ] Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
-  checks against the selected production deployment
+- [x] Repeat cross-account RLS, unauthorized RPC, and trusted-device approval
+  checks against the selected production backend
 - [x] Two-session encrypted sync latency and missed-broadcast recovery against
   the managed connected-test project
 - [x] Rendered bidirectional task editing, isolated offline outbox recovery,
@@ -632,7 +637,7 @@ Local evidence:
   the supported release-browser matrix
 - [x] Device reminder ownership and revocation across live managed sessions
 - [x] Configure VAPID/function secrets and verify the active once-per-minute
-  Web Push dispatcher schedule on the managed connected-test project
+  Web Push dispatcher schedule on the selected production backend
 - [x] Run a due synthetic schedule through the real managed Web Push cron and
   prove fail-closed rejection/removal before outbound access
 - [ ] Permission-granted closed-app Web Push delivery, deep-link,

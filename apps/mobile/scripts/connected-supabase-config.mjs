@@ -116,12 +116,10 @@ export function readConnectedSupabaseConfig(configPath) {
       "The connected Supabase config contains unsupported fields.",
     );
   }
-  if (
-    config?.purpose !== "organa-controlled-beta-test" ||
-    config?.allowSyntheticAccountCreationAndDeletion !== true
-  ) {
+  const purpose = readPurpose(config?.purpose);
+  if (config?.allowSyntheticAccountCreationAndDeletion !== true) {
     throw new Error(
-      "The connected Supabase config must explicitly allow controlled-beta synthetic account creation and deletion.",
+      "The connected Supabase config must explicitly allow synthetic account creation and deletion.",
     );
   }
 
@@ -144,10 +142,23 @@ export function readConnectedSupabaseConfig(configPath) {
     allowWebPushSchedulerDrill:
       config.allowWebPushSchedulerDrill === true,
     deployment,
+    purpose,
     publishableKey: config.publishableKey,
     secretKey: config.secretKey,
     supabaseUrl,
   };
+}
+
+function readPurpose(value) {
+  if (
+    value !== "organa-controlled-beta-test" &&
+    value !== "organa-production"
+  ) {
+    throw new Error(
+      'purpose must be "organa-controlled-beta-test" or "organa-production".',
+    );
+  }
+  return value;
 }
 
 function readCurrentMigrationVersion() {

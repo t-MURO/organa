@@ -1,11 +1,11 @@
 # Organa EAS Web Production Evidence
 
-Status recorded on 2026-07-26.
+Status recorded on 2026-07-27.
 
 This file records the selected production HTTPS deployment and live-response
 gate. It does not claim release-browser PWA installation, offline restart,
-service-worker replacement, permission-granted Web Push, production-backend
-repetition, physical-device validation, or external review.
+service-worker replacement, permission-granted Web Push, the full scheduled
+production-backend drill, physical-device validation, or external review.
 
 ## Production Build
 
@@ -57,8 +57,9 @@ does not duplicate private release-manifest fields.
 
 - Exercise install, offline restart, service-worker replacement, and
   permission-granted Web Push in every supported release browser.
-- Confirm the production Auth provider flow and redirect policy.
-- Complete the connected production repeat, physical-device matrix,
+- Complete one Maileroo-delivered code sign-in at the stable production
+  origin; the production Site URL and exact redirect policy are configured.
+- Complete the full scheduled connected drill, physical-device matrix,
   independent security review, legal review, signing, and store evidence.
 
 No tests were added, changed, or run for this milestone.

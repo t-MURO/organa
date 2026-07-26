@@ -2717,3 +2717,27 @@ must have direct evidence before production launch.
 - The six migration-preservation checks, 75 local Supabase checks, 13 deletion
   function checks, 15 Web Push checks, 18 security checks, strict TypeScript,
   and `git diff --check` pass. No tests were added, changed, or run.
+
+## Managed Production Backend Promotion Milestone
+
+- The existing healthy managed EU Supabase project is explicitly selected as
+  Organa's production backend; no database copy, key rotation, or user-data
+  migration was needed.
+- The mode-600 connected operator config now uses the
+  `organa-production` purpose while retaining synthetic-account consent and
+  keeping the scheduled Web Push and one-hour deletion consents disabled.
+- Connected evidence schema version 7 records the backend purpose and rechecks
+  it at phase boundaries. Release readiness rejects test-purpose evidence even
+  when its origin and migration identity match production.
+- The managed-config preparer accepts an explicit `--purpose production`
+  option while preserving controlled-beta test as its safe default.
+- Supabase Auth now uses `https://organa.expo.app` as its Site URL and an exact
+  allowlist containing only that web origin, `organa://**`, and the two
+  documented localhost development callbacks. The former preview origin is
+  not retained.
+- Read-only management checks confirm six-digit codes, a 15-minute expiry,
+  both code-only templates, and configured custom SMTP without exposing
+  credentials or template bodies.
+- The final scheduled three-phase drill still requires separate per-run
+  consent. Production designation does not silently authorize it.
+- No tests were added, changed, or run.

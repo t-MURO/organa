@@ -216,12 +216,13 @@ const evidencePath = writeEvidence({
     organaCommitConfirmedAtFinish,
     phases: phaseEvidence,
     platform: `${process.platform}-${process.arch}`,
-    runnerVersion: 6,
+    runnerVersion: 7,
     scope: evidenceScope,
     startedAt: startedAt.toISOString(),
     status: runFailure ? "failed" : "passed",
     supabaseDeployment: config.deployment,
     supabaseOrigin: config.supabaseUrl,
+    supabasePurpose: config.purpose,
   },
   startedAt,
 });
@@ -316,6 +317,7 @@ function connectedConfigsMatch(left, right) {
   return (
     left.allowOneHourDeletionDrill === right.allowOneHourDeletionDrill &&
     left.allowWebPushSchedulerDrill === right.allowWebPushSchedulerDrill &&
+    left.purpose === right.purpose &&
     left.publishableKey === right.publishableKey &&
     left.secretKey === right.secretKey &&
     supabaseDeploymentsMatch(left.deployment, right.deployment) &&

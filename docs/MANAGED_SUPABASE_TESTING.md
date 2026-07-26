@@ -1,25 +1,25 @@
 # Managed Supabase Connected Testing
 
-Status updated on 2026-07-26.
+Status updated on 2026-07-27.
 
-Organa currently uses the managed Supabase free tier for connected-beta
-engineering checks. This is a test deployment, not production approval. It
-does not replace physical-device, release-browser, independent security,
-legal, privacy, signing, or store gates.
+Organa uses the managed Supabase free tier as its selected production backend.
+This designation identifies the live data plane and Auth service; it does not
+replace physical-device, release-browser, independent security, legal,
+privacy, signing, or store gates.
 
-## Current Deployment
+## Current Production Deployment
 
-The linked test project is:
+The linked production project is:
 
 ```text
 Name: organa
 Project ref: bkqinjscdxofsfgwozgd
 Region: eu-west-2
 Status at verification: ACTIVE_HEALTHY
-Migration head: 20260725120000
+Migration head: 20260726221031
 ```
 
-All nine checked-in migrations are applied. Linked database lint passes at
+All twelve checked-in migrations are applied. Linked database lint passes at
 warning level with no schema errors. The `finalize-account-deletions` and
 `dispatch-web-push` Edge Functions are active.
 
@@ -70,6 +70,7 @@ either API key:
 ```sh
 pnpm prepare:connected:managed -- \
   --project-ref bkqinjscdxofsfgwozgd \
+  --purpose production \
   --allow-synthetic-account-creation-and-deletion
 pnpm verify:connected:config
 ```
@@ -77,14 +78,16 @@ pnpm verify:connected:config
 The preparer refuses to overwrite an existing file. It requires the exact
 linked project, matches the complete remote migration list to the repository,
 retrieves exactly one modern publishable and secret key in memory, and writes
-`.organa-connected-supabase.json` with mode `600`.
+`.organa-connected-supabase.json` with mode `600`. The production purpose is
+recorded in every connected evidence file and is mandatory for release
+readiness.
 
 Managed evidence is bound to the project ref and 14-digit applied migration
 version. Self-hosted evidence instead uses the exact upstream Supabase source
 Git revision and applied migration version. These identities are not
 interchangeable.
 
-## Controlled-Beta Auth Configuration
+## Production Auth Configuration
 
 The controlled beta requires:
 
@@ -100,28 +103,25 @@ Google or GitHub before the client flag is deliberately enabled.
 The managed project was found using Supabase's default link templates,
 8-digit codes, a 60-minute expiry, and a local-only Site URL. Its OTP policy
 has been corrected to six digits and 15 minutes. Its Site URL now uses the
-live Expo web preview, and its exact redirect set contains that web origin,
+stable production web origin, and its exact redirect set contains that origin,
 the `organa://**` native callback, and the documented local development
 origins. Provision and verify the same fail-closed URL set with:
 
 ```sh
 pnpm configure:managed:auth-urls -- \
   --project-ref bkqinjscdxofsfgwozgd \
-  --site-url https://organa--preview.expo.app
+  --site-url https://organa.expo.app
 pnpm configure:managed:auth-urls -- \
   --project-ref bkqinjscdxofsfgwozgd \
-  --site-url https://organa--preview.expo.app \
+  --site-url https://organa.expo.app \
   --check-only
 ```
 
-The preview is only the managed engineering callback target. It is not
-production approval. Its current deployment applies Organa's route security
-headers and passes the 17-check live deployment verifier, as recorded in
-`docs/WEB_PREVIEW_EVIDENCE.md`, but the production promotion and
-release-browser matrix remain open. Replace `--site-url` with the reviewed
-production HTTPS origin before production acceptance. The command replaces
-the complete allowlist rather than preserving stale or unintended redirect
-destinations.
+The former preview callback is no longer in the allowlist. The stable
+production origin and its immutable deployment apply Organa's route security
+headers and pass the 17-check live deployment verifier. The release-browser
+matrix remains open. The command replaces the complete allowlist rather than
+preserving stale or unintended redirect destinations.
 
 Maileroo custom SMTP is configured. Apply and verify the checked-in code-only
 templates with:
@@ -199,8 +199,8 @@ post-beta provider acceptance.
 
 ## Current Managed Schema Hardening
 
-Migration `20260726221031` is applied to the managed test project and is the
-head of the same twelve-migration chain checked into this repository.
+Migration `20260726221031` is applied to the selected production project and
+is the head of the same twelve-migration chain checked into this repository.
 
 - Seven ownership policies use statement-cached `(select auth.uid())` checks
   while preserving Organa's existing trusted-device write requirements.
@@ -224,7 +224,7 @@ RPCs.
 
 ## Captured Backend Evidence
 
-On 2026-07-26, the managed test project passed
+Before production designation, on 2026-07-26, the same managed project passed
 `pnpm verify:connected:acceptance` from clean commit
 `f0cc0dae1b0d37aa7e86880f9499264424daa0ad`.
 
@@ -258,9 +258,9 @@ sanitized evidence is
 Synthetic cleanup completed and `allowOneHourDeletionDrill` was reset to
 `false` immediately after the run.
 
-This evidence does not prove email delivery, deferred OAuth redirects,
-permission-granted browser Push, physical-device behavior, or a production
-deployment repeat.
+This historical evidence does not prove the final production-purpose commit,
+email delivery at the stable production origin, deferred OAuth redirects,
+permission-granted browser Push, or physical-device behavior.
 
 Run the provider-qualified backend baseline independently:
 
