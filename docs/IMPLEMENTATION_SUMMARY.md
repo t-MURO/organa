@@ -2369,6 +2369,16 @@ No tests were added, changed, or run for this milestone.
 - Updated requirements, acceptance matrices, privacy/security boundaries,
   self-hosting instructions, release instructions, and evidence placeholders
   to match the email-only release scope.
+- Clean source commit `de2056b9b8706328b96b06a7430ae222423ebca0`
+  was deployed as immutable EAS deployment `bl03zsxjcu` and assigned to the
+  stable `https://organa--preview.expo.app` alias.
+- The stable and immutable URLs pass all 16 live deployment checks. The live
+  fingerprinted bundle is
+  `entry-22b4150f3b857e81378e782b24898d2e.js` and contains both the email-only
+  copy and the fail-closed social OAuth guard.
+- Strict TypeScript, the 27-check web export, iOS and Android Hermes exports,
+  12 security checks, 22 platform checks, and a rendered production-build
+  email-only walkthrough pass. No tests were added, changed, or run.
 
 ## Internal Security Hardening Milestone
 
