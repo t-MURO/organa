@@ -1,16 +1,27 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const appRoot = fileURLToPath(new URL("..", import.meta.url));
 const distRoot = new URL("../dist/", import.meta.url);
-const [html, manifestText, pushHandler, serviceWorker] = await Promise.all([
+const [
+  html,
+  manifestText,
+  pushHandler,
+  serviceWorkerRegistration,
+  serviceWorker,
+  hostingHeaders,
+] = await Promise.all([
   readFile(new URL("index.html", distRoot), "utf8"),
   readFile(new URL("manifest.json", distRoot), "utf8"),
   readFile(new URL("push-handler.js", distRoot), "utf8"),
+  readFile(new URL("register-service-worker.js", distRoot), "utf8"),
   readFile(new URL("sw.js", distRoot), "utf8"),
+  readFile(new URL("_headers", distRoot), "utf8"),
 ]);
 const manifest = JSON.parse(manifestText);
 const checks = [];
+const policy = readContentSecurityPolicy(html);
 
 ok(
   /<title[^>]*>Organa<\/title>/.test(html),
@@ -49,10 +60,97 @@ ok(
   "service worker imports the Web Push handler",
 );
 ok(
-  html.includes("organa:update-ready") &&
-    html.includes("registration.waiting") &&
-    html.includes("navigator.serviceWorker.controller"),
+  html.includes('src="/register-service-worker.js"') &&
+    serviceWorkerRegistration.includes("organa:update-ready") &&
+    serviceWorkerRegistration.includes("registration.waiting") &&
+    serviceWorkerRegistration.includes("navigator.serviceWorker.controller"),
   "application shell announces only a waiting replacement worker",
+);
+ok(
+  serviceWorker.includes("register-service-worker.js"),
+  "service worker precaches its external registration bootstrap",
+);
+ok(
+  policy.directives.size === 13 &&
+    policy.directives.get("default-src") === "'self'" &&
+    policy.directives.get("base-uri") === "'self'" &&
+    policy.directives.get("form-action") === "'self'" &&
+    policy.directives.get("object-src") === "'none'" &&
+    policy.directives.get("frame-src") === "'none'" &&
+    policy.directives.get("manifest-src") === "'self'" &&
+    policy.directives.get("media-src") === "'self'",
+  "content security policy has the exact baseline and blocks objects and frames",
+);
+const connectSources = policy.directives.get("connect-src")?.split(" ") ?? [];
+const remoteConnectSources = connectSources.filter(
+  (source) => source !== "'self'",
+);
+const remoteConnectUrls = remoteConnectSources.map(parseUrl);
+ok(
+  connectSources[0] === "'self'" &&
+    (remoteConnectSources.length === 0 ||
+      (remoteConnectSources.length === 2 &&
+        remoteConnectUrls.every(Boolean) &&
+        isAllowedHttpWebSocketPair(remoteConnectUrls))),
+  "content security policy allows only self or one paired Supabase HTTP/WebSocket origin",
+);
+
+const inlineScripts = [
+  ...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g),
+].map((match) => match[1]);
+const expectedInlineScript = "globalThis.__EXPO_ROUTER_HYDRATE__=true;";
+const expectedInlineHash = `'sha256-${createHash("sha256")
+  .update(expectedInlineScript)
+  .digest("base64")}'`;
+const scriptSources = policy.directives.get("script-src") ?? "";
+ok(
+  inlineScripts.length === 1 &&
+    inlineScripts[0] === expectedInlineScript &&
+    scriptSources === `'self' ${expectedInlineHash}` &&
+    policy.directives.get("style-src") === "'self' 'unsafe-inline'" &&
+    policy.directives.get("worker-src") === "'self' blob:",
+  "scripts allow only same-origin assets and the exact Expo hydration hash",
+);
+ok(
+  hostingHeaders.includes(
+    `Content-Security-Policy: ${policy.content}; frame-ancestors 'none'`,
+  ) &&
+    hostingHeaders.includes("X-Content-Type-Options: nosniff") &&
+    hostingHeaders.includes("X-Frame-Options: DENY") &&
+    hostingHeaders.includes(
+      "Referrer-Policy: strict-origin-when-cross-origin",
+    ),
+  "deployment header artifact extends the exact CSP and enables browser hardening",
+);
+ok(
+  hostingHeaders.includes(
+    "Permissions-Policy: camera=(), geolocation=(), microphone=(), payment=(), usb=()",
+  ) &&
+    hostingHeaders.includes(
+      "Strict-Transport-Security: max-age=31536000",
+    ),
+  "deployment header artifact restricts unused capabilities and requires HTTPS",
+);
+ok(
+  /\n\/\s+Cache-Control: no-cache, no-store, must-revalidate/.test(
+    hostingHeaders,
+  ) &&
+    /\/sw\.js\s+Cache-Control: no-cache, no-store, must-revalidate/.test(
+      hostingHeaders,
+    ) &&
+    /\/register-service-worker\.js\s+Cache-Control: no-cache, no-store, must-revalidate/.test(
+      hostingHeaders,
+    ),
+  "application shell and service-worker entry points require revalidation",
+);
+ok(
+  /\/_expo\/static\/\*\s+Cache-Control: public, max-age=31536000, immutable/.test(
+    hostingHeaders,
+  ) &&
+    /\/assets\/\*\s+Cache-Control: public, max-age=31536000, immutable/.test(
+      hostingHeaders,
+    ),
+  "fingerprinted web assets are immutable",
 );
 ok(
   serviceWorker.includes("SKIP_WAITING") &&
@@ -104,4 +202,60 @@ console.log(
 function ok(condition, label) {
   if (!condition) throw new Error(`FAILED: ${label}`);
   checks.push(label);
+}
+
+function readContentSecurityPolicy(document) {
+  const tag = document.match(
+    /<meta[^>]+http-equiv="Content-Security-Policy"[^>]*>/,
+  )?.[0];
+  const encoded = tag?.match(/\bcontent="([^"]*)"/)?.[1];
+  if (!encoded) throw new Error("FAILED: content security policy is missing");
+  const content = encoded
+    .replaceAll("&#x27;", "'")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&amp;", "&");
+  return {
+    content,
+    directives: new Map(
+      content.split("; ").map((directive) => {
+        const separator = directive.indexOf(" ");
+        return separator < 0
+          ? [directive, ""]
+          : [directive.slice(0, separator), directive.slice(separator + 1)];
+      }),
+    ),
+  };
+}
+
+function parseUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash
+      ? undefined
+      : url;
+  } catch {
+    return undefined;
+  }
+}
+
+function isAllowedHttpWebSocketPair(urls) {
+  const http = urls.find(
+    (url) => url.protocol === "https:" || url.protocol === "http:",
+  );
+  const webSocket = urls.find(
+    (url) => url.protocol === "wss:" || url.protocol === "ws:",
+  );
+  return (
+    http &&
+    webSocket &&
+    http.host === webSocket.host &&
+    (http.protocol === "https:"
+      ? webSocket.protocol === "wss:"
+      : webSocket.protocol === "ws:" &&
+        ["localhost", "127.0.0.1", "[::1]"].includes(http.hostname))
+  );
 }

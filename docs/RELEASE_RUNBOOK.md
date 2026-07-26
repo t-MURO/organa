@@ -220,9 +220,26 @@ npx eas-cli@21.2.0 env:pull --environment production
 pnpm build:web
 ```
 
+The export includes `dist/_headers`, generated from the exact rendered CSP.
+Netlify- and Cloudflare-compatible hosts can consume that file directly.
+Other hosts must map every rule to equivalent response-header configuration;
+do not serve `_headers` as evidence that the rules were applied.
+
+After deployment, verify the real HTTPS responses:
+
+```sh
+pnpm verify:web-deployment -- https://your-organa-web-origin.example
+```
+
+The command checks CSP/clickjacking policy, MIME and capability restrictions,
+HSTS, cross-origin/referrer policy, mutable shell/worker caching, and immutable
+fingerprinted bundles. Keep its output with the web artifact and browser
+evidence.
+
 Do not commit the generated `.env` file. Record the deployment identifier,
-artifact checksum, exact browser versions, PWA install result, offline result,
-service-worker update drill, and permission-granted Web Push evidence.
+artifact checksum, header-verifier output, exact browser versions, PWA install
+result, offline result, service-worker update drill, and permission-granted
+Web Push evidence.
 
 ## Evidence Record
 

@@ -1,6 +1,12 @@
 import { ScrollViewStyleReset } from "expo-router/html";
 import type { PropsWithChildren } from "react";
 
+const expoHydrationScriptHash =
+  "'sha256-67fhrP0+BkBqmgGGXTtgiVO/9EQs3QruYNU/7fnRkI8='";
+const contentSecurityPolicy = createContentSecurityPolicy(
+  process.env.EXPO_PUBLIC_SUPABASE_URL,
+);
+
 export default function RootHtml({ children }: PropsWithChildren) {
   return (
     <html lang="en">
@@ -16,42 +22,21 @@ export default function RootHtml({ children }: PropsWithChildren) {
           content="Organa is a calm, offline-first space for tasks, routines, and thoughts."
           name="description"
         />
+        <meta
+          content={contentSecurityPolicy}
+          httpEquiv="Content-Security-Policy"
+        />
         <link href="/manifest.json" rel="manifest" />
         <link href="/icons/organa.svg" rel="icon" type="image/svg+xml" />
         <link href="/icons/organa-192.png" rel="apple-touch-icon" />
         <style dangerouslySetInnerHTML={{ __html: accessibilityCss }} />
-        <script dangerouslySetInnerHTML={{ __html: registerServiceWorker }} />
+        <script src="/register-service-worker.js" />
         <ScrollViewStyleReset />
       </head>
       <body>{children}</body>
     </html>
   );
 }
-
-const registerServiceWorker = `
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function () {
-      navigator.serviceWorker.register("/sw.js").then(function (registration) {
-        function announceWaitingWorker() {
-          if (registration.waiting && navigator.serviceWorker.controller) {
-            window.dispatchEvent(new Event("organa:update-ready"));
-          }
-        }
-
-        announceWaitingWorker();
-        registration.addEventListener("updatefound", function () {
-          var worker = registration.installing;
-          if (!worker) return;
-          worker.addEventListener("statechange", function () {
-            if (worker.state === "installed") announceWaitingWorker();
-          });
-        });
-      }).catch(function () {
-        // The app remains usable online if registration is unavailable.
-      });
-    });
-  }
-`;
 
 const accessibilityCss = `
   :where(button, a[href], [role="button"], [role="checkbox"], [role="radio"], [role="switch"]) {
@@ -87,3 +72,56 @@ const accessibilityCss = `
     }
   }
 `;
+
+function createContentSecurityPolicy(supabaseUrl: string | undefined) {
+  const connectSources = new Set(["'self'"]);
+  const supabaseOrigin = parseConnectOrigin(supabaseUrl);
+  if (supabaseOrigin) {
+    connectSources.add(supabaseOrigin.http);
+    connectSources.add(supabaseOrigin.webSocket);
+  }
+
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    `connect-src ${[...connectSources].join(" ")}`,
+    "font-src 'self' data:",
+    "form-action 'self'",
+    "frame-src 'none'",
+    "img-src 'self' data: blob:",
+    "manifest-src 'self'",
+    "media-src 'self'",
+    "object-src 'none'",
+    `script-src 'self' ${expoHydrationScriptHash}`,
+    "style-src 'self' 'unsafe-inline'",
+    "worker-src 'self' blob:",
+  ].join("; ");
+}
+
+function parseConnectOrigin(value: string | undefined) {
+  if (!value) return undefined;
+  try {
+    const url = new URL(value.trim());
+    const loopback =
+      url.hostname === "localhost" ||
+      url.hostname === "127.0.0.1" ||
+      url.hostname === "[::1]";
+    if (
+      (url.protocol !== "https:" &&
+        !(url.protocol === "http:" && loopback)) ||
+      url.username ||
+      url.password ||
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash
+    ) {
+      return undefined;
+    }
+    return {
+      http: url.origin,
+      webSocket: `${url.protocol === "https:" ? "wss:" : "ws:"}//${url.host}`,
+    };
+  } catch {
+    return undefined;
+  }
+}

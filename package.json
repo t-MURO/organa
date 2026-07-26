@@ -24,6 +24,7 @@
     "prepare:connected:managed": "node supabase/prepare-managed-acceptance-config.mjs",
     "verify:release:client-config": "pnpm --filter @organa/app verify:release:client-config",
     "verify:release:readiness": "pnpm --filter @organa/app verify:release:readiness",
+    "verify:web-deployment": "pnpm --filter @organa/app verify:web-deployment",
     "verify:web-push": "pnpm --filter @organa/app verify:web-push",
     "verify:supabase": "pnpm --filter @organa/app verify:supabase"
   },

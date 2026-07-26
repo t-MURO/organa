@@ -59,6 +59,28 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
 - Hosted provider credentials, redirect allowlists, and end-to-end provider
   drills remain deployment responsibilities for the selected EU project.
 
+## Browser Policy
+
+- Every static web document includes a fail-closed Content Security Policy.
+  Scripts are limited to same-origin files and the exact SHA-256 hash of Expo's
+  generated hydration marker; unrestricted inline script and dynamic
+  evaluation are not allowed.
+- The service-worker registration bootstrap is a same-origin external file.
+  The build verifier requires that file, the worker, and the Push handler to be
+  included in the production artifact and update contract.
+- Network access is limited to the app origin and, when configured, exactly one
+  paired Supabase HTTP/WebSocket origin. Invalid or path-bearing Supabase URLs
+  fail configuration instead of silently widening the policy.
+- `pnpm build:web` derives `dist/_headers` from the exact rendered CSP. The
+  deployment contract adds `frame-ancestors 'none'`, legacy frame denial,
+  MIME-sniffing protection, a restrictive capability policy, cross-origin
+  isolation that preserves OAuth popups, referrer minimization, HSTS, and
+  explicit mutable/immutable cache boundaries.
+- Hosts that do not consume the `_headers` format must apply equivalent
+  response headers. `pnpm verify:web-deployment -- https://web-origin.example`
+  checks the actual HTTPS responses; a passing artifact check alone does not
+  prove that a host applied them.
+
 ## Key Storage
 
 Native:
@@ -471,7 +493,8 @@ Before production:
 3. Review the one-time trusted-device handoff, expiry, rejection, and
    target-binding protocol.
 4. Test token expiry and device revocation under offline/reconnect conditions.
-5. Review XSS/CSP, PWA caching, OAuth redirects, and browser key storage.
+5. Review XSS/CSP, generated and deployed response headers, PWA caching, OAuth
+   redirects, and browser key storage.
 6. Review Web Push capability storage, VAPID/scheduler-secret handling,
    delivery retry semantics, and generic payload boundaries.
 7. Test native secure storage, biometrics, notifications, and backups.

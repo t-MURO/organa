@@ -48,7 +48,8 @@ The criterion-by-criterion status and evidence boundary is recorded in
 - [x] iOS and Android widgets for today's tasks and the next actual enabled
   task or subtask reminder trigger, with deep links and timeline transitions
 - [x] Installable PWA manifest, icons, static routes, signed-in offline reload,
-  local mutation persistence, and reconnecting outbox
+  local mutation persistence, reconnecting outbox, restrictive document CSP,
+  and generated production-host security headers
 - [x] Standards-based Web Push with proof-gated content-free schedules,
   generic service-worker notifications, and an active-tab fallback
 - [x] Keyboard roles/labels, visible focus, semantic state, reduced motion, and
@@ -375,10 +376,18 @@ Local evidence:
 - a task-load race test contract verifies that reconciliation reads the latest
   authorization after asynchronous repository loading
 - production web export succeeds
-- production web artifact verification passes 18 installability, offline,
-  controlled-update, and Push-handler checks
-- Workbox precaches 22 URLs, including every font weight loaded before render,
-  both optional interaction sounds, and the Push handler
+- production web artifact verification passes 26 installability, CSP,
+  deployment-header, cache-policy, controlled-update, and Push-handler checks
+- Workbox precaches 23 URLs, including the external service-worker registration
+  bootstrap, every font weight loaded before render, both optional interaction
+  sounds, and the Push handler
+- the rendered CSP permits scripts only from the app origin plus the exact
+  Expo hydration hash, permits connections only to self and the paired
+  Supabase HTTP/WebSocket origin, and blocks frames and object content
+- the export derives `dist/_headers` from that exact CSP, adding header-only
+  clickjacking protection, HSTS, MIME, referrer, cross-origin, capability, and
+  shell/worker cache controls; `pnpm verify:web-deployment` validates that a
+  selected HTTPS host actually applies them
 - PWA update tests cover waiting-worker discovery, dismiss/restart state,
   one-shot controller handoff, a five-second fallback, and failed
   registration/message paths
@@ -578,6 +587,8 @@ Local evidence:
 - [ ] Permission-granted closed-app Web Push delivery, deep-link,
   replacement, cancellation, denial fallback, and sign-out drill in every
   supported release browser; iOS/iPadOS uses an installed Home Screen PWA
+- [ ] The selected HTTPS web deployment passes
+  `pnpm verify:web-deployment -- https://<production-origin>`
 - [ ] Repeat the scheduled deletion finalizer drill against the connected
   backend
 

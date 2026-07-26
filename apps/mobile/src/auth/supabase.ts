@@ -80,6 +80,7 @@ function parseSupabaseUrl(value: string) {
       url.username ||
       url.password ||
       url.hostname.includes("your-project-ref") ||
+      (url.pathname !== "/" && url.pathname !== "") ||
       url.search ||
       url.hash
     ) {

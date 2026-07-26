@@ -102,16 +102,22 @@ For each browser:
 14. Install a newer build over an active older build, dismiss the first update
     prompt, reopen it after the next update-ready signal, then restart and
     confirm exactly one reload into the new worker.
+15. Run `pnpm verify:web-deployment -- https://<candidate-origin>` and retain
+    the passing security-header and cache-policy evidence.
 
 ## Latest Local Evidence
 
-On 2026-07-24, the configured production PWA:
+On 2026-07-26, the configured production PWA:
 
 - scored 100% for Lighthouse accessibility and best practices
-- passed 18 deterministic production artifact checks
+- passed 26 deterministic production artifact checks
 - precached the static routes, JavaScript, manifest, install icons, four
   render-critical Manrope weights, optional interaction sounds, and the Web
-  Push handler across 22 URLs
+  Push handler plus external registration bootstrap across 23 URLs
+- emitted a script policy without `unsafe-inline` or `unsafe-eval`, restricted
+  connections to the exact paired Supabase HTTPS/WebSocket origins, and
+  generated a matching deployment-header artifact with clickjacking, MIME,
+  referrer, capability, HTTPS, and cache protections
 - reloaded a signed-in account with both the static server and Supabase stopped
 - retained existing encrypted local task data
 - created and retained a new task plus outbox mutation while fully offline

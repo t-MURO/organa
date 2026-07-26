@@ -2169,6 +2169,34 @@ No tests were added, changed, or run for this milestone.
   `docs/MANAGED_RENDERED_CLIENT_EVIDENCE.md`. No tests were added, changed, or
   run.
 
+## Browser Security And Deployment-Header Milestone
+
+- Added a build-time document CSP that defaults to same-origin, permits only
+  the exact configured Supabase HTTP/WebSocket pair, blocks frames and object
+  content, and limits script execution to same-origin assets plus the exact
+  SHA-256 hash of Expo's generated hydration marker. Script
+  `unsafe-inline`/`unsafe-eval` are not allowed.
+- Moved service-worker registration out of inline HTML and into a same-origin
+  precached bootstrap while retaining controlled waiting-worker activation and
+  quiet registration failure.
+- The production export now derives `dist/_headers` from the rendered CSP. It
+  adds header-only `frame-ancestors 'none'`, HSTS, MIME, referrer,
+  cross-origin, browser-capability, mutable shell/worker, and immutable
+  fingerprinted-asset policies.
+- Added `pnpm verify:web-deployment -- https://<candidate-origin>` to verify
+  those policies on actual deployed HTTPS responses. Artifact generation is
+  not treated as proof that an arbitrary host applied the file.
+- Runtime Supabase URL parsing now rejects path-bearing origins consistently
+  with the release preflight, preventing a nominally configured client whose
+  API traffic would be blocked by its narrower CSP.
+- A focused SQL privilege audit confirmed every security-definer helper and
+  trigger revokes direct execution from public client roles, user RPCs are
+  explicitly granted to `authenticated`, and the scheduler claim RPC is
+  granted only to `service_role`; no corrective migration was needed.
+- Strict TypeScript, Node syntax, diff hygiene, and the configured production
+  web export pass. The export has eight routes, 26 artifact/CSP/header checks,
+  and 23 precached URLs. No tests were added, changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
