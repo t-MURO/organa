@@ -1973,6 +1973,20 @@ No tests were added, changed, or run for this milestone.
   routes and 22 precache URLs, and `git diff --check` pass. No tests were
   added, changed, or run.
 
+## Bounded Migration Verification
+
+- The local migration-preservation verifier now checks Docker before invoking
+  the Supabase CLI, validates every required status value, and health-checks
+  local Auth before creating disposable state.
+- Supabase status, Docker discovery, PostgreSQL operations, and Auth startup
+  probes all have explicit time bounds. A stopped Docker daemon now fails in
+  under one second with the exact setup action instead of leaving the release
+  checklist waiting indefinitely.
+- The current environment has no running Docker daemon, so the six live
+  migration-preservation checks were not rerun. JavaScript syntax validation,
+  strict TypeScript, and `git diff --check` pass; no tests were added, changed,
+  or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:

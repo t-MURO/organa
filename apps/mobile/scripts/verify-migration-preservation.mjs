@@ -14,8 +14,10 @@ const migrations = readdirSync(migrationRoot)
 const suffix = randomUUID().replaceAll("-", "").slice(0, 10);
 const schema = `organa_upgrade_${suffix}`;
 const realtimePolicy = `organa_upgrade_broadcast_${suffix}`;
+assertDockerAvailable();
 const environment = readLocalEnvironment();
 const databaseContainer = findDatabaseContainer(environment.DB_URL);
+await assertLocalApiAvailable(environment.API_URL);
 const admin = createClient(
   environment.API_URL,
   environment.SERVICE_ROLE_KEY,
@@ -341,23 +343,45 @@ function runSql(sql) {
       encoding: "utf8",
       input: `set client_min_messages = warning;\n${sql}`,
       maxBuffer: 16 * 1024 * 1024,
+      timeout: 30_000,
     },
   ).trim();
 }
 
 function readLocalEnvironment() {
-  const output = execFileSync(
-    "pnpm",
-    ["dlx", "supabase@latest", "status", "-o", "env"],
-    { cwd: repositoryRoot, encoding: "utf8" },
-  );
-  return Object.fromEntries(
+  let output;
+  try {
+    output = execFileSync(
+      "pnpm",
+      ["dlx", "supabase@latest", "status", "-o", "env"],
+      {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 60_000,
+      },
+    );
+  } catch {
+    throw new Error(
+      "Local Supabase status is unavailable. Start the stack with `pnpm dlx supabase start` before running `pnpm verify:migrations`.",
+    );
+  }
+
+  const environment = Object.fromEntries(
     output
       .split("\n")
       .map((line) => line.match(/^([A-Z_]+)="(.*)"$/))
       .filter(Boolean)
       .map((match) => [match[1], match[2]]),
   );
+  for (const key of ["API_URL", "DB_URL", "SERVICE_ROLE_KEY"]) {
+    if (!environment[key]) {
+      throw new Error(
+        `Local Supabase status did not provide ${key}. Restart the local stack before running the migration verifier.`,
+      );
+    }
+  }
+  return environment;
 }
 
 function findDatabaseContainer(databaseUrl) {
@@ -366,7 +390,7 @@ function findDatabaseContainer(databaseUrl) {
   const containers = execFileSync(
     "docker",
     ["ps", "--filter", `publish=${port}`, "--format", "{{.Names}}"],
-    { encoding: "utf8" },
+    { encoding: "utf8", timeout: 5_000 },
   )
     .trim()
     .split("\n")
@@ -375,6 +399,38 @@ function findDatabaseContainer(databaseUrl) {
     throw new Error("The local Supabase database container is unavailable.");
   }
   return containers[0];
+}
+
+function assertDockerAvailable() {
+  try {
+    execFileSync("docker", ["info", "--format", "{{.ServerVersion}}"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 5_000,
+    });
+  } catch {
+    throw new Error(
+      "Docker is unavailable. Start Docker and local Supabase before running `pnpm verify:migrations`.",
+    );
+  }
+}
+
+async function assertLocalApiAvailable(apiUrl) {
+  let response;
+  try {
+    response = await fetch(new URL("/auth/v1/health", apiUrl), {
+      signal: AbortSignal.timeout(5_000),
+    });
+  } catch {
+    throw new Error(
+      "Local Supabase Auth is unavailable. Restart the local stack before running the migration verifier.",
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      `Local Supabase Auth health check failed with HTTP ${response.status}.`,
+    );
+  }
 }
 
 function ok(condition, label) {

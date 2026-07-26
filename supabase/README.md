@@ -65,7 +65,10 @@ PostgreSQL container, applies the original schema migration, seeds synthetic
 encrypted account and content rows, applies every later timestamped migration,
 and requires the original rows to remain byte-for-byte unchanged. The schema,
 Realtime policy, and disposable Auth user are removed after every run,
-including failed runs. `pnpm verify:supabase` includes this check.
+including failed runs. It checks Docker before invoking the Supabase CLI and
+uses bounded CLI, container, PostgreSQL, and Auth probes, so a stopped or
+unhealthy local stack fails with a setup action instead of stalling the release
+check. `pnpm verify:supabase` includes this check.
 
 For a linked EU project:
 
