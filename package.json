@@ -21,6 +21,7 @@
     "verify:connected:acceptance:full": "pnpm --filter @organa/app verify:connected:acceptance:full",
     "verify:connected:acceptance:web-push": "pnpm --filter @organa/app verify:connected:acceptance:web-push",
     "verify:connected:config": "pnpm --filter @organa/app verify:connected:config",
+    "configure:managed:email-otp": "node supabase/configure-managed-email-otp.mjs",
     "prepare:connected:managed": "node supabase/prepare-managed-acceptance-config.mjs",
     "verify:release:client-config": "pnpm --filter @organa/app verify:release:client-config",
     "verify:release:readiness": "pnpm --filter @organa/app verify:release:readiness",

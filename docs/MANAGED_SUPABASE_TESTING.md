@@ -102,6 +102,27 @@ The managed free tier can use custom SMTP. Its default SMTP service cannot
 apply Organa's custom email-code templates, so do not claim the email method
 until custom SMTP and both email paths have been exercised.
 
+The managed project was found using Supabase's default link templates,
+8-digit codes, a 60-minute expiry, and a local-only Site URL. Its OTP policy
+has been corrected to six digits and 15 minutes. The link templates cannot be
+replaced until custom SMTP is configured. After adding custom SMTP in the
+Supabase dashboard, apply and verify the checked-in code-only templates with:
+
+```sh
+pnpm configure:managed:email-otp -- \
+  --project-ref bkqinjscdxofsfgwozgd
+pnpm configure:managed:email-otp -- \
+  --project-ref bkqinjscdxofsfgwozgd \
+  --check-only
+```
+
+The command requires the exact linked project, reads the existing Supabase CLI
+login from its native credential store or private file fallback, and never
+prints the access token, SMTP values, or template bodies. It updates only the
+OTP length/expiry and the confirmation/magic-link subjects and bodies.
+Organa deliberately keeps the code out of the subject line so notification
+previews do not expose it.
+
 The missing providers do not need to block independent backend evidence. Run:
 
 ```sh

@@ -40,8 +40,24 @@ Enable:
 
 Set both the confirmation and magic-link email templates to send the six-digit
 `{{ .Token }}` value. The checked-in local template is
-`supabase/templates/email-code.html`. Add these redirects, replacing the web
-origin with the deployed origin:
+`supabase/templates/email-code.html`. Keep the code in the email body rather
+than the subject so lock-screen previews do not expose it. Managed free-tier
+projects using Supabase's default mail provider reject custom template
+updates, so configure custom SMTP first and then run:
+
+```sh
+pnpm configure:managed:email-otp -- \
+  --project-ref PROJECT_REF
+pnpm configure:managed:email-otp -- \
+  --project-ref PROJECT_REF \
+  --check-only
+```
+
+The command requires the CLI-linked project and an existing Supabase CLI
+login. It updates and verifies only the six-digit/15-minute OTP policy and the
+two code-email templates without printing credentials or template bodies.
+
+Add these redirects, replacing the web origin with the deployed origin:
 
 ```text
 organa://**

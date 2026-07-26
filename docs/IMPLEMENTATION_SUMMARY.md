@@ -2220,6 +2220,31 @@ No tests were added, changed, or run for this milestone.
   Physical Android behavior remains unclaimed. No tests were added, changed,
   or run.
 
+## Managed Email OTP Provisioning Milestone
+
+- A live read-only Management API probe reproduced the reported Auth mismatch:
+  the managed test project used Supabase's default confirmation/magic-link
+  templates, an 8-digit token, a 60-minute expiry, and a local-only Site URL.
+- The managed OTP policy is now six digits with a 15-minute expiry, matching
+  the Organa code-entry flow. The hosted templates remain links because the
+  free-tier project still uses Supabase's default email provider, which rejects
+  custom template updates until custom SMTP is configured.
+- Added `pnpm configure:managed:email-otp` as a guarded, idempotent Management
+  API provisioner. It requires the exact CLI-linked project, resolves the
+  existing CLI login without printing it, updates only the OTP policy and the
+  confirmation/magic-link email fields, and supports a read-only
+  `--check-only` mode.
+- The provisioner refuses template writes before custom SMTP exists, validates
+  that the checked-in body contains only `{{ .Token }}`, and never prints the
+  access token, SMTP values, or template bodies.
+- Local and self-hosted subjects are now static so lock-screen notification
+  previews do not expose the one-time code.
+- Node syntax, strict TypeScript, diff hygiene, and the live managed-state
+  probe pass at their applicable scopes. The live probe confirms the policy is
+  6 digits/15 minutes and accurately reports both remaining link templates and
+  missing custom SMTP. Provider delivery remains unclaimed. No tests were
+  added, changed, or run.
+
 ## Remaining Acceptance Gates
 
 Connected Supabase project:
