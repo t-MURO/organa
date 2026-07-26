@@ -2644,3 +2644,18 @@ must have direct evidence before production launch.
   verification with one valid v2 signer, no errors or warnings, and the same
   signer certificate as the preceding installable preview. Its SHA-256 and EAS
   record are in `docs/ANDROID_PREVIEW_EVIDENCE.md`.
+
+## Private Release Evidence Initialization Milestone
+
+- `pnpm initialize:release:evidence` now creates the ignored production
+  evidence scaffold directly from a clean commit instead of relying on a
+  permission-sensitive manual copy.
+- The initializer binds only the current commit and checked-in EAS project ID.
+  It deliberately does not promote the managed test backend, preview builds,
+  or earlier verification records into production evidence.
+- The command creates a mode-600 regular file, refuses to overwrite an
+  existing path, and never prints identifiers or private evidence.
+- Every production, artifact, browser, physical-device, and external-review
+  field remains an explicit placeholder until direct evidence exists. The
+  strict readiness verifier continues to fail closed while any placeholder is
+  present.

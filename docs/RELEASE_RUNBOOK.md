@@ -144,16 +144,19 @@ and web/native build output in the release evidence.
 
 The final readiness check consumes only local, non-secret evidence references;
 it does not contact EAS, stores, reviewers, browsers, devices, or the backend
-on the operator's behalf. Start the private manifest from the checked-in
-template:
+on the operator's behalf. From a clean commit, initialize the ignored private
+manifest:
 
 ```sh
-install -m 600 .organa-release-evidence.example.json .organa-release-evidence.json
+pnpm initialize:release:evidence
 ```
 
-Replace every placeholder only after the corresponding direct evidence exists.
-The manifest is ignored by Git. Do not put provider credentials, tokens,
-sessions, device proofs, encryption material, or user content in it.
+The initializer refuses to overwrite an existing manifest, creates it with
+mode 600, and fills only the clean source commit and checked-in EAS project
+link. Replace every remaining placeholder only after the corresponding direct
+production evidence exists. The manifest is ignored by Git. Do not put
+provider credentials, tokens, sessions, device proofs, encryption material,
+or user content in it.
 The v2 backend identity records managed deployments by project ref and applied
 migration version. Other deployment types are rejected.
 

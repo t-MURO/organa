@@ -8,6 +8,7 @@
     "build:web": "pnpm --filter @organa/app build:web",
     "dev": "turbo dev",
     "dev:web": "pnpm --filter @organa/app web",
+    "initialize:release:evidence": "pnpm --filter @organa/app initialize:release:evidence",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "verify:yjs-runtime": "pnpm --filter @organa/app verify:yjs-runtime",

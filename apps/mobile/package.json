@@ -11,6 +11,7 @@
     "build:web": "expo export --platform web --clear && workbox generateSW workbox-config.cjs && node scripts/write-web-security-headers.mjs && node scripts/verify-web-build.mjs",
     "dev": "expo start",
     "eas-build-pre-install": "node scripts/verify-release-client-config.mjs",
+    "initialize:release:evidence": "node scripts/initialize-release-evidence.mjs",
     "ios": "expo run:ios",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",

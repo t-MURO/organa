@@ -89,7 +89,7 @@ try {
     false,
     `${
       error instanceof Error ? error.message : "Manifest is invalid."
-    } Start from .organa-release-evidence.example.json.`,
+    } Run \`pnpm initialize:release:evidence\` from a clean commit to create the private scaffold.`,
   );
 }
 
