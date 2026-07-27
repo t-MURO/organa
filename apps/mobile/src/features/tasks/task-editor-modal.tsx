@@ -815,8 +815,8 @@ export function TaskEditorModal({
                     }
                   }}
                 >
-                  <Text style={styles.deleteButtonText}>
-                    {confirmDelete ? "Confirm delete" : "Delete task"}
+                  <Text numberOfLines={1} style={styles.deleteButtonText}>
+                    {confirmDelete ? "Confirm" : "Delete"}
                   </Text>
                 </Pressable>
               ) : (
@@ -1365,11 +1365,10 @@ function createStyles(theme: OrganaTheme) {
       paddingVertical: 6,
     },
     footerCompact: {
-      alignItems: "stretch",
-      flexDirection: "column-reverse",
-      gap: 12,
+      gap: 8,
     },
     footerActions: {
+      flexShrink: 0,
       flexDirection: "row",
       gap: 8,
     },
@@ -1380,7 +1379,7 @@ function createStyles(theme: OrganaTheme) {
       borderWidth: 1,
       justifyContent: "center",
       minHeight: 44,
-      paddingHorizontal: 17,
+      paddingHorizontal: 14,
     },
     cancelButtonText: {
       color: theme.textMuted,
@@ -1393,7 +1392,7 @@ function createStyles(theme: OrganaTheme) {
       borderRadius: 12,
       justifyContent: "center",
       minHeight: 44,
-      paddingHorizontal: 19,
+      paddingHorizontal: 16,
     },
     saveButtonText: {
       color: theme.background,
@@ -1401,11 +1400,14 @@ function createStyles(theme: OrganaTheme) {
       fontSize: 10,
     },
     deleteButton: {
+      alignItems: "center",
       borderColor: theme.must,
       borderRadius: 12,
       borderWidth: 1,
-      paddingHorizontal: 14,
-      paddingVertical: 11,
+      flexShrink: 0,
+      justifyContent: "center",
+      minHeight: 44,
+      paddingHorizontal: 10,
     },
     deleteButtonConfirm: {
       backgroundColor: theme.mustSoft,
