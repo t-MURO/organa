@@ -472,6 +472,9 @@ function QuickAdd({
           <Text style={styles.quickAddEyebrow}>QUICK CAPTURE</Text>
           <Text style={styles.quickAddTitle}>What is on your mind?</Text>
         </View>
+        {!compact ? (
+          <Text style={styles.quickAddHint}>Press enter to add</Text>
+        ) : null}
       </View>
       <View style={styles.inputRow}>
         <TextInput
@@ -496,21 +499,12 @@ function QuickAdd({
           <Text style={styles.addButtonText}>Add</Text>
         </Pressable>
       </View>
-      <View style={styles.quickAddSecondaryRow}>
-        {!compact ? (
-          <Text style={styles.quickAddHint}>Press enter to add</Text>
-        ) : (
-          <View />
-        )}
-        <Pressable
-          accessibilityRole="button"
-          style={styles.planButton}
-          onPress={onOpenEditor}
-        >
-          <Text style={styles.planButtonText}>Plan details</Text>
-        </Pressable>
-      </View>
-      <View style={styles.priorityChips}>
+      <View
+        style={[
+          styles.priorityChips,
+          compact ? styles.priorityChipsCompact : undefined,
+        ]}
+      >
         {priorities.map((item) => (
           <Pressable
             key={item.key}
@@ -519,11 +513,16 @@ function QuickAdd({
             aria-checked={priority === item.key}
             style={[
               styles.priorityChip,
+              compact ? styles.priorityChipCompact : undefined,
+              compact && item.key !== "must"
+                ? styles.priorityChipCompactWide
+                : undefined,
               priority === item.key && styles.priorityChipActive,
             ]}
             onPress={() => onChangePriority(item.key)}
           >
             <Text
+              numberOfLines={1}
               style={[
                 styles.priorityChipText,
                 priority === item.key && styles.priorityChipTextActive,
@@ -533,6 +532,18 @@ function QuickAdd({
             </Text>
           </Pressable>
         ))}
+        <Pressable
+          accessibilityRole="button"
+          style={[
+            styles.planButton,
+            compact ? styles.planButtonCompact : undefined,
+          ]}
+          onPress={onOpenEditor}
+        >
+          <Text numberOfLines={1} style={styles.planButtonText}>
+            Options
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -1168,6 +1179,9 @@ function createStyles(theme: OrganaTheme) {
       paddingHorizontal: 12,
     },
     quickAddTop: {
+      alignItems: "flex-end",
+      flexDirection: "row",
+      justifyContent: "space-between",
       marginBottom: 14,
     },
     quickAddEyebrow: {
@@ -1187,19 +1201,20 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_400Regular",
       fontSize: 10,
     },
-    quickAddSecondaryRow: {
-      alignItems: "center",
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginTop: 8,
-    },
     planButton: {
+      alignItems: "center",
       backgroundColor: theme.shouldSoft,
       borderColor: theme.should,
       borderRadius: 12,
       borderWidth: 1,
+      justifyContent: "center",
       paddingHorizontal: 12,
-      paddingVertical: 8,
+      paddingVertical: 7,
+    },
+    planButtonCompact: {
+      flex: 1.05,
+      minWidth: 0,
+      paddingHorizontal: 2,
     },
     planButtonText: {
       color: theme.should,
@@ -1245,12 +1260,26 @@ function createStyles(theme: OrganaTheme) {
       gap: 8,
       marginTop: 12,
     },
+    priorityChipsCompact: {
+      flexWrap: "nowrap",
+      gap: 4,
+    },
     priorityChip: {
+      alignItems: "center",
       borderColor: theme.border,
       borderRadius: 20,
       borderWidth: 1,
+      justifyContent: "center",
       paddingHorizontal: 12,
       paddingVertical: 7,
+    },
+    priorityChipCompact: {
+      flex: 1,
+      minWidth: 0,
+      paddingHorizontal: 2,
+    },
+    priorityChipCompactWide: {
+      flex: 1.18,
     },
     priorityChipActive: {
       backgroundColor: theme.shouldSoft,
