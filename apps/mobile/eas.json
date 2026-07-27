@@ -13,6 +13,11 @@
       "distribution": "internal",
       "environment": "preview"
     },
+    "local-preview": {
+      "autoIncrement": false,
+      "environment": "preview",
+      "extends": "preview"
+    },
     "preview-simulator": {
       "environment": "preview",
       "extends": "preview",
