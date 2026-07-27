@@ -50,7 +50,13 @@ export function createNotificationScheduler(): NotificationScheduler {
       await cancelTaskNotifications(task.id);
       const plan = buildNativeTaskNotificationPlan(task);
       if (plan.requests.length === 0) {
-        return { permission: "not_requested", scheduled: 0 };
+        const settings = await Notifications.getPermissionsAsync();
+        return {
+          permission: notificationPermissionGranted(settings)
+            ? "granted"
+            : "not_requested",
+          scheduled: 0,
+        };
       }
 
       const permission = await resolvePermission(requestPermission);

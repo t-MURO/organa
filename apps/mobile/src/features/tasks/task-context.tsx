@@ -256,7 +256,6 @@ export function TaskProvider({ children }: PropsWithChildren) {
             false,
             authorization.allowed,
             authorization.ready,
-            setReminderNotice,
           ),
         );
       }
@@ -286,7 +285,6 @@ export function TaskProvider({ children }: PropsWithChildren) {
         false,
         devices.remindersAllowed,
         true,
-        setReminderNotice,
       ),
     );
   }, [
@@ -309,7 +307,6 @@ export function TaskProvider({ children }: PropsWithChildren) {
           false,
           devices.remindersAllowed,
           true,
-          setReminderNotice,
         ),
       );
     });
@@ -332,7 +329,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
         await reconcileRemoteTaskChange(change, {
           cancelNotifications: (id) =>
             isCurrent()
-              ? cancelNotifications(id, namespace, setReminderNotice)
+              ? cancelNotifications(id, namespace)
               : undefined,
           remove: async (id) => {
             await repository.remove(id);
@@ -346,7 +343,6 @@ export function TaskProvider({ children }: PropsWithChildren) {
                   false,
                   devices.remindersAllowed,
                   devices.reminderAuthorizationReady,
-                  setReminderNotice,
                 )
               : undefined,
           upsert: async (task) => {

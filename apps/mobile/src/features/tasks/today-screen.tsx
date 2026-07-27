@@ -20,7 +20,10 @@ import { useRouter } from "expo-router";
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
-import { KeyboardAwareScrollView } from "../../components/keyboard";
+import {
+  KeyboardAwareScrollView,
+  useKeyboardInset,
+} from "../../components/keyboard";
 import { TextInput } from "../../components/themed-text-input";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
@@ -48,6 +51,7 @@ export function TodayScreen() {
   const theme = useAppTheme();
   const styles = createStyles(theme);
   const { width } = useWindowDimensions();
+  const keyboardInset = useKeyboardInset();
   const {
     loading,
     tasks,
@@ -404,6 +408,9 @@ export function TodayScreen() {
         style={[
           styles.quickAddDock,
           isCompact ? styles.quickAddDockCompact : undefined,
+          {
+            bottom: (isCompact ? 10 : 16) + keyboardInset,
+          },
         ]}
       >
         <QuickAdd

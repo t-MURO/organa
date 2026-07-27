@@ -38,7 +38,9 @@ export function TimePickerField({
             style={styles.field}
             onPress={() => onChange(formatTimeValue(new Date()))}
           >
-            <Text style={styles.placeholder}>Choose a time</Text>
+            <Text numberOfLines={1} style={styles.placeholder}>
+              Choose a time
+            </Text>
             <Text aria-hidden style={styles.clockMark}>
               TIME
             </Text>
@@ -63,7 +65,10 @@ export function TimePickerField({
         style={styles.field}
         onPress={() => setOpen(true)}
       >
-        <Text style={value ? styles.value : styles.placeholder}>
+        <Text
+          numberOfLines={1}
+          style={value ? styles.value : styles.placeholder}
+        >
           {value || "Choose a time"}
         </Text>
         <Text aria-hidden style={styles.clockMark}>
@@ -153,31 +158,39 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
       flex: 1,
       flexDirection: "row",
       justifyContent: "space-between",
+      minWidth: 0,
       minHeight: 44,
       paddingHorizontal: 13,
       paddingVertical: 10,
     },
     value: {
       color: theme.text,
+      flex: 1,
+      flexShrink: 1,
       fontFamily: "Manrope_600SemiBold",
       fontSize: 12,
     },
     placeholder: {
       color: theme.textMuted,
+      flex: 1,
+      flexShrink: 1,
       fontFamily: "Manrope_600SemiBold",
       fontSize: 12,
     },
     clockMark: {
       color: theme.accentStrong,
+      flexShrink: 0,
       fontFamily: "Manrope_800ExtraBold",
       fontSize: 8,
       letterSpacing: 0.6,
+      marginLeft: 8,
     },
     clearButton: {
       alignItems: "center",
       borderColor: theme.border,
       borderRadius: 10,
       borderWidth: 1,
+      flexShrink: 0,
       justifyContent: "center",
       minHeight: 44,
       paddingHorizontal: 10,
@@ -189,6 +202,7 @@ function createStyles(theme: ReturnType<typeof useAppTheme>) {
     },
     iosPicker: {
       flex: 1,
+      minWidth: 0,
       minHeight: 44,
     },
   });

@@ -52,7 +52,7 @@ async function syncCheckInReminder(
   settings: UserSettings,
   ownerId: string,
   requestPermission: boolean,
-  report: (message: string) => void,
+  report?: (message: string) => void,
 ) {
   try {
     const result = await runNotificationOperation(ownerId, async () => {
@@ -61,12 +61,12 @@ async function syncCheckInReminder(
     });
     if (!result) return;
     if (!settings.checkInReminder.enabled) {
-      report("");
+      report?.("");
       return;
     }
-    report(checkInReminderNoticeFor(result));
+    report?.(checkInReminderNoticeFor(result));
   } catch {
-    report(
+    report?.(
       settings.checkInReminder.enabled
         ? "Your Check-In reminder was saved, but this device could not schedule it. Check system notification settings before relying on it."
         : "Organa could not remove the previous Check-In reminder. Check system notification settings before relying on its schedule.",
@@ -115,7 +115,6 @@ export function SettingsProvider({ children }: PropsWithChildren) {
             reminderSettings(stored, devices.remindersAllowed),
             namespace,
             false,
-            setCheckInReminderNotice,
           );
         }
       });
@@ -134,7 +133,6 @@ export function SettingsProvider({ children }: PropsWithChildren) {
       reminderSettings(settings, devices.remindersAllowed),
       namespace,
       false,
-      setCheckInReminderNotice,
     );
   }, [
     devices.reminderAuthorizationReady,
@@ -153,7 +151,6 @@ export function SettingsProvider({ children }: PropsWithChildren) {
         reminderSettings(settingsRef.current, devices.remindersAllowed),
         namespace,
         false,
-        setCheckInReminderNotice,
       );
     });
     return () => subscription.remove();
@@ -180,7 +177,6 @@ export function SettingsProvider({ children }: PropsWithChildren) {
             reminderSettings(next, devices.remindersAllowed),
             namespace,
             false,
-            setCheckInReminderNotice,
           );
         }
       }),

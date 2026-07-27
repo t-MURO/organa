@@ -374,6 +374,7 @@ export function TaskEditorModal({
           </View>
 
           <KeyboardAwareScrollView
+            style={styles.formScroll}
             contentContainerStyle={styles.form}
           >
             <Section
@@ -465,7 +466,12 @@ export function TaskEditorModal({
                   compact ? styles.fieldGridCompact : undefined,
                 ]}
               >
-                <View style={styles.fieldCell}>
+                <View
+                  style={[
+                    styles.fieldCell,
+                    compact ? styles.fieldCellCompact : undefined,
+                  ]}
+                >
                   <FieldLabel
                     styles={styles}
                     label="Planned date"
@@ -477,7 +483,12 @@ export function TaskEditorModal({
                     onChange={setPlannedFor}
                   />
                 </View>
-                <View style={styles.fieldCell}>
+                <View
+                  style={[
+                    styles.fieldCell,
+                    compact ? styles.fieldCellCompact : undefined,
+                  ]}
+                >
                   <FieldLabel
                     styles={styles}
                     label="Scheduled time"
@@ -489,7 +500,12 @@ export function TaskEditorModal({
                     onChange={setScheduledTime}
                   />
                 </View>
-                <View style={styles.fieldCell}>
+                <View
+                  style={[
+                    styles.fieldCell,
+                    compact ? styles.fieldCellCompact : undefined,
+                  ]}
+                >
                   <FieldLabel styles={styles} label="Due date" optional />
                   <DatePickerField
                     accessibilityLabel="Task due date"
@@ -497,7 +513,12 @@ export function TaskEditorModal({
                     onChange={setDueDate}
                   />
                 </View>
-                <View style={styles.fieldCell}>
+                <View
+                  style={[
+                    styles.fieldCell,
+                    compact ? styles.fieldCellCompact : undefined,
+                  ]}
+                >
                   <FieldLabel styles={styles} label="Due time" optional />
                   <TimePickerField
                     accessibilityLabel="Task due time"
@@ -763,9 +784,9 @@ export function TaskEditorModal({
                 </Text>
               ) : null}
             </Section>
-
+          </KeyboardAwareScrollView>
+          <View style={styles.stickyFooter}>
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
             <View
               style={[
                 styles.footer,
@@ -813,7 +834,7 @@ export function TaskEditorModal({
                 </Pressable>
               </View>
             </View>
-          </KeyboardAwareScrollView>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -1030,6 +1051,9 @@ function createStyles(theme: OrganaTheme) {
       gap: 14,
       padding: 18,
     },
+    formScroll: {
+      flexShrink: 1,
+    },
     section: {
       backgroundColor: theme.surface,
       borderColor: theme.border,
@@ -1195,10 +1219,18 @@ function createStyles(theme: OrganaTheme) {
     },
     fieldGridCompact: {
       flexDirection: "column",
+      gap: 16,
     },
     fieldCell: {
       flexBasis: "47%",
       flexGrow: 1,
+      gap: 8,
+      minWidth: 0,
+    },
+    fieldCellCompact: {
+      flexBasis: "auto",
+      flexGrow: 0,
+      width: "100%",
     },
     toggleRow: {
       alignItems: "center",
@@ -1301,6 +1333,14 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_700Bold",
       fontSize: 10,
       paddingHorizontal: 4,
+    },
+    stickyFooter: {
+      backgroundColor: theme.surface,
+      borderTopColor: theme.border,
+      borderTopWidth: 1,
+      gap: 8,
+      paddingHorizontal: 18,
+      paddingVertical: 12,
     },
     footer: {
       alignItems: "center",
