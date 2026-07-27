@@ -740,26 +740,26 @@ function PriorityTask({
             ) : null}
           </View>
         </Animated.View>
-        {task.completedAt ? (
-          <View style={styles.completedActions}>
-            <DoseConfirmationButton
-              styles={styles}
-              task={task}
-              onConfirm={onConfirmDose}
-            />
-            <UndoButton styles={styles} task={task} onToggle={onToggle} />
-          </View>
-        ) : (
-          <View style={styles.taskActions}>
-            <Text style={[styles.taskKind, { color: colors.strong }]}>
-              {formatKind(task.kind)}
-            </Text>
+        <View style={styles.taskActions}>
+          <Text style={[styles.taskKind, { color: colors.strong }]}>
+            {formatKind(task.kind)}
+          </Text>
+          {task.completedAt ? (
+            <View style={styles.completedActions}>
+              <DoseConfirmationButton
+                styles={styles}
+                task={task}
+                onConfirm={onConfirmDose}
+              />
+              <UndoButton styles={styles} task={task} onToggle={onToggle} />
+            </View>
+          ) : (
             <View style={styles.taskActionButtons}>
               <EditButton styles={styles} task={task} onEdit={onEdit} />
               <FocusButton styles={styles} task={task} onFocus={onFocus} />
             </View>
-          </View>
-        )}
+          )}
+        </View>
       </View>
     </CompletionCollapse>
   );
@@ -822,23 +822,26 @@ function TimelineTask({
           <Text style={styles.timelineTaskMeta}>{formatTaskMeta(task)}</Text>
         </View>
       </Animated.View>
-      {task.completedAt ? (
-        <View style={styles.completedActions}>
-          <DoseConfirmationButton
-            styles={styles}
-            task={task}
-            onConfirm={onConfirmDose}
-          />
-          <UndoButton styles={styles} task={task} onToggle={onToggle} />
-        </View>
-      ) : (
-        <View style={styles.taskActions}>
+      <View style={styles.taskActions}>
+        <Text style={[styles.taskKind, { color: theme.accentStrong }]}>
+          {formatKind(task.kind)}
+        </Text>
+        {task.completedAt ? (
+          <View style={styles.completedActions}>
+            <DoseConfirmationButton
+              styles={styles}
+              task={task}
+              onConfirm={onConfirmDose}
+            />
+            <UndoButton styles={styles} task={task} onToggle={onToggle} />
+          </View>
+        ) : (
           <View style={styles.taskActionButtons}>
             <EditButton styles={styles} task={task} onEdit={onEdit} />
             <FocusButton styles={styles} task={task} onFocus={onFocus} />
           </View>
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
 }
@@ -1459,9 +1462,10 @@ function createStyles(theme: OrganaTheme) {
     },
     taskActions: {
       alignItems: "flex-end",
+      alignSelf: "stretch",
       gap: 7,
-      justifyContent: "center",
-      minWidth: 112,
+      justifyContent: "space-between",
+      minWidth: 128,
     },
     taskActionButtons: {
       flexDirection: "row",
