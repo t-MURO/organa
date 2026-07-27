@@ -288,8 +288,13 @@ Local evidence:
 - generated Android configuration registers Today Tasks and Next Reminder
   AppWidget providers, Java receivers, resize metadata, descriptions, and
   30-minute launcher updates
-- the Android Hermes export succeeds; a local Gradle APK build remains
-  unverified because this host has Java 17 but no Android SDK installed
+- the Android Hermes export and a local signed Gradle APK build both succeed;
+  the local host now has Java 17, Android API 36/build tools, platform tools,
+  NDK 27.1, and CMake installed
+- the Firebase-enabled local version-code-9 APK passes signature and package
+  inspection, requests notification and FCM receive permissions, registers
+  Expo/Firebase messaging services, and embeds the expected Firebase project
+  resources; physical-device delivery remains a separate gate
 - generated iOS configuration has no microphone or background-audio
   declarations, uses the explicit widget bundle ID, and produces an opaque
   1024-pixel App Store icon

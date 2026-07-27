@@ -79,6 +79,35 @@ duplicate-class task and completed release assembly and signing.
 - `pnpm audit --prod --json` reports zero findings at every severity.
 - No tests were added, changed, or run.
 
+## Local Firebase-enabled Artifact
+
+Status recorded on 2026-07-27.
+
+- Source commit: `58580c6d9974ade2c75d7a9963e5720258890147`
+- Profile and distribution: `local-preview`, internal APK
+- App version and build: `0.1.0` (`9`)
+- Artifact size: 111,812,858 bytes
+- Artifact SHA-256:
+  `856244b4ec87ee8ae3aa5c9286103c3d9fd9dd27473d3e13785af34fa4aca7db`
+- Local artifact: `~/Downloads/Organa-0.1.0-build-9.apk`
+
+The host now has a complete local Android build toolchain using Java 17,
+Android API 36/build tools, platform tools, NDK 27.1, and CMake. Expo Doctor
+passes all 20 checks, Expo Prebuild succeeds, and Gradle completes
+`:app:assembleRelease`.
+
+The local build resolves the checked-in public Android Firebase client
+configuration for package `app.organa.mobile` and completes
+`:app:processReleaseGoogleServices`. APK inspection confirms version code 9,
+minimum API 24, target API 36, all four native ABIs, notification and FCM
+receive permissions, Expo/Firebase messaging services, and the expected
+Firebase project ID, app ID, sender ID, and storage bucket resources.
+
+Android `apksigner` verifies one RSA signer with a valid APK Signature Scheme
+v2 signature. This is build and static-artifact evidence only; notification
+delivery and device-approval behavior still require a physical-device check.
+No tests were added, changed, or run for the local build.
+
 ## Remaining Physical Gate
 
 The APK exists and is signed, but no physical Android claim is made yet.

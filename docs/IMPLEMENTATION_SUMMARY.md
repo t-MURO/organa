@@ -2741,3 +2741,24 @@ must have direct evidence before production launch.
 - The final scheduled three-phase drill still requires separate per-run
   consent. Production designation does not silently authorize it.
 - No tests were added, changed, or run.
+
+## Local Android and Firebase Push Build Milestone
+
+- The macOS development host now has Java 17 and a complete Android API 36
+  toolchain, including platform/build tools, NDK 27.1, and CMake.
+- Shell startup configuration exports the Java and Android SDK locations, so
+  future local Android builds do not depend on an Expo cloud worker.
+- The `local-preview` EAS profile reuses preview signing and client
+  configuration without consuming the next remote version code.
+- Android app configuration prefers EAS's protected Firebase file variable
+  and falls back to the checked-in public `google-services.json` for local
+  builds. Private Firebase service-account files remain ignored.
+- The Firebase-enabled local version-code-9 APK completes Expo Doctor,
+  Prebuild, Google Services processing, release assembly, and signing.
+- Static inspection confirms the Organa package and SDK range, notification
+  and FCM permissions, Expo/Firebase messaging services, expected Firebase
+  resources, four Android ABIs, and a valid v2 release signature.
+- The verified artifact checksum and metadata are recorded in
+  `docs/ANDROID_PREVIEW_EVIDENCE.md`; physical notification delivery remains a
+  separate acceptance gate.
+- No tests were added, changed, or run.
