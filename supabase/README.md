@@ -4,7 +4,7 @@ Organa uses Supabase for authentication, encrypted synchronization, private
 Realtime signals, trusted-device metadata, browser reminder delivery, and
 delayed account deletion.
 
-For the current managed connected-test project, follow
+For the selected managed production project, follow
 `docs/MANAGED_SUPABASE_TESTING.md`. It records the non-secret deployment
 identity, migration/function/scheduler state, private config preparation, and
 remaining Auth gates.
@@ -29,13 +29,12 @@ its JWT expires, even after its refresh token is revoked.
 
 ## 2. Configure Authentication
 
-Enable:
+Enable Email OTP only for the controlled beta. Keep Google and GitHub disabled
+in Supabase and hidden in the client until the separate post-beta OAuth rollout
+is reviewed and exercised.
 
-- Google
-- GitHub
-- Email OTP
-
-For managed Google/GitHub, register this provider callback in both consoles:
+For that later managed Google/GitHub rollout, register this provider callback
+in both consoles:
 
 ```text
 https://PROJECT_REF.supabase.co/auth/v1/callback
@@ -302,9 +301,9 @@ Use two accounts and two physical devices or browsers to verify:
 - proofless device registration, mutation, revocation, and deletion RPC calls
   are rejected
 - a revoked device cannot re-enroll without the recovery-derived proof
-- a pending device remains untrusted until a different trusted device approves
-  it and the target proves possession of both its device secret and one-time
-  approval code
+- a pending device remains untrusted until a different trusted device selects
+  and approves it, and the target proves possession of its device secret and
+  short-lived approval exchange key
 - approval envelopes expire, can be rejected, and are erased after claim
 - active deletion requests reject encrypted mutations and device changes
 - different-field edits merge and same-field edits resolve deterministically

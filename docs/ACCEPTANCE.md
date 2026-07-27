@@ -621,13 +621,13 @@ Local evidence:
   confirmation and returning-user email templates
 - [ ] Disable Maileroo click/open tracking for the Auth sending domain before
   accepting any link-based security email flow
-- [x] Complete Maileroo-delivered six-digit email OTP sign-in against the live
-  managed-test preview
+- [x] Complete Maileroo-delivered six-digit email OTP sign-in against both the
+  live managed-test preview and stable production origin
 - [x] Keep Google and GitHub sign-in dormant for the controlled beta, with no
   provider discovery, controls, divider, or programmatic OAuth start
 - Deferred post-beta: configure and exercise Google and GitHub before enabling
   the retained social OAuth path
-- [x] Apply all twelve migrations and pass linked database lint and targeted
+- [x] Apply all thirteen migrations and pass linked database lint and targeted
   security/performance advisor checks against the selected managed EU
   production backend
 - [x] Confirm the exact migration chain, lint, and advisor state after

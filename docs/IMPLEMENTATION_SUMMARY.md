@@ -2457,7 +2457,6 @@ No tests were added, changed, or run for this milestone.
 
 Connected Supabase project:
 
-- Repeat the confirmed Maileroo email-code flow against production.
 - Repeat cross-account RLS, unauthorized RPC, trusted-device, encrypted sync,
   and Web Push scheduler checks against the selected production deployment.
 - Complete rendered reminder-device cleanup, then repeat large-account,
@@ -2470,6 +2469,8 @@ Connected Supabase project:
 Physical devices:
 
 - Validate iOS and Android notification scheduling, actions, and snooze.
+- Validate trusted-device approval push delivery, Account deep link, and
+  selected-device approval between physical devices.
 - Validate reminders after process termination and while offline.
 - Restore an encrypted export on a separate physical release device.
 - Validate biometric/device-PIN app lock.
@@ -2761,4 +2762,28 @@ must have direct evidence before production launch.
 - The verified artifact checksum and metadata are recorded in
   `docs/ANDROID_PREVIEW_EVIDENCE.md`; physical notification delivery remains a
   separate acceptance gate.
+- No tests were added, changed, or run.
+
+## Production Approval Push And Current Android Preview
+
+- The selected managed production backend contains all thirteen checked-in
+  migrations through `20260727130802`; the linked local and remote migration
+  lists match exactly.
+- `notify-device-approval` is active with gateway JWT verification enabled.
+  A direct unauthenticated production request returns `401`, while the
+  function keeps notification content generic and routes taps only to Account.
+- The private mode-600 production operator configuration was regenerated
+  through the guarded managed-config helper at the current migration head.
+  Synthetic-account consent remains explicit, while scheduled Web Push and
+  one-hour deletion drill consent remain disabled.
+- User-confirmed Maileroo six-digit code sign-ins now cover both preview and
+  the stable production origin. No email address, code, or session data is
+  retained in checked-in evidence.
+- The locally built, release-signed Android preview at version code 11 includes
+  the Firebase client configuration, approval notifications, current keyboard
+  and picker fixes, compact week calendar, full-screen phone task editor, and
+  compact Quick Capture `Options` row.
+- The version-11 APK passes Android package, SDK, signer, and checksum
+  inspection. Physical approval-push delivery and tap-to-Account remain a
+  release-device gate.
 - No tests were added, changed, or run.

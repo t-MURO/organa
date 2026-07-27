@@ -57,9 +57,11 @@ does not duplicate private release-manifest fields.
 
 - Exercise install, offline restart, service-worker replacement, and
   permission-granted Web Push in every supported release browser.
-- Complete one Maileroo-delivered code sign-in at the stable production
-  origin; the production Site URL and exact redirect policy are configured.
 - Complete the full scheduled connected drill, physical-device matrix,
   independent security review, legal review, signing, and store evidence.
+
+The Maileroo-delivered six-digit code flow was user-confirmed at the stable
+production origin on 2026-07-27. The ignored mode-600 release manifest records
+the evidence reference without retaining an email address, code, or session.
 
 No tests were added, changed, or run for this milestone.

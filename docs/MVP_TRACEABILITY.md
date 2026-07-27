@@ -1,6 +1,6 @@
 # MVP Acceptance Traceability
 
-Status audited on 2026-07-26 against `REQUIREMENTS.md` section 19.
+Status audited on 2026-07-27 against `REQUIREMENTS.md` section 19.
 
 This matrix separates implementation evidence from the external evidence
 required to declare the controlled-beta MVP complete.
@@ -15,8 +15,8 @@ Status meanings:
 
 | # | Acceptance criterion | Status | Current evidence | Evidence still required |
 | --- | --- | --- | --- | --- |
-| 1 | Email verification-code account creation | Local + managed preview | `apps/mobile/src/auth/auth-boundary.tsx`, `apps/mobile/src/auth/auth-context.tsx`, and a user-confirmed Maileroo six-digit code sign-in on the live preview; social OAuth is explicitly dormant for this beta | Repeat the email-code flow against the reviewed production deployment |
-| 2 | Recovery-key confirmation and trusted-device enrollment | Partial | `apps/mobile/src/security/security-boundary.tsx`, protected short-lived X25519 exchange keys, selectable pending-device approval with automatic encrypted claim, strict native/web stored-identity parsing, an encrypted restore into a separately enrolled clean browser origin, and managed approval/rejection/revocation evidence | Complete the automatic flow on separate physical devices plus malformed/missing-identity drills, then repeat against production |
+| 1 | Email verification-code account creation | Local + managed production | `apps/mobile/src/auth/auth-boundary.tsx`, `apps/mobile/src/auth/auth-context.tsx`, and user-confirmed Maileroo six-digit code sign-ins on both the live preview and stable production origin; social OAuth is explicitly dormant for this beta | None for the controlled-beta code flow; disable Maileroo tracking before any future link-based security flow |
+| 2 | Recovery-key confirmation and trusted-device enrollment | Partial | `apps/mobile/src/security/security-boundary.tsx`, protected short-lived X25519 exchange keys, selectable pending-device approval with automatic encrypted claim, strict native/web stored-identity parsing, an encrypted restore into a separately enrolled clean browser origin, managed approval/rejection/revocation evidence, proof-gated native Expo Push registration, and the deployed authenticated generic approval-alert function | Complete the automatic flow and approval-push tap on separate physical devices plus malformed/missing-identity drills |
 | 3 | Task creation, editing, scheduling, recurrence, completion, and search | Local | `apps/mobile/src/features/tasks`, `packages/domain/src/tasks.ts`, and the 2026-07-24 browser walkthrough | None for local product behavior |
 | 4 | One-off, routine, and medication behavior | Local | Task editor/domain invariants, medication dose confirmation, recurrence/grace handling, and browser drills recorded in `docs/ACCEPTANCE.md` | None for local product behavior |
 | 5 | Multiple reminders, snooze presets, and primary reminder device | Partial | Owner-serialized native/browser scheduling and cleanup, native/web schedulers, Focus presets, reminder authorization cache, private device RPCs, deployed VAPID/function secrets, managed live-session ownership/revocation checks, and a real managed cron drill that rejected and removed an untrusted synthetic Push endpoint before outbound access | Complete rendered release-browser delivery/cleanup and physical notification/action/snooze drills; repeat against production |

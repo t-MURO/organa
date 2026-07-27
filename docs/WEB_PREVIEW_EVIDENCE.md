@@ -145,8 +145,10 @@ remain available for a deliberate post-beta release.
   `docs/WEB_PRODUCTION_EVIDENCE.md`.
 - Exercise install, offline restart, service-worker replacement, and
   permission-granted Web Push in every supported release browser.
-- Repeat the confirmed Maileroo email-code flow against production.
 - Complete the connected production repeat, physical-device matrix,
   independent security review, legal review, signing, and store evidence.
+
+The Maileroo six-digit email-code flow has also been user-confirmed at the
+stable production origin; see `docs/WEB_PRODUCTION_EVIDENCE.md`.
 
 No tests were added, changed, or run for this milestone.
