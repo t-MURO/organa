@@ -275,23 +275,25 @@ export function TodayScreen() {
               count={visibleTaskCount}
             />
             <View style={styles.priorityStack}>
-              {priorities.map((lane) => (
-                <PriorityLane
-                  key={lane.key}
-                  hint={lane.hint}
-                  label={lane.label}
-                  priority={lane.key}
-                  selectedDate={selectedDate}
-                  styles={styles}
-                  tasks={visibleLanes[lane.key]}
-                  theme={theme}
-                  onEdit={openTask}
-                  onFocus={focusTask}
-                  onConfirmDose={confirmDose}
-                  onToggle={toggleTaskWithGrace}
-                  onToggleSubtask={toggleSubtaskWithGrace}
-                />
-              ))}
+              {priorities
+                .filter((lane) => visibleLanes[lane.key].length > 0)
+                .map((lane) => (
+                  <PriorityLane
+                    key={lane.key}
+                    hint={lane.hint}
+                    label={lane.label}
+                    priority={lane.key}
+                    selectedDate={selectedDate}
+                    styles={styles}
+                    tasks={visibleLanes[lane.key]}
+                    theme={theme}
+                    onEdit={openTask}
+                    onFocus={focusTask}
+                    onConfirmDose={confirmDose}
+                    onToggle={toggleTaskWithGrace}
+                    onToggleSubtask={toggleSubtaskWithGrace}
+                  />
+                ))}
             </View>
           </View>
 
@@ -600,26 +602,20 @@ function PriorityLane({
         </Text>
       </View>
       <View style={styles.taskList}>
-        {tasks.length > 0 ? (
-          tasks.map((task) => (
-            <PriorityTask
-              key={task.id}
-              colors={colors}
-              overdue={Boolean(
-                task.plannedFor && task.plannedFor < selectedDate,
-              )}
-              styles={styles}
-              task={task}
-              onEdit={onEdit}
-              onFocus={onFocus}
-              onConfirmDose={onConfirmDose}
-              onToggle={onToggle}
-              onToggleSubtask={onToggleSubtask}
-            />
-          ))
-        ) : (
-          <Text style={styles.emptyLane}>Nothing asking for attention.</Text>
-        )}
+        {tasks.map((task) => (
+          <PriorityTask
+            key={task.id}
+            colors={colors}
+            overdue={Boolean(task.plannedFor && task.plannedFor < selectedDate)}
+            styles={styles}
+            task={task}
+            onEdit={onEdit}
+            onFocus={onFocus}
+            onConfirmDose={onConfirmDose}
+            onToggle={onToggle}
+            onToggleSubtask={onToggleSubtask}
+          />
+        ))}
       </View>
     </View>
   );
@@ -1539,13 +1535,6 @@ function createStyles(theme: OrganaTheme) {
       color: theme.accentStrong,
       fontFamily: "Manrope_800ExtraBold",
       fontSize: 9,
-    },
-    emptyLane: {
-      color: theme.textMuted,
-      fontFamily: "Manrope_400Regular",
-      fontSize: 11,
-      paddingHorizontal: 4,
-      paddingVertical: 7,
     },
     timelineCard: {
       backgroundColor: theme.surface,
