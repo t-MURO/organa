@@ -1,3 +1,6 @@
+const fs = require("node:fs");
+const path = require("node:path");
+
 const {
   createContentSecurityPolicy,
   createWebResponseHeaders,
@@ -7,7 +10,12 @@ module.exports = ({ config }) => {
   const headers = createWebResponseHeaders(
     createContentSecurityPolicy(process.env.EXPO_PUBLIC_SUPABASE_URL),
   );
-  const googleServicesFile = process.env.GOOGLE_SERVICES_JSON;
+  const localGoogleServicesFile = path.join(__dirname, "google-services.json");
+  const googleServicesFile =
+    process.env.GOOGLE_SERVICES_JSON ??
+    (fs.existsSync(localGoogleServicesFile)
+      ? localGoogleServicesFile
+      : undefined);
   let configuredRouter = false;
   const plugins = (config.plugins ?? []).map((plugin) => {
     const name = Array.isArray(plugin) ? plugin[0] : plugin;
