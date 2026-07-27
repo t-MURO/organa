@@ -108,6 +108,39 @@ v2 signature. This is build and static-artifact evidence only; notification
 delivery and device-approval behavior still require a physical-device check.
 No tests were added, changed, or run for the local build.
 
+## Email-Only Version 12 Artifact
+
+Status recorded on 2026-07-27.
+
+- Source commit: `092f72218f177b3c877495406a5d4064025d0171`
+- Profile and distribution: `local-preview`, internal APK
+- App version and build: `0.1.0` (`12`)
+- Artifact size: 111,707,642 bytes
+- Artifact SHA-256:
+  `c4e24005ce33b9c6c0553e215ef5988904322421c87a81b18c72443293ef70bc`
+- Local artifact: `artifacts/organa-preview-v12.apk`
+
+This build follows the complete removal of Google/GitHub sign-in. EAS local
+prebuild regenerated the Android project from source, and its linked Expo
+module list no longer contains the removed browser-Auth module. Firebase
+Google Services processing remains enabled only for Android notifications.
+
+Expo Doctor passes all 20 checks. Gradle completes all 606 release tasks,
+including Google Services processing, duplicate-class validation, release
+lint, signing validation, and `:app:assembleRelease`.
+
+Static inspection confirms package `app.organa.mobile`, version code 12,
+minimum API 24, target/compile API 36, all four native ABIs, notification and
+FCM permissions, and a valid single-signer APK Signature Scheme v2 signature.
+The signer certificate SHA-256 is identical to version 11, so the APK can be
+installed as an in-place upgrade. Complete ZIP integrity validation reports no
+errors.
+
+This is build and static-artifact evidence only. Tests were not run at the
+product owner's request, and physical notification, device-approval, widget,
+app-lock, accessibility, backup-restore, and offline-process drills remain
+open.
+
 ## Remaining Physical Gate
 
 The APK exists and is signed, but no physical Android claim is made yet.

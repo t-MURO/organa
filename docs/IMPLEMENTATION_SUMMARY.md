@@ -2802,3 +2802,27 @@ must have direct evidence before production launch.
   inspection. Physical approval-push delivery and tap-to-Account remain a
   release-device gate.
 - No tests were added, changed, or run.
+
+## Email-Only Production Web And Android 12 Milestone
+
+- Promoted clean email-only Auth commit
+  `092f72218f177b3c877495406a5d4064025d0171` to the stable production web
+  origin as immutable EAS deployment `lf0te9nlpc`.
+- The stable and immutable origins both pass all 17 live deployment checks and
+  serve the same fingerprinted bundle.
+- Tightened the deployed opener policy from popup-compatible isolation to
+  strict `same-origin` now that browser-based provider Auth is absent.
+- Regenerated Android from source and built a local release-signed version-code
+  12 APK with the preview keystore and Firebase notification configuration.
+- Expo Doctor passes 20/20 checks and Gradle completes 606 release tasks.
+- APK inspection confirms API 24-36 support, four ABIs, notification/FCM
+  permissions, complete ZIP integrity, a valid v2 signature, and the same
+  signer certificate as version 11.
+- Refreshed the production dependency audit at 608 dependencies with zero
+  findings at every severity.
+- Updated the private mode-600 production manifest to the current source
+  commit, migration `20260727130802`, deployment identity, archive checksum,
+  and lockfile-bound dependency evidence.
+- Tests were not run at the product owner's request. Physical-device,
+  release-browser Push, scheduled production deletion, and external review
+  gates remain open.

@@ -1,17 +1,17 @@
 # Production Dependency Audit
 
-Audit performed on 2026-07-26 against the live package advisory registry.
+Audit performed on 2026-07-27 against the live package advisory registry.
 
 ## Audited Graph
 
 - Organa source commit at audit time:
-  `d99b50a1ee4a8285b1136c966beae47a92adbee4`
+  `092f72218f177b3c877495406a5d4064025d0171`
 - `pnpm-lock.yaml` SHA-256:
-  `5c1d3f4b37b959b4bb8ce678725a62fb97e9f6b70bb7ab9d2fde14fff3f8eaad`
+  `833c9c5b31b798ff56e84276faf12359b0c7a229595011b06518bc1203eb6cf9`
 - pnpm: `10.28.2`
 - Node.js: `v25.4.0`
 - Scope: production dependencies and production optional dependencies
-- Audited dependencies: `610`
+- Audited dependencies: `608`
 - Development dependencies included: `0`
 
 ## Result

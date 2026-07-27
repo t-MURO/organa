@@ -53,6 +53,28 @@ checksum, and exact verification references are kept in the ignored,
 mode-600 `.organa-release-evidence.json`. This checked-in record intentionally
 does not duplicate private release-manifest fields.
 
+## Email-Only Auth Redeployment
+
+Clean source commit `092f72218f177b3c877495406a5d4064025d0171`
+was exported with the EAS production environment after Google/GitHub sign-in,
+provider discovery, callback exchange, and direct browser-Auth dependencies
+were removed.
+
+The export passed all 28 artifact checks and was promoted as deployment
+`lf0te9nlpc`:
+
+```text
+https://organa--lf0te9nlpc.expo.app
+https://organa.expo.app
+```
+
+Both origins pass all 17 live deployment checks and serve
+`entry-1726d97a00a73a4af96ddfb61cd0408b.js`. The response policy now uses
+`Cross-Origin-Opener-Policy: same-origin`; popup compatibility is no longer
+required by the email-code-only Auth flow. The mode-600 release manifest
+records the commit, deployment identifier, current migration head, and
+checksum of the matching dry-run deployment archive.
+
 ## Remaining Gates
 
 - Exercise install, offline restart, service-worker replacement, and
