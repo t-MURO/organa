@@ -5,6 +5,8 @@ Status recorded on 2026-07-26.
 This file records connected-test web evidence. It does not claim a reviewed
 production candidate, custom domain, provider acceptance, release-browser PWA
 or Web Push behavior, independent security review, or legal approval.
+Its deployed Auth bundle predates the repository's email-only cleanup and is
+not current Auth implementation evidence.
 
 ## Deployment Identity
 
@@ -65,12 +67,6 @@ Direct live evidence covers:
 - a content-addressed application bundle
 - bounded EAS static-asset caching at one hour
 - service-worker and imported-worker update checks that bypass the HTTP cache
-- the live fingerprinted bundle contains the explicit `emailRedirectTo`
-  behavior used by email sign-in
-- the live fingerprinted bundle maps Supabase `otp_expired` callbacks to a
-  fixed recovery message instead of silently returning to the login form
-- the live fingerprinted bundle contains the controlled-beta email-only copy
-  and the fail-closed social OAuth guard
 - the deployed device-approval UI identifies a pending device with a short
   request ID and completes its recipient-bound handoff automatically, without
   a transfer-code input
@@ -131,12 +127,10 @@ inbox security prefetch can consume or rewrite one-time links; Maileroo tracking
 must therefore be disabled for the Auth sending domain before link-based
 security flows are accepted.
 
-A production-build browser walkthrough proved the hard-disabled social OAuth
-path renders zero provider controls and zero social/email dividers while
-retaining the email field and verification-code action. Provider discovery
-does not run during the controlled beta, and a programmatic OAuth start also
-fails closed. The retained provider-settings adapter and PKCE callback path
-remain available for a deliberate post-beta release.
+The current source goes beyond this historical deployment: it removes social
+provider discovery, controls, callback exchange, direct dependencies, and
+provider-provisioning tooling. A new deployment must replace this record
+before the live bundle can be claimed as evidence for that email-only source.
 
 ## Remaining Gates
 

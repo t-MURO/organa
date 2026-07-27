@@ -21,7 +21,6 @@ apps/mobile/ios/
 .env.functions
 .organa-connected-supabase.json
 .organa-connected-evidence/
-.organa-managed-oauth.json
 .organa-release-evidence.json
 apps/mobile/firebase-service-account*.json
 supabase/.branches/

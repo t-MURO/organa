@@ -113,10 +113,10 @@ recorded determination, and attach any required compliance code or
 documentation before TestFlight or App Store submission.
 
 Confirm that both Supabase values point to the selected EU project. Confirm
-that hosted Auth allows the exact web origins and the `organa://**` native
-callback. Keep Google and GitHub disabled in Supabase and in the client for
-the controlled beta. Their credentials and provider-console setup belong to a
-separate post-beta rollout. The app rejects non-HTTPS remote endpoints, URL
+that hosted Auth uses the reviewed production Site URL and email-code
+templates. Keep every social provider disabled in Supabase; the client contains
+no social sign-in implementation or provider credentials. The app rejects
+non-HTTPS remote endpoints, URL
 credentials, placeholders, and any key that is not an `sb_publishable_`
 client key; do not weaken that runtime boundary to make a build appear
 configured.

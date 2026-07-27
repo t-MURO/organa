@@ -50,10 +50,10 @@ The reviewed source state passed:
   cross-account RLS, proof-gated RPCs, trusted-device lifecycle, encrypted
   Realtime delivery, durable reconciliation, and exact synthetic-user cleanup
 - clean app commit `97e964980b1c1cee6739a7f6e485505a6a6eab19`
-  explicitly binds email sign-in to its platform callback; EAS deployment
-  `bbchcanwav`, its stable alias, and its immutable URL pass all 16 live
-  response checks, and the served fingerprinted bundle contains the
-  `emailRedirectTo` behavior
+  historically bound email sign-in to a platform callback; EAS deployment
+  `bbchcanwav`, its stable alias, and its immutable URL passed all 16 live
+  response checks. The current email-code-only source no longer requests an
+  Auth redirect and requires refreshed deployment evidence.
 
 The first connected attempt reached the encrypted Realtime probe but missed
 its 10-second broadcast deadline. Its RPC had succeeded, cleanup completed,

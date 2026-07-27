@@ -4,9 +4,6 @@ import { createClient, processLock } from "@supabase/supabase-js";
 
 import { authStorage } from "./auth-storage";
 
-export type ConfiguredOAuthProvider = "google" | "github";
-
-const oauthProviderOrder: ConfiguredOAuthProvider[] = ["google", "github"];
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const supabasePublishableKey =
   process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
@@ -23,8 +20,7 @@ export const supabase = isSupabaseConfigured
   ? createClient(configuration.value!.url, configuration.value!.key, {
       auth: {
         autoRefreshToken: true,
-        detectSessionInUrl: typeof window !== "undefined",
-        flowType: "pkce",
+        detectSessionInUrl: false,
         lock: processLock,
         persistSession: true,
         storage: authStorage,
@@ -36,39 +32,6 @@ export const supabase = isSupabaseConfigured
       },
     })
   : undefined;
-
-export async function readConfiguredOAuthProviders() {
-  if (!configuration.value) return [];
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5_000);
-  try {
-    const response = await fetch(`${configuration.value.url}/auth/v1/settings`, {
-      headers: {
-        Accept: "application/json",
-        apikey: configuration.value.key,
-      },
-      signal: controller.signal,
-    });
-    if (!response.ok) {
-      throw new Error("Supabase Auth settings could not be loaded.");
-    }
-
-    const settings: unknown = await response.json();
-    const external =
-      isRecord(settings) && isRecord(settings.external)
-        ? settings.external
-        : undefined;
-    if (!external) {
-      throw new Error("Supabase Auth settings were malformed.");
-    }
-    return oauthProviderOrder.filter(
-      (provider) => external[provider] === true,
-    );
-  } finally {
-    clearTimeout(timeout);
-  }
-}
 
 function readSupabaseConfiguration(
   urlValue: string | undefined,
@@ -120,8 +83,4 @@ function parseSupabaseUrl(value: string) {
   } catch {
     return undefined;
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

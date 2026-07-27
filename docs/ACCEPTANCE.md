@@ -68,8 +68,10 @@ rewrites, or production deployment.
   inputs visible; shared fields provide stable themed focus and selection
 - [x] Source-pinned iOS 16.4+ and Android 7+/API 36 build targets plus a
   documented browser and platform capability matrix
-- [x] Native OAuth callback recovery across attached browser sessions, app
-  resume, and cold start with one-time PKCE exchange deduplication
+- [x] Email-code-only authentication with no social-provider discovery,
+  controls, browser callback exchange, or provisioning tooling
+- [x] Reject and locally clear any saved Supabase session whose provider is not
+  `email`
 - [x] Account-scoped content-key readiness and runtime validation for native
   and web key-vault records
 - [x] New, restored, and legacy local Check-In rows use deterministic opaque
@@ -86,14 +88,10 @@ rewrites, or production deployment.
 Local evidence:
 
 - strict TypeScript passes for all packages
-- 151 automated tests pass: 43 domain, 6 cryptography, and 102 application
-  tests
-- OAuth callback tests accept only the configured app redirect, map remote
-  provider errors to safe local copy, deduplicate simultaneous and repeated
-  one-time codes, and allow a failed exchange to be retried
-- the authentication contract pins the `organa` scheme, local Supabase
-  redirect allowlist, PKCE mode, platform auth storage, initial native URL
-  recovery, resumed URL handling, and attached browser-session handling
+- the existing non-social authentication suite was not rerun for the
+  social-login removal at the product owner's request
+- the authentication contract uses email verification codes, platform auth
+  storage, durable web sessions, and disabled URL-session detection
 - completion-feedback tests prove iOS and Android use their native system
   haptic effects, web remains quiet, the preference disables feedback, and
   unavailable haptic hardware does not interrupt task completion
@@ -623,10 +621,9 @@ Local evidence:
   accepting any link-based security email flow
 - [x] Complete Maileroo-delivered six-digit email OTP sign-in against both the
   live managed-test preview and stable production origin
-- [x] Keep Google and GitHub sign-in dormant for the controlled beta, with no
-  provider discovery, controls, divider, or programmatic OAuth start
-- Deferred post-beta: configure and exercise Google and GitHub before enabling
-  the retained social OAuth path
+- [x] Remove Google and GitHub sign-in, provider discovery, social controls,
+  callback exchange, direct dependencies, credential template, and provider
+  provisioning command; managed providers remain disabled
 - [x] Apply all thirteen migrations and pass linked database lint and targeted
   security/performance advisor checks against the selected managed EU
   production backend

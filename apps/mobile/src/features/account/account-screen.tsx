@@ -68,7 +68,6 @@ export function AccountScreen() {
   const [updatingLock, setUpdatingLock] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const identities = auth.user?.identities ?? [];
   const dataLoading =
     tasks.loading ||
     brainDump.loading ||
@@ -356,15 +355,11 @@ export function AccountScreen() {
               ? "This development account stays on this device and does not synchronize."
               : "Your authentication session is stored using platform-appropriate secure storage."}
           </Text>
-          {identities.length > 0 ? (
+          {!auth.localPreview ? (
             <View style={styles.identityList}>
-              {identities.map((identity) => (
-                <View key={identity.id} style={styles.identityPill}>
-                  <Text style={styles.identityText}>
-                    {capitalize(identity.provider)}
-                  </Text>
-                </View>
-              ))}
+              <View style={styles.identityPill}>
+                <Text style={styles.identityText}>Email code</Text>
+              </View>
             </View>
           ) : null}
         </View>

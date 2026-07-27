@@ -1,6 +1,4 @@
-import type { Provider, Session, User } from "@supabase/supabase-js";
-import * as Linking from "expo-linking";
-import * as WebBrowser from "expo-web-browser";
+import type { Session, User } from "@supabase/supabase-js";
 import {
   createContext,
   type PropsWithChildren,
@@ -12,13 +10,7 @@ import { AppState, Platform } from "react-native";
 
 import { clearPrivatePlatformState } from "../data/clear-private-platform-state";
 import {
-  createOAuthCallbackCoordinator,
-  parseOAuthCallback,
-} from "./oauth-callback";
-import {
-  type ConfiguredOAuthProvider,
   isSupabaseConfigured,
-  readConfiguredOAuthProviders,
   supabase,
   supabaseConfigurationIssue,
 } from "./supabase";
@@ -31,13 +23,6 @@ import {
   saveLocalDevelopmentIdentity,
 } from "./local-development-auth";
 
-WebBrowser.maybeCompleteAuthSession();
-
-type OAuthProvider = Extract<Provider, ConfiguredOAuthProvider>;
-
-// Keep the completed OAuth path dormant until its providers are released.
-const socialOAuthEnabled = false;
-
 interface AuthContextValue {
   configurationIssue: string;
   configured: boolean;
@@ -46,15 +31,12 @@ interface AuthContextValue {
   localEmail: string | null;
   ownerId: string | null;
   localPreview: boolean;
-  oauthProviders: OAuthProvider[];
-  oauthProvidersLoading: boolean;
   session: Session | null;
   user: User | null;
-  callbackError: string;
-  clearCallbackError(): void;
+  authError: string;
+  clearAuthError(): void;
   isCurrentUser(userId: string): Promise<boolean>;
   signInLocally(email: string): Promise<void>;
-  signInWithOAuth(provider: OAuthProvider): Promise<void>;
   sendEmailCode(email: string): Promise<void>;
   verifyEmailCode(email: string, code: string): Promise<void>;
   signOut(): Promise<void>;
@@ -70,20 +52,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [localIdentity, setLocalIdentity] =
     useState<LocalDevelopmentIdentity | null>(null);
-  const [callbackError, setCallbackError] = useState("");
-  const [oauthProviders, setOauthProviders] = useState<OAuthProvider[]>([]);
-  const [oauthProvidersLoading, setOauthProvidersLoading] = useState(
-    isSupabaseConfigured && socialOAuthEnabled,
-  );
-  const [authRedirectUrl] = useState(() => Linking.createURL("/"));
-  const [oauthCallbackCoordinator] = useState(() => {
-    const client = supabase;
-    if (!client) return undefined;
-    return createOAuthCallbackCoordinator(authRedirectUrl, async (code) => {
-      const result = await client.auth.exchangeCodeForSession(code);
-      if (result.error) throw result.error;
-    });
-  });
+  const [authError, setAuthError] = useState("");
   const localPreview = localIdentity !== null;
   const visibleSession = localPreview ? null : session;
   const ownerId = localIdentity?.ownerId ?? visibleSession?.user.id ?? null;
@@ -102,46 +71,6 @@ export function AuthProvider({ children }: PropsWithChildren) {
       .finally(() => {
         if (active) setLocalIdentityLoading(false);
       });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (Platform.OS !== "web" || typeof window === "undefined") return;
-    const callback = parseOAuthCallback(
-      window.location.href,
-      authRedirectUrl,
-    );
-    if (callback.type !== "error") return;
-
-    setCallbackError(callback.message);
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${window.location.search}`,
-    );
-  }, [authRedirectUrl]);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured || !socialOAuthEnabled) {
-      setOauthProviders([]);
-      setOauthProvidersLoading(false);
-      return;
-    }
-
-    let active = true;
-    void readConfiguredOAuthProviders()
-      .then((providers) => {
-        if (active) setOauthProviders(providers);
-      })
-      .catch(() => {
-        if (active) setOauthProviders([]);
-      })
-      .finally(() => {
-        if (active) setOauthProvidersLoading(false);
-      });
-
     return () => {
       active = false;
     };
@@ -168,8 +97,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
       .then(({ data, error }) => {
         if (!active || authStateChanged) return;
         if (error) {
-          setCallbackError((current) => current || initialSessionErrorMessage);
+          setAuthError((current) => current || initialSessionErrorMessage);
           setSession(null);
+        } else if (!isEmailSession(data.session)) {
+          setAuthError(unsupportedSessionErrorMessage);
+          setSession(null);
+          void client.auth.signOut({ scope: "local" });
         } else {
           setSession(data.session);
         }
@@ -177,13 +110,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
       })
       .catch(() => {
         if (!active || authStateChanged) return;
-        setCallbackError((current) => current || initialSessionErrorMessage);
+        setAuthError((current) => current || initialSessionErrorMessage);
         setSession(null);
         setSessionLoading(false);
       });
 
     const { data } = client.auth.onAuthStateChange((event, nextSession) => {
+      if (!active) return;
       authStateChanged = true;
+      if (!isEmailSession(nextSession)) {
+        setAuthError(unsupportedSessionErrorMessage);
+        setSession(null);
+        setSessionLoading(false);
+        setTimeout(() => {
+          void client.auth.signOut({ scope: "local" });
+        }, 0);
+        return;
+      }
       setSession(nextSession);
       setSessionLoading(false);
       if (event === "SIGNED_OUT") {
@@ -209,82 +152,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     };
   }, [localIdentity, localIdentityLoading]);
 
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-    const coordinator = oauthCallbackCoordinator;
-    if (!coordinator) return;
-
-    let active = true;
-    const handleCallback = async (url: string | null) => {
-      if (!url) return;
-      try {
-        const handled = await coordinator.handle(url);
-        if (active && handled) setCallbackError("");
-      } catch (error) {
-        if (active) setCallbackError(oauthCallbackMessage(error));
-      }
-    };
-
-    void Linking.getInitialURL()
-      .then(handleCallback)
-      .catch(() => {
-        if (active) {
-          setCallbackError(
-            "The sign-in response could not be opened. Please try again.",
-          );
-        }
-      });
-    const subscription = Linking.addEventListener("url", ({ url }) => {
-      void handleCallback(url);
-    });
-
-    return () => {
-      active = false;
-      subscription.remove();
-    };
-  }, [oauthCallbackCoordinator]);
-
-  async function signInWithOAuth(provider: OAuthProvider) {
-    if (!socialOAuthEnabled) {
-      throw new Error("Social sign-in is not available in this beta.");
-    }
-    if (!supabase) throw new Error("Supabase is not configured.");
-    setCallbackError("");
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: authRedirectUrl,
-        skipBrowserRedirect: Platform.OS !== "web",
-      },
-    });
-    if (error) throw error;
-    if (Platform.OS === "web") return;
-    if (!data.url) throw new Error("The sign-in provider did not return a URL.");
-
-    const result = await WebBrowser.openAuthSessionAsync(
-      data.url,
-      authRedirectUrl,
-    );
-    if (result.type !== "success") return;
-    if (!oauthCallbackCoordinator) {
-      throw new Error("Sign-in could not be completed. Please try again.");
-    }
-    try {
-      const handled = await oauthCallbackCoordinator.handle(result.url);
-      if (!handled) {
-        throw new Error("Sign-in could not be completed. Please try again.");
-      }
-    } catch (error) {
-      throw new Error(oauthCallbackMessage(error));
-    }
-  }
-
   async function sendEmailCode(email: string) {
     if (!supabase) throw new Error("Supabase is not configured.");
     const result = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: authRedirectUrl,
         shouldCreateUser: true,
       },
     });
@@ -310,7 +182,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }
 
   async function signOut() {
-    setCallbackError("");
+    setAuthError("");
     if (localIdentity) {
       await clearLocalDevelopmentIdentity();
       setLocalIdentity(null);
@@ -331,7 +203,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   async function signInLocally(email: string) {
     const identity = await createLocalDevelopmentIdentity(email);
     await saveLocalDevelopmentIdentity(identity);
-    setCallbackError("");
+    setAuthError("");
     setSession(null);
     setLocalIdentity(identity);
   }
@@ -339,8 +211,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
   return (
     <AuthContext.Provider
       value={{
-        callbackError,
-        clearCallbackError: () => setCallbackError(""),
+        authError,
+        clearAuthError: () => setAuthError(""),
         configurationIssue: supabaseConfigurationIssue,
         configured: isSupabaseConfigured,
         isCurrentUser,
@@ -349,12 +221,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         localEmail: localIdentity?.email ?? null,
         localPreview,
         ownerId,
-        oauthProviders,
-        oauthProvidersLoading,
         session: visibleSession,
         user: visibleSession?.user ?? null,
         signInLocally,
-        signInWithOAuth,
         sendEmailCode,
         verifyEmailCode,
         signOut,
@@ -371,11 +240,11 @@ export function useAuth() {
   return context;
 }
 
-function oauthCallbackMessage(error: unknown) {
-  return error instanceof Error && error.message === "Sign-in was cancelled."
-    ? error.message
-    : "Sign-in could not be completed. Please try again.";
-}
-
 const initialSessionErrorMessage =
   "Saved sign-in could not be opened. Please sign in again.";
+const unsupportedSessionErrorMessage =
+  "This saved sign-in method is no longer supported. Continue with an email verification code.";
+
+function isEmailSession(session: Session | null) {
+  return session === null || session.user.app_metadata.provider === "email";
+}

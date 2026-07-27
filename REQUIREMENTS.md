@@ -382,10 +382,9 @@ Supabase Auth provides for the controlled beta:
 
 - Email verification-code sign-in
 
-Google and GitHub sign-in are deferred until after the controlled beta. Their
-PKCE callback implementation and deployment tooling may remain dormant in the
-codebase, but the client must not discover, display, or start either provider
-while social OAuth is disabled.
+Google, GitHub, and other social sign-in methods are not supported. The client
+must not contain provider discovery, social sign-in controls, browser-based
+authorization callbacks, or social-provider provisioning tooling.
 
 Requirements:
 

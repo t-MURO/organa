@@ -138,8 +138,7 @@ ok(
       "no-cache, no-store, must-revalidate" &&
     routeHeaders["Content-Security-Policy"] ===
       `${policy.content}; frame-ancestors 'none'` &&
-    routeHeaders["Cross-Origin-Opener-Policy"] ===
-      "same-origin-allow-popups" &&
+    routeHeaders["Cross-Origin-Opener-Policy"] === "same-origin" &&
     routeHeaders["Cross-Origin-Resource-Policy"] === "same-origin" &&
     routeHeaders["Permissions-Policy"] ===
       "camera=(), geolocation=(), microphone=(), payment=(), usb=()" &&

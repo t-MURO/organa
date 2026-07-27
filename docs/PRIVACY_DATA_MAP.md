@@ -15,7 +15,6 @@ before completing Apple or Google declarations.
 | Supabase Auth | Email-code account creation and sessions | Email, account ID, session and request metadata |
 | Supabase Database and Realtime | Durable encrypted sync, device trust, deletion state | Ciphertext plus the operational metadata listed below |
 | Supabase Edge Functions | Scheduled deletion and Web Push dispatch | Due account IDs or Push capabilities and generic encrypted Push payloads |
-| Google and GitHub (deferred) | No controlled-beta runtime use | No data is sent while social OAuth remains disabled |
 | Browser Push service | Closed-tab web reminder transport | Push endpoint/capability and encrypted payload containing only a safe route and opaque tag |
 | Apple/Google app distribution | Installation and store updates | Store-account, download, device, and platform diagnostics governed by the stores |
 
@@ -86,7 +85,7 @@ metadata.
 
 | Data | Purpose | Current retention boundary |
 | --- | --- | --- |
-| Account ID, email, provider identities, session metadata | Authentication and account management | Until account deletion, provider policy, or session expiry |
+| Account ID, email, session metadata | Authentication and account management | Until account deletion or session expiry |
 | Random device ID, generic display name, platform | Trusted-device management | Until device/account deletion; revoked rows remain until account deletion |
 | Trust, revocation, last-seen, reminder-device booleans | Security and notification ownership | Until account deletion |
 | One-way recovery and device proof hashes | Enrollment and authenticated device operations | Until account deletion; proof columns are not client-selectable |
@@ -161,7 +160,7 @@ Google Play Data safety candidates:
   unreadable by intermediaries. Legal and security reviewers must confirm that
   Organa's deployed key lifecycle satisfies that exclusion before omitting
   task, medication, mood, reflection, template, and Brain Dump categories.
-- Confirm whether each OAuth, hosting, Push, and store provider qualifies as a
+- Confirm whether each hosting, Push, and store provider qualifies as a
   service provider rather than reportable sharing under the final contracts.
 
 Authoritative declaration guidance:
@@ -176,8 +175,8 @@ Before store submission:
 1. Re-run the dependency, permission, endpoint, schema, Push-payload, and
    runtime-traffic inventory against the signed artifact.
 2. Confirm the selected Supabase project is in the promised EU region.
-3. Obtain processor/subprocessor and retention details for Supabase, OAuth
-   providers, browser Push services, Expo EAS, Apple, and Google.
+3. Obtain processor/subprocessor and retention details for Supabase, browser
+   Push services, Expo EAS, Apple, and Google.
 4. Decide retention for mutation receipts, revoked device rows, expired
    approvals, and provider request logs.
 5. Publish a legally reviewed privacy policy and account/privacy choices URL.

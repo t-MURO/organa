@@ -29,8 +29,7 @@ Committed and verified milestones:
 - Race-safe encrypted Yjs update compaction for Brain Dump
 - Atomic cleanup and stale-update rejection for deleted structured Brain Dump
   bullets
-- Native OAuth callback recovery across browser completion, resume, and cold
-  start
+- Email-code-only authentication with social sign-in code and tooling removed
 - Native-only completion haptics with non-disruptive feedback failure handling
 - Fail-closed native app-lock startup and foreground transitions
 - Explicit controlled-beta OS and browser support boundaries
@@ -74,7 +73,11 @@ Latest verified task-type work:
   verifier, iOS and Android Hermes exports, the production PWA export, the
   production dependency audit, and `git diff --check`.
 
-## Native OAuth Callback Recovery Milestone
+## Historical Native OAuth Callback Recovery Milestone
+
+This milestone records previously shipped work. The callback implementation,
+tests, dependencies, and provisioning path were removed by the later
+Email-Only Auth Removal milestone.
 
 - Uses one callback coordinator for the Expo authentication-browser result,
   native app-resume links, and cold-start initial URLs.
@@ -507,11 +510,10 @@ Implemented user-facing areas:
 ## Authentication And Security
 
 - Controlled-beta account creation uses Supabase email verification codes.
-- Google and GitHub adapters remain implemented but are dormant behind a
-  hard-disabled client flag until a separate post-beta rollout.
-- Native PKCE callbacks recover through browser completion, app resume, and
-  cold start while strict redirect matching and exchange deduplication prevent
-  unrelated or duplicate callback handling.
+- Google/GitHub provider discovery, controls, callback exchange, direct
+  dependencies, credential templates, and provisioning tooling are absent.
+- Supabase URL-session detection is disabled and email-code requests do not
+  include a redirect URL.
 - Production use requires an account.
 - Local preview is exposed only in development when Supabase is not configured.
 - Native sessions and content keys use platform secure storage.
@@ -2334,20 +2336,10 @@ No tests were added, changed, or run for this milestone.
 - A subsequent live preview walkthrough received the Maileroo-delivered
   six-digit code and completed sign-in successfully. Managed-test email OTP is
   therefore accepted; the production email-provider repeat remains open.
-- Auth now reads the public managed settings endpoint before presenting a
-  signed-out provider choice. The response is shape-validated and bounded to
-  five seconds; failures hide OAuth controls while preserving email, and an
-  existing offline session never waits for provider discovery. A
-  production-build browser walkthrough proved the current managed state omits
-  disabled Google/GitHub controls and their divider without disturbing email.
-  The stable and immutable deployments pass all 16 live checks, and the live
-  bundle contains the provider-aware email-only copy.
-- Retained `pnpm configure:managed:oauth` for a post-beta Google/GitHub
-  rollout. It requires the exact linked project, reads credentials only from a
-  bounded ignored regular file, rejects symlinks, placeholders, extra fields,
-  ownership changes, and non-private Unix modes, and never prints client IDs
-  or secrets. Its read-only mode requires no credential file and currently
-  confirms both managed providers remain disabled.
+- This historical deployment hid disabled Google/GitHub controls without
+  disturbing email. The current source removes the provider-settings request,
+  social controls, and callback path entirely; refreshed deployment evidence
+  is required before claiming the live bundle matches that source.
 - Managed Supabase now uses the stable alias for its Site URL and exact web
   redirect. The old immutable callback was removed, and both the provisioning
   command and immediate read-only repeat pass.
@@ -2356,7 +2348,10 @@ No tests were added, changed, or run for this milestone.
   limits. Strict TypeScript, 22 platform checks, the 27-check web export, and
   the live verifier pass. No tests were added, changed, or run.
 
-## Email-Only Controlled-Beta Auth Milestone
+## Historical Email-Only Controlled-Beta Auth Milestone
+
+This milestone first hid social sign-in behind a disabled gate. The later
+Email-Only Auth Removal milestone supersedes it by deleting the dormant path.
 
 - Changed the controlled-beta account requirement to passwordless email
   verification codes. Google and GitHub are now explicitly deferred.
@@ -2380,6 +2375,26 @@ No tests were added, changed, or run for this milestone.
 - Strict TypeScript, the 27-check web export, iOS and Android Hermes exports,
   12 security checks, 22 platform checks, and a rendered production-build
   email-only walkthrough pass. No tests were added, changed, or run.
+
+## Email-Only Auth Removal Milestone
+
+- Removed Google and GitHub provider discovery, sign-in controls, browser
+  authorization launch, callback exchange, and native callback recovery.
+- Removed the direct Expo AuthSession and WebBrowser dependencies plus the
+  WebBrowser app plugin.
+- Removed the managed-provider credential template, ignored credential path,
+  provisioning command, and provisioning implementation.
+- Changed email code requests to avoid redirect URLs and disabled Supabase
+  URL-session detection.
+- Rejects and locally clears legacy saved sessions whose Supabase provider is
+  not `email`.
+- Simplified Account to identify the connected method as `Email code`.
+- Kept Firebase/Google Services configuration because it supplies Android
+  notifications and is unrelated to Google account sign-in.
+- Confirmed the managed production project's Google and GitHub Auth providers
+  were already disabled before removing the local verification command.
+- Obsolete social-auth tests were deleted; tests were not run for this change
+  at the product owner's request.
 
 ## Selectable Device Approval Milestone
 

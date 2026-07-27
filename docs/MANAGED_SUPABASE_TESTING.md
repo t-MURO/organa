@@ -96,9 +96,9 @@ The controlled beta requires:
 
 The live settings check currently reports email enabled and phone disabled,
 with Google and GitHub disabled. Maileroo custom SMTP, both code-only
-templates, and a live six-digit sign-in are accepted. The app also
-hard-disables social OAuth, so a future backend setting change cannot expose
-Google or GitHub before the client flag is deliberately enabled.
+templates, and a live six-digit sign-in are accepted. The app contains no
+social-provider discovery, controls, callback path, or provisioning tooling.
+Keep every social provider disabled in the managed project.
 
 The managed project was found using Supabase's default link templates,
 8-digit codes, a 60-minute expiry, and a local-only Site URL. Its OTP policy
@@ -142,51 +142,8 @@ length/expiry and the confirmation/magic-link subjects and bodies.
 Organa deliberately keeps the code out of the subject line so notification
 previews do not expose it.
 
-## Deferred Managed OAuth Provisioning
-
-This section is retained for the post-beta social sign-in rollout. Do not
-enable either provider for the controlled beta.
-
-Google and GitHub must each use Supabase Auth's provider callback:
-
-```text
-https://bkqinjscdxofsfgwozgd.supabase.co/auth/v1/callback
-```
-
-For Google, create a Web application OAuth client, add
-`https://organa--preview.expo.app` as an authorized JavaScript origin, and add
-the callback above as an authorized redirect URI. For GitHub, create an OAuth
-App with `https://organa--preview.expo.app` as its homepage and the same
-Supabase callback as its authorization callback.
-
-Do not paste provider secrets into commands, tracked files, issues, or
-evidence. Start from `.organa-managed-oauth.example.json`, place real
-credentials in the ignored `.organa-managed-oauth.json`, and make it private:
-
-```sh
-chmod 600 .organa-managed-oauth.json
-pnpm configure:managed:oauth -- \
-  --project-ref bkqinjscdxofsfgwozgd \
-  --validate-only
-pnpm configure:managed:oauth -- \
-  --project-ref bkqinjscdxofsfgwozgd
-pnpm configure:managed:oauth -- \
-  --project-ref bkqinjscdxofsfgwozgd \
-  --check-only
-```
-
-The apply path validates a bounded, current-user-owned regular file with mode
-`600` or `400`, rejects symlinks, placeholders, malformed values, and extra
-fields, and updates only provider-specific Auth fields. `--validate-only`
-checks that file without contacting the managed project. The read-only
-`--check-only` path does not open the credentials file. No path prints client
-IDs or secrets.
-After a future client release enables social OAuth, reload Organa: its
-provider-aware sign-in screen will expose each enabled provider. Complete one
-real web redirect and one native callback for each provider before accepting
-that post-beta feature.
-
-Deferred providers do not block controlled-beta backend evidence. Run:
+Social sign-in is outside the Organa product requirements and is not a
+deferred release gate. Run the backend acceptance scope with:
 
 ```sh
 pnpm verify:connected:acceptance:backend
@@ -259,8 +216,8 @@ Synthetic cleanup completed and `allowOneHourDeletionDrill` was reset to
 `false` immediately after the run.
 
 This historical evidence does not prove the final production-purpose commit,
-email delivery at the stable production origin, deferred OAuth redirects,
-permission-granted browser Push, or physical-device behavior.
+email delivery at the stable production origin, permission-granted browser
+Push, or physical-device behavior.
 
 Run the provider-qualified backend baseline independently:
 

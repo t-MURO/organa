@@ -70,7 +70,6 @@ two-client editing, Brain Dump offline/reconnect, sustained-volume, and
 concurrent-compaction drills. It does not replace:
 
 - production custom-SMTP email-code acceptance
-- deferred Google or GitHub provider acceptance after social OAuth is released
 - permission-granted Web Push in the supported release-browser matrix
 - physical iOS or Android validation
 - the one-hour connected deletion drill

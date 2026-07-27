@@ -39,7 +39,7 @@ function createWebResponseHeaders(contentSecurityPolicy) {
     "Cache-Control": "no-cache, no-store, must-revalidate",
     "Content-Security-Policy":
       `${contentSecurityPolicy}; frame-ancestors 'none'`,
-    "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+    "Cross-Origin-Opener-Policy": "same-origin",
     "Cross-Origin-Resource-Policy": "same-origin",
     "Permissions-Policy":
       "camera=(), geolocation=(), microphone=(), payment=(), usb=()",

@@ -45,24 +45,20 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
 ## Authentication
 
 - Controlled-beta access uses a passwordless six-digit email verification
-  code. Google and GitHub OAuth are hard-disabled in the client.
-- The retained Google and GitHub implementation uses PKCE, but it is dormant
-  until a separate post-beta provider rollout.
-- Native authentication state and the PKCE verifier use Expo SecureStore.
-  Web authentication state uses origin-scoped browser storage.
-- Native OAuth accepts callbacks only at the configured `organa` app redirect.
-  Unrelated deep links and mismatched paths or origins are ignored.
-- Both an attached authentication-browser result and native cold-start/resume
-  links pass through the same coordinator.
-- Simultaneous or repeated delivery of a one-time authorization code causes at
-  most one successful exchange during the provider lifecycle. A transiently
-  failed exchange may be retried.
-- Provider-supplied callback descriptions are not displayed. Cancellation has
-  fixed local copy and all other callback failures use a generic local message.
-- Callback URLs and authorization codes are not logged.
-- Hosted OAuth credentials and provider drills are not part of the
-  controlled-beta release boundary. Redirect allowlists and email delivery
-  remain deployment responsibilities for the selected EU project.
+  code.
+- Social-provider discovery, social sign-in controls, browser authorization
+  callbacks, and provider-provisioning tooling are absent from the client and
+  repository.
+- Native authentication state uses Expo SecureStore. Web authentication state
+  uses origin-scoped browser storage.
+- Supabase URL-session detection is disabled. Email sign-in does not request a
+  redirect URL and succeeds only after the entered verification code is
+  accepted.
+- Saved sessions whose Supabase Auth provider is not `email` are rejected and
+  cleared from local authentication storage.
+- Verification errors use fixed local copy and do not log codes or sessions.
+- Email delivery and the configured code template remain deployment
+  responsibilities for the selected EU project.
 
 ## Browser Policy
 
@@ -79,8 +75,8 @@ the platform AES-GCM and secure-random APIs exposed by Expo.
 - `pnpm build:web` derives `dist/_headers` from the exact rendered CSP. The
   deployment contract adds `frame-ancestors 'none'`, legacy frame denial,
   MIME-sniffing protection, a restrictive capability policy, cross-origin
-  isolation that preserves OAuth popups, referrer minimization, HSTS, and
-  explicit mutable/immutable cache boundaries.
+  isolation, referrer minimization, HSTS, and explicit mutable/immutable cache
+  boundaries.
 - Expo Router emits the same policy into `_expo/.routes.json` for EAS Hosting.
   EAS converts the legacy frame header into the required response CSP and uses
   a bounded one-hour static-asset cache. Organa's worker registration sets
@@ -197,7 +193,7 @@ the signed-in user.
 
 Supabase can read:
 
-- Auth account ID, email, provider identities, and session metadata
+- Auth account ID, email, and session metadata
 - content-key ID and recovery-envelope metadata/ciphertext
 - device ID, display name, platform, trust/revocation time, last-seen time, and
   reminder-device booleans
@@ -502,7 +498,7 @@ The app includes no analytics, advertising identifiers, session recording, or
 automatic crash telemetry. Do not add logs containing:
 
 - user content
-- OAuth or Supabase tokens
+- Supabase tokens
 - recovery codes
 - content keys
 - encrypted envelopes paired with keys
@@ -519,8 +515,8 @@ Before production:
 3. Review the one-time trusted-device handoff, expiry, rejection, and
    target-binding protocol.
 4. Test token expiry and device revocation under offline/reconnect conditions.
-5. Review XSS/CSP, generated and deployed response headers, PWA caching, OAuth
-   redirects, and browser key storage.
+5. Review XSS/CSP, generated and deployed response headers, PWA caching, email
+   authentication, and browser key storage.
 6. Review Web Push capability storage, VAPID/scheduler-secret handling,
    delivery retry semantics, and generic payload boundaries.
 7. Test native secure storage, biometrics, notifications, and backups.

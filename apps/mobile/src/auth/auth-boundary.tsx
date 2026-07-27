@@ -23,10 +23,7 @@ export function AuthBoundary({ children }: PropsWithChildren) {
   const auth = useAuth();
   const theme = useColorScheme() === "dark" ? darkTheme : lightTheme;
 
-  if (
-    auth.loading ||
-    (!auth.session && !auth.localPreview && auth.oauthProvidersLoading)
-  ) {
+  if (auth.loading) {
     return (
       <SafeAreaView
         accessibilityLabel="Opening Organa"
@@ -54,14 +51,14 @@ function SignInScreen() {
   const [codeSent, setCodeSent] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const displayedError = error || auth.callbackError;
+  const displayedError = error || auth.authError;
   const secondaryHeadingProps =
     Platform.OS === "web" ? { "aria-level": 2 as const } : {};
 
   async function run(label: string, action: () => Promise<void>) {
     setBusy(label);
     setError("");
-    auth.clearCallbackError();
+    auth.clearAuthError();
     try {
       await action();
     } catch (nextError) {
@@ -167,45 +164,11 @@ function SignInScreen() {
               </Text>
               <Text style={styles.cardText}>
                 {auth.configured
-                  ? auth.oauthProviders.length > 0
-                    ? "Choose a sign-in method. Organa does not require a password."
-                    : "Enter your email and Organa will send a one-time verification code."
+                  ? "Enter your email and Organa will send a one-time verification code."
                   : auth.localDevelopmentEnabled
                     ? "Enter any test email to open a local-only account instantly."
-                  : auth.configurationIssue}
+                    : auth.configurationIssue}
               </Text>
-
-              {auth.oauthProviders.length > 0 ? (
-                <>
-                  <View style={styles.providerGrid}>
-                    {auth.oauthProviders.map((provider) => (
-                      <Pressable
-                        key={provider}
-                        accessibilityLabel={`Continue with ${provider}`}
-                        accessibilityRole="button"
-                        disabled={Boolean(busy)}
-                        style={styles.providerButton}
-                        onPress={() =>
-                          void run(provider, () =>
-                            auth.signInWithOAuth(provider),
-                          )
-                        }
-                      >
-                        <View style={styles.providerGlyph} />
-                        <Text style={styles.providerText}>
-                          {capitalize(provider)}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-
-                  <View style={styles.dividerRow}>
-                    <View style={styles.divider} />
-                    <Text style={styles.dividerText}>OR USE EMAIL</Text>
-                    <View style={styles.divider} />
-                  </View>
-                </>
-              ) : null}
 
               {auth.configured || auth.localDevelopmentEnabled ? (
                 <>
@@ -347,10 +310,6 @@ function Promise({
   );
 }
 
-function capitalize(value: string) {
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
-}
-
 function stylesFor(theme: OrganaTheme) {
   return StyleSheet.create({
     safeArea: { backgroundColor: theme.background, flex: 1 },
@@ -484,42 +443,6 @@ function stylesFor(theme: OrganaTheme) {
       fontSize: 11,
       lineHeight: 17,
       marginTop: 7,
-    },
-    providerGrid: { flexDirection: "row", gap: 8, marginTop: 22 },
-    providerButton: {
-      alignItems: "center",
-      borderColor: theme.border,
-      borderRadius: 13,
-      borderWidth: 1,
-      flex: 1,
-      gap: 6,
-      paddingVertical: 11,
-    },
-    providerGlyph: {
-      borderColor: theme.accentStrong,
-      borderRadius: 3,
-      borderWidth: 2,
-      height: 10,
-      transform: [{ rotate: "45deg" }],
-      width: 10,
-    },
-    providerText: {
-      color: theme.text,
-      fontFamily: "Manrope_600SemiBold",
-      fontSize: 9,
-    },
-    dividerRow: {
-      alignItems: "center",
-      flexDirection: "row",
-      gap: 10,
-      marginVertical: 20,
-    },
-    divider: { backgroundColor: theme.border, flex: 1, height: 1 },
-    dividerText: {
-      color: theme.textMuted,
-      fontFamily: "Manrope_700Bold",
-      fontSize: 7,
-      letterSpacing: 1,
     },
     fieldLabel: {
       color: theme.text,

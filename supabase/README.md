@@ -29,44 +29,9 @@ its JWT expires, even after its refresh token is revoked.
 
 ## 2. Configure Authentication
 
-Enable Email OTP only for the controlled beta. Keep Google and GitHub disabled
-in Supabase and hidden in the client until the separate post-beta OAuth rollout
-is reviewed and exercised.
-
-For that later managed Google/GitHub rollout, register this provider callback
-in both consoles:
-
-```text
-https://PROJECT_REF.supabase.co/auth/v1/callback
-```
-
-Use a Google **Web application** OAuth client. Its authorized JavaScript
-origins must include the deployed Organa web origin. A GitHub OAuth App uses
-the deployed Organa origin as its homepage and the Supabase URL above as its
-authorization callback.
-
-Keep the provider credentials out of source and shell arguments. Start from
-`.organa-managed-oauth.example.json`, write the real values to the ignored
-`.organa-managed-oauth.json`, and restrict it before provisioning:
-
-```sh
-chmod 600 .organa-managed-oauth.json
-pnpm configure:managed:oauth -- \
-  --project-ref PROJECT_REF \
-  --validate-only
-pnpm configure:managed:oauth -- \
-  --project-ref PROJECT_REF
-pnpm configure:managed:oauth -- \
-  --project-ref PROJECT_REF \
-  --check-only
-```
-
-The provisioner requires the exact CLI-linked project, rejects symlinks,
-unexpected fields, placeholders, oversized files, ownership changes, and
-non-private Unix modes, and never prints either client IDs or secrets.
-`--validate-only` checks the private file without contacting or changing the
-managed project. `--check-only` reads only managed state and does not require
-the private file.
+Enable Email OTP only. Keep every social provider disabled in Supabase. The
+client supports email verification codes and does not contain social-provider
+discovery, controls, callback handling, or provisioning tooling.
 
 Set both the confirmation and magic-link email templates to send the six-digit
 `{{ .Token }}` value. The checked-in local template is
@@ -111,9 +76,6 @@ pnpm configure:managed:auth-urls -- \
 This also includes `http://localhost:4173/**`, which is used by the production
 export preview. Use the reviewed production origin for release acceptance;
 temporary deployment-preview origins are connected-testing targets only.
-
-Provider consoles must contain the callback URL shown by Supabase for that
-provider.
 
 ## 3. Apply And Validate The Database
 

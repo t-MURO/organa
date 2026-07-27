@@ -62,10 +62,10 @@ ok(
 );
 ok(
   documentResponse.headers.get("cross-origin-opener-policy") ===
-    "same-origin-allow-popups" &&
+    "same-origin" &&
     documentResponse.headers.get("cross-origin-resource-policy") ===
       "same-origin",
-  "cross-origin window and resource policies preserve OAuth while isolating app resources",
+  "cross-origin window and resource policies isolate app resources",
 );
 ok(
   documentResponse.headers.get("permissions-policy") ===
