@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "78029579441",
+    "project_id": "organa-6232c",
+    "storage_bucket": "organa-6232c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:78029579441:android:e99228aee75949b2eaee90",
+        "android_client_info": {
+          "package_name": "app.organa.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7vyAHyfKOp1lACjxqfd1MJF8hO7Ng9Z0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

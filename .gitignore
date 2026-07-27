@@ -23,7 +23,6 @@ apps/mobile/ios/
 .organa-connected-evidence/
 .organa-managed-oauth.json
 .organa-release-evidence.json
-apps/mobile/google-services.json
 apps/mobile/firebase-service-account*.json
 supabase/.branches/
 supabase/.temp/
