@@ -5,6 +5,10 @@ import {
   buildNativeTaskNotificationPlan,
   gentleReminderChannelId,
 } from "./native-notification-plan";
+import {
+  notificationChannelEnabled,
+  notificationPermissionGranted,
+} from "./native-notification-status";
 import type {
   NotificationCapability,
   NotificationScheduler,
@@ -53,6 +57,9 @@ export function createNotificationScheduler(): NotificationScheduler {
       if (permission !== "granted") {
         return { permission, scheduled: 0 };
       }
+      if (!(await notificationChannelEnabled(gentleReminderChannelId))) {
+        return { permission: "denied", scheduled: 0 };
+      }
 
       await Notifications.setNotificationCategoryAsync(
         plan.category.identifier,
@@ -78,6 +85,9 @@ export function createNotificationScheduler(): NotificationScheduler {
           }),
         ),
       );
+      await verifyScheduledNotifications(
+        plan.requests.map((request) => request.identifier),
+      );
 
       return {
         permission: "granted",
@@ -92,7 +102,7 @@ async function resolvePermission(
   requestPermission: boolean,
 ): Promise<NotificationSyncResult["permission"]> {
   let settings = await Notifications.getPermissionsAsync();
-  if (!isGranted(settings) && requestPermission) {
+  if (!notificationPermissionGranted(settings) && requestPermission) {
     settings = await Notifications.requestPermissionsAsync({
       ios: {
         allowAlert: true,
@@ -101,16 +111,18 @@ async function resolvePermission(
       },
     });
   }
-  if (isGranted(settings)) return "granted";
+  if (notificationPermissionGranted(settings)) return "granted";
   return requestPermission ? "denied" : "not_requested";
 }
 
-function isGranted(settings: Notifications.NotificationPermissionsStatus) {
-  return (
-    settings.granted ||
-    settings.ios?.status ===
-      Notifications.IosAuthorizationStatus.PROVISIONAL
+async function verifyScheduledNotifications(identifiers: string[]) {
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const scheduledIds = new Set(
+    scheduled.map((notification) => notification.identifier),
   );
+  if (identifiers.some((identifier) => !scheduledIds.has(identifier))) {
+    throw new Error("The device did not retain every scheduled task reminder.");
+  }
 }
 
 async function cancelTaskNotifications(taskId: string) {

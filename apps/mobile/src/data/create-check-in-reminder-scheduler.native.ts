@@ -3,6 +3,10 @@ import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 import type { CheckInReminderScheduler } from "./check-in-reminder-scheduler.types";
+import {
+  notificationChannelEnabled,
+  notificationPermissionGranted,
+} from "./native-notification-status";
 
 const identifier = "organa:daily-check-in";
 const channelId = "gentle-check-in";
@@ -28,16 +32,19 @@ export function createCheckInReminderScheduler(): CheckInReminderScheduler {
         return { permission: "not_requested", scheduled: false };
       }
       let permission = await Notifications.getPermissionsAsync();
-      if (!permission.granted && requestPermission) {
+      if (!notificationPermissionGranted(permission) && requestPermission) {
         permission = await Notifications.requestPermissionsAsync({
           ios: { allowAlert: true, allowBadge: false, allowSound: false },
         });
       }
-      if (!isGranted(permission)) {
+      if (!notificationPermissionGranted(permission)) {
         return {
           permission: requestPermission ? "denied" : "not_requested",
           scheduled: false,
         };
+      }
+      if (!(await notificationChannelEnabled(channelId))) {
+        return { permission: "denied", scheduled: false };
       }
 
       const [hour, minute] = settings.checkInReminder.time
@@ -58,15 +65,11 @@ export function createCheckInReminderScheduler(): CheckInReminderScheduler {
           type: Notifications.SchedulableTriggerInputTypes.DAILY,
         },
       });
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      if (!scheduled.some((request) => request.identifier === identifier)) {
+        throw new Error("The device did not retain the Check-In reminder.");
+      }
       return { permission: "granted", scheduled: true };
     },
   };
-}
-
-function isGranted(settings: Notifications.NotificationPermissionsStatus) {
-  return (
-    settings.granted ||
-    settings.ios?.status ===
-      Notifications.IosAuthorizationStatus.PROVISIONAL
-  );
 }

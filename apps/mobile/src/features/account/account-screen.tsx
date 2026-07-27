@@ -12,6 +12,7 @@ import { AccessiblePressable as Pressable } from "../../accessibility/accessible
 import { useAppTheme } from "../../components/app-shell";
 import { createBackupFileReader } from "../../data/create-backup-file-reader";
 import { createExportFileWriter } from "../../data/create-export-file-writer";
+import { sendNotificationDeliveryCheck } from "../../data/notification-delivery-check";
 import { useBrainDump } from "../brain-dump/brain-dump-context";
 import { useCheckIns } from "../check-in/check-in-context";
 import { useSettings } from "../settings/settings-context";
@@ -63,6 +64,8 @@ export function AccountScreen() {
   const [deletionConfirmation, setDeletionConfirmation] = useState("");
   const [requestingDeletion, setRequestingDeletion] = useState(false);
   const [busyDevice, setBusyDevice] = useState("");
+  const [checkingNotifications, setCheckingNotifications] = useState(false);
+  const [notificationCheckMessage, setNotificationCheckMessage] = useState("");
   const [updatingLock, setUpdatingLock] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -298,6 +301,21 @@ export function AccountScreen() {
     }
   }
 
+  async function checkNotificationDelivery() {
+    setCheckingNotifications(true);
+    setNotificationCheckMessage("");
+    try {
+      const result = await sendNotificationDeliveryCheck();
+      setNotificationCheckMessage(result.message);
+    } catch {
+      setNotificationCheckMessage(
+        "Organa could not send the test. Close and reopen the app, then try once more.",
+      );
+    } finally {
+      setCheckingNotifications(false);
+    }
+  }
+
   async function signOut() {
     setSigningOut(true);
     setError("");
@@ -528,6 +546,26 @@ export function AccountScreen() {
               );
             })
           )}
+          <View style={styles.notificationCheck}>
+            <ExportButton
+              busy={checkingNotifications}
+              label="Send a test notification"
+              styles={styles}
+              onPress={() => void checkNotificationDelivery()}
+            />
+            <Text style={styles.notificationCheckHint}>
+              This checks Android or browser delivery directly. Task reminders
+              also require reminders to be enabled for this device above.
+            </Text>
+            {notificationCheckMessage ? (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={styles.notificationCheckMessage}
+              >
+                {notificationCheckMessage}
+              </Text>
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -1023,6 +1061,25 @@ function createStyles(theme: OrganaTheme) {
       color: theme.text,
       fontFamily: "Manrope_700Bold",
       fontSize: 8,
+    },
+    notificationCheck: {
+      borderTopColor: theme.border,
+      borderTopWidth: 1,
+      gap: 8,
+      marginTop: 14,
+      paddingTop: 14,
+    },
+    notificationCheckHint: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 8,
+      lineHeight: 13,
+    },
+    notificationCheckMessage: {
+      color: theme.text,
+      fontFamily: "Manrope_600SemiBold",
+      fontSize: 9,
+      lineHeight: 14,
     },
     primaryPill: {
       backgroundColor: theme.niceSoft,

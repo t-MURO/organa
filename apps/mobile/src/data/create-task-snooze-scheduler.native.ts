@@ -6,6 +6,10 @@ import {
   gentleReminderChannelId,
 } from "./native-notification-plan";
 import { runNotificationOperation } from "./notification-private-state";
+import {
+  notificationChannelEnabled,
+  notificationPermissionGranted,
+} from "./native-notification-status";
 import type { TaskSnoozeScheduler } from "./task-snooze-scheduler.types";
 
 export function createTaskSnoozeScheduler(): TaskSnoozeScheduler {
@@ -16,12 +20,17 @@ export function createTaskSnoozeScheduler(): TaskSnoozeScheduler {
           throw new Error("The snooze preset is not available for this task.");
         }
         let permission = await Notifications.getPermissionsAsync();
-        if (!isGranted(permission)) {
+        if (!notificationPermissionGranted(permission)) {
           permission = await Notifications.requestPermissionsAsync({
             ios: { allowAlert: true, allowBadge: false, allowSound: false },
           });
         }
-        if (!isGranted(permission)) return { delivery: "unsupported" as const };
+        if (
+          !notificationPermissionGranted(permission) ||
+          !(await notificationChannelEnabled(gentleReminderChannelId))
+        ) {
+          return { delivery: "unsupported" as const };
+        }
 
         const category = buildNativeTaskNotificationPlan(task).category;
         await Notifications.setNotificationCategoryAsync(
@@ -47,12 +56,4 @@ export function createTaskSnoozeScheduler(): TaskSnoozeScheduler {
       return result ?? { delivery: "unsupported" };
     },
   };
-}
-
-function isGranted(settings: Notifications.NotificationPermissionsStatus) {
-  return (
-    settings.granted ||
-    settings.ios?.status ===
-      Notifications.IosAuthorizationStatus.PROVISIONAL
-  );
 }

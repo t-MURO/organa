@@ -1,5 +1,6 @@
 import {
   canTaskKindRepeat,
+  formatLocalDate,
   type CreateTaskInput,
   type Reminder,
   type Task,
@@ -33,6 +34,7 @@ import {
   materializeInheritedSubtaskReminders,
   readTaskDeadline,
 } from "./task-editor-model";
+import { DatePickerField } from "./task-date-picker";
 
 const taskKinds: Array<{ value: TaskKind; label: string; hint: string }> = [
   { value: "one_off", label: "One-off", hint: "A task to finish once" },
@@ -123,7 +125,7 @@ export function TaskEditorModal({
     setPriority(task?.priority ?? "should");
     setPlannedFor(task?.plannedFor ?? defaultPlannedFor);
     setScheduledTime(task?.scheduledTime ?? "");
-    setDueDate(deadline.dueDate);
+    setDueDate(task ? deadline.dueDate : formatLocalDate(new Date()));
     setDueTime(deadline.dueTime);
     setDuration(task?.estimatedMinutes?.toString() ?? "");
     setRecurrenceEnabled(
@@ -470,13 +472,10 @@ export function TaskEditorModal({
                     label="Planned date"
                     optional
                   />
-                  <TextInput
+                  <DatePickerField
                     accessibilityLabel="Task planned date"
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={theme.textMuted}
-                    style={styles.input}
                     value={plannedFor}
-                    onChangeText={setPlannedFor}
+                    onChange={setPlannedFor}
                   />
                 </View>
                 <View style={styles.fieldCell}>
@@ -496,13 +495,10 @@ export function TaskEditorModal({
                 </View>
                 <View style={styles.fieldCell}>
                   <FieldLabel styles={styles} label="Due date" optional />
-                  <TextInput
+                  <DatePickerField
                     accessibilityLabel="Task due date"
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={theme.textMuted}
-                    style={styles.input}
                     value={dueDate}
-                    onChangeText={setDueDate}
+                    onChange={setDueDate}
                   />
                 </View>
                 <View style={styles.fieldCell}>
