@@ -264,7 +264,35 @@ release browser. iOS and iPadOS require the PWA to be added to the Home Screen.
 Unconfigured, denied, and unsupported browsers retain the visible active-tab
 fallback.
 
-## 6. Beta Validation
+## 6. Configure Native Approval Push
+
+Organa sends a generic native push to existing trusted phones when another
+device requests access. Deploy the authenticated function:
+
+```sh
+pnpm dlx supabase functions deploy notify-device-approval
+```
+
+Android delivery requires a Firebase Android app whose package is
+`app.organa.mobile`. Upload its `google-services.json` as a secret EAS file
+variable named `GOOGLE_SERVICES_JSON`; `app.config.js` reads that file path
+during the build. Separately upload a service-account key for the same Firebase
+project to the Organa EAS application identifier as its FCM V1 push credential.
+Never commit the service-account key.
+
+Expo push enhanced security is optional. If enabled in Expo, store its access
+token on Supabase before redeploying:
+
+```sh
+pnpm dlx supabase secrets set EXPO_ACCESS_TOKEN=EXPO_PUSH_ACCESS_TOKEN
+```
+
+Native approval alerts require an installed build and notification permission.
+They do not work in Expo Go. Test with two physical devices: request approval
+on an untrusted device, confirm that a trusted phone receives one alert, tap it
+to open Account, and approve the named device there.
+
+## 7. Beta Validation
 
 Use two accounts and two physical devices or browsers to verify:
 

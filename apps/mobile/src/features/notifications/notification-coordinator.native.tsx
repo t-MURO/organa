@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { useEffect } from "react";
 
 import { useAuth } from "../../auth/auth-context";
+import { readApprovalPushToken } from "../../data/approval-push-registration";
 import {
   gentleReminderChannelId,
   resolveNativeNotificationResponse,
@@ -20,6 +21,35 @@ export function NotificationCoordinator() {
   const ownerId = auth.ownerId;
 
   useEffect(() => {
+    if (
+      !auth.user ||
+      !devices.currentDeviceId ||
+      !devices.reminderAuthorizationReady
+    ) {
+      return;
+    }
+
+    let active = true;
+    void readApprovalPushToken()
+      .then((token) => {
+        if (!active) return;
+        return token
+          ? devices.registerPushToken(token)
+          : devices.unregisterPushToken();
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+      void devices.unregisterPushToken().catch(() => undefined);
+    };
+  }, [
+    auth.user?.id,
+    devices.currentDeviceId,
+    devices.reminderAuthorizationReady,
+  ]);
+
+  useEffect(() => {
     function handle(response: Notifications.NotificationResponse) {
       const action = resolveNativeNotificationResponse(
         response.actionIdentifier,
@@ -33,6 +63,7 @@ export function NotificationCoordinator() {
         return false;
       }
       if (action.type === "check_in") router.push("/check-in");
+      if (action.type === "device_approval") router.push("/account");
       if (action.type === "open_task") {
         router.push({ pathname: "/focus", params: { taskId: action.taskId } });
       }

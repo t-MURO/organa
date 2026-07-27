@@ -45,6 +45,7 @@ export interface NativeTaskNotificationPlan {
 
 export type NativeNotificationResponseAction =
   | { type: "check_in" }
+  | { type: "device_approval" }
   | { type: "ignore" }
   | { taskId: string; type: "open_task" }
   | {
@@ -134,6 +135,9 @@ export function resolveNativeNotificationResponse(
 ): NativeNotificationResponseAction {
   if (data.route === "/check-in") {
     return { type: "check_in" };
+  }
+  if (data.route === "/account" && data.type === "device_approval") {
+    return { type: "device_approval" };
   }
 
   const taskId = typeof data.taskId === "string" ? data.taskId : undefined;

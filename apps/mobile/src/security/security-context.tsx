@@ -312,6 +312,21 @@ export function SecurityProvider({ children }: PropsWithChildren) {
     });
     if (result.error) throw result.error;
     setApprovalRequest(await loadDeviceApproval(auth.user.id, device.id));
+
+    const notification = await supabase.functions.invoke(
+      "notify-device-approval",
+      {
+        body: {
+          deviceId: device.id,
+          deviceProof: device.secret,
+        },
+      },
+    );
+    if (notification.error) {
+      throw new Error(
+        "The approval request is ready, but Organa could not alert your trusted devices. Open Account on one of them to approve manually.",
+      );
+    }
   }
 
   async function refreshDeviceApproval() {

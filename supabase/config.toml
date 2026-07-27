@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.dispatch-web-push]
 verify_jwt = false
+
+[functions.notify-device-approval]
+verify_jwt = true

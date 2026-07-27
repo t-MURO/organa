@@ -41,9 +41,11 @@ interface DeviceContextValue {
     deviceId: string,
     options: { makePrimary?: boolean; notificationsEnabled: boolean },
   ): Promise<void>;
+  registerPushToken(expoPushToken: string): Promise<void>;
   refresh(): Promise<void>;
   rejectApproval(deviceId: string): Promise<void>;
   revoke(deviceId: string): Promise<void>;
+  unregisterPushToken(): Promise<void>;
 }
 
 const DeviceContext = createContext<DeviceContextValue | undefined>(undefined);
@@ -198,6 +200,25 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     await refresh();
   }
 
+  async function registerPushToken(expoPushToken: string) {
+    if (!supabase || !security.device || auth.localPreview) return;
+    const result = await supabase.rpc("register_device_push_token", {
+      p_current_device_id: security.device.id,
+      p_current_device_proof: security.device.secret,
+      p_expo_push_token: expoPushToken,
+    });
+    if (result.error) throw result.error;
+  }
+
+  async function unregisterPushToken() {
+    if (!supabase || !security.device || auth.localPreview) return;
+    const result = await supabase.rpc("unregister_device_push_token", {
+      p_current_device_id: security.device.id,
+      p_current_device_proof: security.device.secret,
+    });
+    if (result.error) throw result.error;
+  }
+
   async function approve(deviceId: string) {
     if (
       !supabase ||
@@ -337,10 +358,12 @@ export function DeviceProvider({ children }: PropsWithChildren) {
         devices: visibleDevices,
         loading,
         reminderAuthorizationReady: reminderAuthorization.ready,
+        registerPushToken,
         refresh,
         rejectApproval,
         remindersAllowed: reminderAuthorization.allowed,
         revoke,
+        unregisterPushToken,
       }}
     >
       {children}

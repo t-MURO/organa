@@ -1,7 +1,5 @@
-import { useEffect, useRef, type PropsWithChildren } from "react";
+import type { PropsWithChildren } from "react";
 import {
-  type FocusEvent,
-  Keyboard,
   KeyboardAvoidingView as NativeKeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -39,42 +37,6 @@ const keyboardAwareScrollProps = {
   | "keyboardShouldPersistTaps"
 >;
 
-export function KeyboardAwareScrollView({
-  onFocus,
-  ...props
-}: ScrollViewProps) {
-  const scrollRef = useRef<ScrollView>(null);
-  const focusedTarget = useRef<FocusEvent["target"] | undefined>(undefined);
-
-  function keepInputVisible(target = focusedTarget.current) {
-    if (Platform.OS === "web" || target === undefined) return;
-    scrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(
-      target,
-      28,
-      true,
-    );
-  }
-
-  useEffect(() => {
-    if (Platform.OS === "web") return;
-    const eventName =
-      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const subscription = Keyboard.addListener(eventName, () => {
-      keepInputVisible();
-    });
-    return () => subscription.remove();
-  }, []);
-
-  return (
-    <ScrollView
-      {...keyboardAwareScrollProps}
-      {...props}
-      ref={scrollRef}
-      onFocus={(event) => {
-        focusedTarget.current = event.target;
-        onFocus?.(event);
-        setTimeout(() => keepInputVisible(event.target), 80);
-      }}
-    />
-  );
+export function KeyboardAwareScrollView(props: ScrollViewProps) {
+  return <ScrollView {...keyboardAwareScrollProps} {...props} />;
 }

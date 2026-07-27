@@ -7,6 +7,7 @@ module.exports = ({ config }) => {
   const headers = createWebResponseHeaders(
     createContentSecurityPolicy(process.env.EXPO_PUBLIC_SUPABASE_URL),
   );
+  const googleServicesFile = process.env.GOOGLE_SERVICES_JSON;
   let configuredRouter = false;
   const plugins = (config.plugins ?? []).map((plugin) => {
     const name = Array.isArray(plugin) ? plugin[0] : plugin;
@@ -22,6 +23,10 @@ module.exports = ({ config }) => {
 
   return {
     ...config,
+    android: {
+      ...config.android,
+      ...(googleServicesFile ? { googleServicesFile } : {}),
+    },
     plugins,
   };
 };

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Platform,
   Text,
   useWindowDimensions,
   View,
@@ -221,192 +222,202 @@ export function TodayScreen() {
   }
 
   return (
-    <KeyboardAwareScrollView
-      contentContainerStyle={[
-        styles.page,
-        isCompact ? styles.pageCompact : undefined,
-      ]}
-    >
-      <View style={[styles.hero, isCompact ? styles.heroCompact : undefined]}>
-        <View style={styles.heroCopy}>
-          <Text style={styles.eyebrow}>
-            {formatFriendlyDate(parseLocalDate(selectedDate))}
-          </Text>
-          <Text role="heading" style={styles.title}>
-            {selectedDate === actualToday
-              ? "Make room for today."
-              : "Plan with a little room."}
-          </Text>
-          <Text style={styles.subtitle}>
-            A short list is still a real plan. Choose what feels possible.
-          </Text>
-        </View>
-        <View style={styles.progressCard}>
-          <Text style={styles.progressNumber}>{plan.completed.length}</Text>
-          <Text style={styles.progressLabel}>gentle wins</Text>
-        </View>
-      </View>
-
-      <PlanningCalendar
-        selectedDate={selectedDate}
-        tasks={tasks}
-        onSelectDate={setSelectedDate}
-      />
-
-      <View style={[styles.board, isWide && styles.boardWide]}>
-        <View
-          style={[
-            styles.priorityColumn,
-            isWide ? styles.priorityColumnWide : undefined,
-          ]}
-        >
-          <SectionHeading
-            styles={styles}
-            eyebrow="PRIORITY LANE"
-            title="What matters"
-            count={visibleTaskCount}
-          />
-          <View style={styles.priorityStack}>
-            {priorities.map((lane) => (
-              <PriorityLane
-                key={lane.key}
-                hint={lane.hint}
-                label={lane.label}
-                priority={lane.key}
-                selectedDate={selectedDate}
-                styles={styles}
-                tasks={visibleLanes[lane.key]}
-                theme={theme}
-                onEdit={openTask}
-                onFocus={focusTask}
-                onConfirmDose={confirmDose}
-                onToggle={toggleTaskWithGrace}
-                onToggleSubtask={toggleSubtaskWithGrace}
-              />
-            ))}
+    <View style={styles.screen}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={[
+          styles.page,
+          styles.pageWithQuickAdd,
+          isCompact ? styles.pageCompact : undefined,
+          isCompact ? styles.pageWithQuickAddCompact : undefined,
+        ]}
+      >
+        <View style={[styles.hero, isCompact ? styles.heroCompact : undefined]}>
+          <View style={styles.heroCopy}>
+            <Text style={styles.eyebrow}>
+              {formatFriendlyDate(parseLocalDate(selectedDate))}
+            </Text>
+            <Text role="heading" style={styles.title}>
+              {selectedDate === actualToday
+                ? "Make room for today."
+                : "Plan with a little room."}
+            </Text>
+            <Text style={styles.subtitle}>
+              A short list is still a real plan. Choose what feels possible.
+            </Text>
+          </View>
+          <View style={styles.progressCard}>
+            <Text style={styles.progressNumber}>{plan.completed.length}</Text>
+            <Text style={styles.progressLabel}>gentle wins</Text>
           </View>
         </View>
 
-        <View
-          style={[
-            styles.timeColumn,
-            isWide ? styles.timeColumnWide : undefined,
-          ]}
-        >
-          <SectionHeading
-            styles={styles}
-            eyebrow="TIME LANE"
-            title="Anchors"
-            count={visibleTimed.length}
-          />
-          <View style={styles.timelineCard}>
-            {visibleTimed.length > 0 ? (
-              visibleTimed.map((task, index) => (
-                <CompletionCollapse
-                  key={task.id}
-                  completed={Boolean(task.completedAt)}
-                >
-                  <View style={styles.timelineRow}>
-                    <View style={styles.timelineTimeWrap}>
-                      <Text style={styles.timelineTime}>
-                        {task.scheduledTime}
-                      </Text>
-                      {index < visibleTimed.length - 1 ? (
-                        <View style={styles.timelineLine} />
-                      ) : null}
+        <PlanningCalendar
+          selectedDate={selectedDate}
+          tasks={tasks}
+          onSelectDate={setSelectedDate}
+        />
+
+        <View style={[styles.board, isWide && styles.boardWide]}>
+          <View
+            style={[
+              styles.priorityColumn,
+              isWide ? styles.priorityColumnWide : undefined,
+            ]}
+          >
+            <SectionHeading
+              styles={styles}
+              eyebrow="PRIORITY LANE"
+              title="What matters"
+              count={visibleTaskCount}
+            />
+            <View style={styles.priorityStack}>
+              {priorities.map((lane) => (
+                <PriorityLane
+                  key={lane.key}
+                  hint={lane.hint}
+                  label={lane.label}
+                  priority={lane.key}
+                  selectedDate={selectedDate}
+                  styles={styles}
+                  tasks={visibleLanes[lane.key]}
+                  theme={theme}
+                  onEdit={openTask}
+                  onFocus={focusTask}
+                  onConfirmDose={confirmDose}
+                  onToggle={toggleTaskWithGrace}
+                  onToggleSubtask={toggleSubtaskWithGrace}
+                />
+              ))}
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.timeColumn,
+              isWide ? styles.timeColumnWide : undefined,
+            ]}
+          >
+            <SectionHeading
+              styles={styles}
+              eyebrow="TIME LANE"
+              title="Anchors"
+              count={visibleTimed.length}
+            />
+            <View style={styles.timelineCard}>
+              {visibleTimed.length > 0 ? (
+                visibleTimed.map((task, index) => (
+                  <CompletionCollapse
+                    key={task.id}
+                    completed={Boolean(task.completedAt)}
+                  >
+                    <View style={styles.timelineRow}>
+                      <View style={styles.timelineTimeWrap}>
+                        <Text style={styles.timelineTime}>
+                          {task.scheduledTime}
+                        </Text>
+                        {index < visibleTimed.length - 1 ? (
+                          <View style={styles.timelineLine} />
+                        ) : null}
+                      </View>
+                      <TimelineTask
+                        styles={styles}
+                        task={task}
+                        theme={theme}
+                        onEdit={openTask}
+                        onFocus={focusTask}
+                        onConfirmDose={confirmDose}
+                        onToggle={toggleTaskWithGrace}
+                      />
                     </View>
-                    <TimelineTask
+                  </CompletionCollapse>
+                ))
+              ) : (
+                <View style={styles.emptyTime}>
+                  <Text style={styles.emptyTimeTitle}>No fixed times</Text>
+                  <Text style={styles.emptyTimeText}>
+                    Your day has room to move. Scheduled tasks will appear here.
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.completedWrap}>
+          <Pressable
+            accessibilityRole="button"
+            style={styles.completedHeader}
+            onPress={() => setShowCompleted((current) => !current)}
+          >
+            <Text style={styles.completedTitle}>
+              {selectedDate === actualToday ? "Completed today" : "Completed"}
+              {" ("}
+              {settledCompleted.length})
+            </Text>
+            <Text style={styles.completedToggle}>
+              {showCompleted ? "Hide" : "Show"}
+            </Text>
+          </Pressable>
+          {showCompleted ? (
+            <View style={styles.completedList}>
+              {settledCompleted.length > 0 ? (
+                settledCompleted.map((task) => (
+                  <View key={task.id} style={styles.completedTask}>
+                    <Pressable
+                      accessibilityLabel={`Reopen ${task.title}`}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: true }}
+                      aria-checked
+                      style={styles.completedCheck}
+                      onPress={() => toggleTaskWithGrace(task)}
+                    >
+                      <Text style={styles.completedCheckText}>✓</Text>
+                    </Pressable>
+                    <View style={styles.completedTaskCopy}>
+                      <Text style={styles.completedTaskTitle}>{task.title}</Text>
+                      <Text style={styles.reopenLabel}>
+                        Select the checkmark to reopen
+                      </Text>
+                    </View>
+                    <DoseConfirmationButton
                       styles={styles}
                       task={task}
-                      theme={theme}
-                      onEdit={openTask}
-                      onFocus={focusTask}
-                      onConfirmDose={confirmDose}
-                      onToggle={toggleTaskWithGrace}
+                      onConfirm={confirmDose}
                     />
                   </View>
-                </CompletionCollapse>
-              ))
-            ) : (
-              <View style={styles.emptyTime}>
-                <Text style={styles.emptyTimeTitle}>No fixed times</Text>
-                <Text style={styles.emptyTimeText}>
-                  Your day has room to move. Scheduled tasks will appear here.
+                ))
+              ) : (
+                <Text style={styles.completedEmpty}>
+                  Nothing here yet. Starting counts, too.
                 </Text>
-              </View>
-            )}
-          </View>
+              )}
+            </View>
+          ) : null}
         </View>
+        <TaskInbox
+          tasks={tasks}
+          temporarilyVisibleTaskIds={recentlyCompletedIds}
+          onEdit={openTask}
+        />
+      </KeyboardAwareScrollView>
+      <View
+        style={[
+          styles.quickAddDock,
+          isCompact ? styles.quickAddDockCompact : undefined,
+        ]}
+      >
+        <QuickAdd
+          compact={isCompact}
+          priority={priority}
+          styles={styles}
+          theme={theme}
+          title={title}
+          onChangePriority={setPriority}
+          onChangeTitle={setTitle}
+          onOpenEditor={openNewTask}
+          onSubmit={submitTask}
+        />
       </View>
-
-      <QuickAdd
-        compact={isCompact}
-        priority={priority}
-        styles={styles}
-        theme={theme}
-        title={title}
-        onChangePriority={setPriority}
-        onChangeTitle={setTitle}
-        onOpenEditor={openNewTask}
-        onSubmit={submitTask}
-      />
-
-      <View style={styles.completedWrap}>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.completedHeader}
-          onPress={() => setShowCompleted((current) => !current)}
-        >
-          <Text style={styles.completedTitle}>
-            {selectedDate === actualToday ? "Completed today" : "Completed"}
-            {" ("}
-            {settledCompleted.length})
-          </Text>
-          <Text style={styles.completedToggle}>
-            {showCompleted ? "Hide" : "Show"}
-          </Text>
-        </Pressable>
-        {showCompleted ? (
-          <View style={styles.completedList}>
-            {settledCompleted.length > 0 ? (
-              settledCompleted.map((task) => (
-                <View key={task.id} style={styles.completedTask}>
-                  <Pressable
-                    accessibilityLabel={`Reopen ${task.title}`}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: true }}
-                    aria-checked
-                    style={styles.completedCheck}
-                    onPress={() => toggleTaskWithGrace(task)}
-                  >
-                    <Text style={styles.completedCheckText}>✓</Text>
-                  </Pressable>
-                  <View style={styles.completedTaskCopy}>
-                    <Text style={styles.completedTaskTitle}>{task.title}</Text>
-                    <Text style={styles.reopenLabel}>
-                      Select the checkmark to reopen
-                    </Text>
-                  </View>
-                  <DoseConfirmationButton
-                    styles={styles}
-                    task={task}
-                    onConfirm={confirmDose}
-                  />
-                </View>
-              ))
-            ) : (
-              <Text style={styles.completedEmpty}>
-                Nothing here yet. Starting counts, too.
-              </Text>
-            )}
-          </View>
-        ) : null}
-      </View>
-      <TaskInbox
-        tasks={tasks}
-        temporarilyVisibleTaskIds={recentlyCompletedIds}
-        onEdit={openTask}
-      />
       <TaskEditorModal
         defaultPlannedFor={selectedDate}
         task={editingTask}
@@ -415,7 +426,7 @@ export function TodayScreen() {
         onDelete={deleteFromEditor}
         onSave={saveEditor}
       />
-    </KeyboardAwareScrollView>
+    </View>
   );
 }
 
@@ -441,7 +452,12 @@ function QuickAdd({
   onSubmit(): void;
 }) {
   return (
-    <View style={styles.quickAdd}>
+    <View
+      style={[
+        styles.quickAdd,
+        compact ? styles.quickAddCompact : undefined,
+      ]}
+    >
       <View style={styles.quickAddTop}>
         <View>
           <Text style={styles.quickAddEyebrow}>QUICK CAPTURE</Text>
@@ -1030,6 +1046,10 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_600SemiBold",
       fontSize: 13,
     },
+    screen: {
+      flex: 1,
+      minHeight: 0,
+    },
     page: {
       alignSelf: "center",
       maxWidth: 1560,
@@ -1037,6 +1057,12 @@ function createStyles(theme: OrganaTheme) {
       paddingHorizontal: 24,
       paddingTop: 30,
       width: "100%",
+    },
+    pageWithQuickAdd: {
+      paddingBottom: 205,
+    },
+    pageWithQuickAddCompact: {
+      paddingBottom: 220,
     },
     pageCompact: {
       alignSelf: "stretch",
@@ -1105,8 +1131,36 @@ function createStyles(theme: OrganaTheme) {
       borderColor: theme.border,
       borderRadius: 22,
       borderWidth: 1,
-      marginBottom: 34,
+      maxWidth: 960,
       padding: 20,
+      width: "100%",
+      ...(Platform.OS === "web"
+        ? { boxShadow: `0 8px 22px ${theme.shadow}2e` }
+        : {
+            elevation: 10,
+            shadowColor: theme.shadow,
+            shadowOffset: { height: 8, width: 0 },
+            shadowOpacity: 0.18,
+            shadowRadius: 22,
+          }),
+    },
+    quickAddCompact: {
+      borderRadius: 18,
+      padding: 13,
+    },
+    quickAddDock: {
+      alignItems: "center",
+      bottom: 16,
+      left: 0,
+      paddingHorizontal: 24,
+      pointerEvents: "box-none",
+      position: "absolute",
+      right: 0,
+      zIndex: 20,
+    },
+    quickAddDockCompact: {
+      bottom: 10,
+      paddingHorizontal: 12,
     },
     quickAddTop: {
       alignItems: "flex-end",
