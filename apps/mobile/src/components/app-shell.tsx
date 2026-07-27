@@ -170,15 +170,9 @@ export function AppShell() {
                 onCycleTheme={cycleTheme}
               />
             )}
-            {pathname === "/" ? (
-              <View role="main" style={styles.content}>
-                <Slot />
-              </View>
-            ) : (
-              <KeyboardAvoidingView role="main" style={styles.content}>
-                <Slot />
-              </KeyboardAvoidingView>
-            )}
+            <KeyboardAvoidingView role="main" style={styles.content}>
+              <Slot />
+            </KeyboardAvoidingView>
             {!isWide ? <MobileNavigation styles={styles} /> : null}
           </View>
         )}
