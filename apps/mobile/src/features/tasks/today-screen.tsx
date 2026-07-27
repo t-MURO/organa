@@ -307,7 +307,7 @@ export function TodayScreen() {
             />
             <View style={styles.timelineCard}>
               {visibleTimed.length > 0 ? (
-                visibleTimed.map((task, index) => (
+                visibleTimed.map((task) => (
                   <CompletionCollapse
                     key={task.id}
                     completed={Boolean(task.completedAt)}
@@ -317,9 +317,6 @@ export function TodayScreen() {
                         <Text style={styles.timelineTime}>
                           {task.scheduledTime}
                         </Text>
-                        {index < visibleTimed.length - 1 ? (
-                          <View style={styles.timelineLine} />
-                        ) : null}
                       </View>
                       <TimelineTask
                         styles={styles}
@@ -1493,27 +1490,33 @@ function createStyles(theme: OrganaTheme) {
       fontSize: 9,
     },
     editButton: {
+      alignItems: "center",
       borderColor: theme.border,
-      borderRadius: 9,
+      borderRadius: 12,
       borderWidth: 1,
-      paddingHorizontal: 9,
-      paddingVertical: 6,
+      justifyContent: "center",
+      minHeight: 44,
+      minWidth: 58,
+      paddingHorizontal: 12,
     },
     editButtonText: {
       color: theme.textMuted,
       fontFamily: "Manrope_700Bold",
-      fontSize: 8,
+      fontSize: 10,
     },
     focusButton: {
+      alignItems: "center",
       backgroundColor: theme.shouldSoft,
-      borderRadius: 9,
-      paddingHorizontal: 9,
-      paddingVertical: 6,
+      borderRadius: 12,
+      justifyContent: "center",
+      minHeight: 44,
+      minWidth: 64,
+      paddingHorizontal: 12,
     },
     focusButtonText: {
       color: theme.accentStrong,
       fontFamily: "Manrope_700Bold",
-      fontSize: 8,
+      fontSize: 10,
     },
     subtaskList: {
       gap: 9,
@@ -1568,25 +1571,17 @@ function createStyles(theme: OrganaTheme) {
     },
     timelineRow: {
       alignItems: "stretch",
-      flexDirection: "row",
-      gap: 12,
-      minHeight: 78,
+      gap: 6,
+      marginBottom: 12,
     },
     timelineTimeWrap: {
-      alignItems: "center",
-      width: 48,
+      alignItems: "flex-start",
+      paddingHorizontal: 4,
     },
     timelineTime: {
       color: theme.accentStrong,
       fontFamily: "Manrope_800ExtraBold",
-      fontSize: 11,
-      marginTop: 4,
-    },
-    timelineLine: {
-      backgroundColor: theme.border,
-      flex: 1,
-      marginVertical: 8,
-      width: 1,
+      fontSize: 12,
     },
     timelineTask: {
       alignItems: "center",
@@ -1595,7 +1590,6 @@ function createStyles(theme: OrganaTheme) {
       flex: 1,
       flexDirection: "row",
       gap: 10,
-      marginBottom: 10,
       padding: 13,
     },
     timelineTaskMain: {
