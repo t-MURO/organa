@@ -472,18 +472,6 @@ function QuickAdd({
           <Text style={styles.quickAddEyebrow}>QUICK CAPTURE</Text>
           <Text style={styles.quickAddTitle}>What is on your mind?</Text>
         </View>
-        <View style={styles.quickAddActions}>
-          {!compact ? (
-            <Text style={styles.quickAddHint}>Press enter to add</Text>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            style={styles.planButton}
-            onPress={onOpenEditor}
-          >
-            <Text style={styles.planButtonText}>Plan details</Text>
-          </Pressable>
-        </View>
       </View>
       <View style={styles.inputRow}>
         <TextInput
@@ -506,6 +494,20 @@ function QuickAdd({
           onPress={onSubmit}
         >
           <Text style={styles.addButtonText}>Add</Text>
+        </Pressable>
+      </View>
+      <View style={styles.quickAddSecondaryRow}>
+        {!compact ? (
+          <Text style={styles.quickAddHint}>Press enter to add</Text>
+        ) : (
+          <View />
+        )}
+        <Pressable
+          accessibilityRole="button"
+          style={styles.planButton}
+          onPress={onOpenEditor}
+        >
+          <Text style={styles.planButtonText}>Plan details</Text>
         </Pressable>
       </View>
       <View style={styles.priorityChips}>
@@ -1166,9 +1168,6 @@ function createStyles(theme: OrganaTheme) {
       paddingHorizontal: 12,
     },
     quickAddTop: {
-      alignItems: "flex-end",
-      flexDirection: "row",
-      justifyContent: "space-between",
       marginBottom: 14,
     },
     quickAddEyebrow: {
@@ -1188,10 +1187,11 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_400Regular",
       fontSize: 10,
     },
-    quickAddActions: {
+    quickAddSecondaryRow: {
       alignItems: "center",
       flexDirection: "row",
-      gap: 12,
+      justifyContent: "space-between",
+      marginTop: 8,
     },
     planButton: {
       backgroundColor: theme.shouldSoft,
