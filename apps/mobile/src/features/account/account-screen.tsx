@@ -332,12 +332,12 @@ export function AccountScreen() {
           <Text style={styles.cardEyebrow}>SIGNED IN AS</Text>
           <Text style={styles.cardTitle}>
             {auth.localPreview
-              ? "Local development preview"
+              ? (auth.localEmail ?? "Local development account")
               : (auth.user?.email ?? "Organa account")}
           </Text>
           <Text style={styles.cardText}>
             {auth.localPreview
-              ? "This preview stays on this device and does not synchronize."
+              ? "This development account stays on this device and does not synchronize."
               : "Your authentication session is stored using platform-appropriate secure storage."}
           </Text>
           {identities.length > 0 ? (
@@ -365,7 +365,9 @@ export function AccountScreen() {
             <View style={styles.deviceRow}>
               <View style={styles.deviceDot} />
               <View style={styles.deviceCopy}>
-                <Text style={styles.deviceTitle}>Local preview device</Text>
+                <Text style={styles.deviceTitle}>
+                  Local development device
+                </Text>
                 <Text style={styles.deviceMeta}>
                   Reminders enabled for local testing
                 </Text>
@@ -744,7 +746,7 @@ export function AccountScreen() {
           <ActivityIndicator color={theme.must} />
         ) : (
           <Text style={styles.signOutText}>
-            {auth.localPreview ? "Leave local preview" : "Sign out"}
+            {auth.localPreview ? "Leave local account" : "Sign out"}
           </Text>
         )}
       </Pressable>
@@ -876,8 +878,8 @@ function createStyles(theme: OrganaTheme) {
     grid: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 16,
-      marginTop: 28,
+      gap: 20,
+      marginTop: 32,
     },
     gridCompact: { flexDirection: "column" },
     card: {

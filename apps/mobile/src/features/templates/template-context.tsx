@@ -163,7 +163,7 @@ function makeId() {
 export function TemplateProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
   const sync = useSync();
-  const namespace = auth.user?.id ?? "local-preview";
+  const namespace = auth.ownerId ?? "signed-out";
   const repository = useMemo(
     () => createTemplateRepository(namespace),
     [namespace],

@@ -59,8 +59,11 @@ cp .env.example apps/mobile/.env.local
 pnpm dev:web
 ```
 
-Without Supabase environment values, development builds offer an explicitly
-local preview. Production builds always require an account.
+Development builds always offer `Continue locally` on the sign-in screen, even
+when Supabase is configured. Enter any test email to open a local-only account
+without sending a message. Local accounts persist across reloads, each email has
+separate data, and no content is synchronized to Supabase. Production builds
+never expose local sign-in and always require a connected account.
 
 Run native development builds:
 

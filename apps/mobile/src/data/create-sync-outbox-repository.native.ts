@@ -1,5 +1,4 @@
-import * as SQLite from "expo-sqlite";
-
+import { openOrganaDatabase } from "./organa-database.native";
 import type {
   EncryptedMutation,
   SyncOutboxRepository,
@@ -12,18 +11,10 @@ interface OutboxRow {
 export function createSyncOutboxRepository(
   namespace = "local",
 ): SyncOutboxRepository {
-  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
+  const databasePromise = openOrganaDatabase(namespace);
   return {
     async initialize() {
-      const database = await databasePromise;
-      await database.execAsync(`
-        PRAGMA journal_mode = WAL;
-        CREATE TABLE IF NOT EXISTS sync_outbox (
-          id TEXT PRIMARY KEY NOT NULL,
-          payload TEXT NOT NULL,
-          created_at TEXT NOT NULL
-        );
-      `);
+      await databasePromise;
     },
     async list() {
       const database = await databasePromise;
@@ -50,8 +41,4 @@ export function createSyncOutboxRepository(
       await database.runAsync("DELETE FROM sync_outbox WHERE id = ?", id);
     },
   };
-}
-
-function databaseName(namespace: string) {
-  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

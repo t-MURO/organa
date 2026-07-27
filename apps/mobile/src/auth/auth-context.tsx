@@ -22,6 +22,14 @@ import {
   supabase,
   supabaseConfigurationIssue,
 } from "./supabase";
+import {
+  clearLocalDevelopmentIdentity,
+  createLocalDevelopmentIdentity,
+  type LocalDevelopmentIdentity,
+  localDevelopmentAuthEnabled,
+  readLocalDevelopmentIdentity,
+  saveLocalDevelopmentIdentity,
+} from "./local-development-auth";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -34,6 +42,9 @@ interface AuthContextValue {
   configurationIssue: string;
   configured: boolean;
   loading: boolean;
+  localDevelopmentEnabled: boolean;
+  localEmail: string | null;
+  ownerId: string | null;
   localPreview: boolean;
   oauthProviders: OAuthProvider[];
   oauthProvidersLoading: boolean;
@@ -42,7 +53,7 @@ interface AuthContextValue {
   callbackError: string;
   clearCallbackError(): void;
   isCurrentUser(userId: string): Promise<boolean>;
-  startLocalPreview(): void;
+  signInLocally(email: string): Promise<void>;
   signInWithOAuth(provider: OAuthProvider): Promise<void>;
   sendEmailCode(email: string): Promise<void>;
   verifyEmailCode(email: string, code: string): Promise<void>;
@@ -52,9 +63,13 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: PropsWithChildren) {
-  const [loading, setLoading] = useState(isSupabaseConfigured);
+  const [sessionLoading, setSessionLoading] = useState(isSupabaseConfigured);
+  const [localIdentityLoading, setLocalIdentityLoading] = useState(
+    localDevelopmentAuthEnabled,
+  );
   const [session, setSession] = useState<Session | null>(null);
-  const [localPreview, setLocalPreview] = useState(false);
+  const [localIdentity, setLocalIdentity] =
+    useState<LocalDevelopmentIdentity | null>(null);
   const [callbackError, setCallbackError] = useState("");
   const [oauthProviders, setOauthProviders] = useState<OAuthProvider[]>([]);
   const [oauthProvidersLoading, setOauthProvidersLoading] = useState(
@@ -69,6 +84,28 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (result.error) throw result.error;
     });
   });
+  const localPreview = localIdentity !== null;
+  const visibleSession = localPreview ? null : session;
+  const ownerId = localIdentity?.ownerId ?? visibleSession?.user.id ?? null;
+
+  useEffect(() => {
+    if (!localDevelopmentAuthEnabled) return;
+
+    let active = true;
+    void readLocalDevelopmentIdentity()
+      .then((identity) => {
+        if (active) setLocalIdentity(identity);
+      })
+      .catch(() => {
+        if (active) setLocalIdentity(null);
+      })
+      .finally(() => {
+        if (active) setLocalIdentityLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
@@ -111,9 +148,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
+    if (localIdentityLoading) return;
+    if (localIdentity) {
+      setSession(null);
+      setSessionLoading(false);
+      return;
+    }
+
     const client = supabase;
     if (!client) {
-      setLoading(false);
+      setSessionLoading(false);
       return;
     }
 
@@ -129,19 +173,19 @@ export function AuthProvider({ children }: PropsWithChildren) {
         } else {
           setSession(data.session);
         }
-        setLoading(false);
+        setSessionLoading(false);
       })
       .catch(() => {
         if (!active || authStateChanged) return;
         setCallbackError((current) => current || initialSessionErrorMessage);
         setSession(null);
-        setLoading(false);
+        setSessionLoading(false);
       });
 
     const { data } = client.auth.onAuthStateChange((event, nextSession) => {
       authStateChanged = true;
       setSession(nextSession);
-      setLoading(false);
+      setSessionLoading(false);
       if (event === "SIGNED_OUT") {
         void clearPrivatePlatformState();
       }
@@ -163,7 +207,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       data.subscription.unsubscribe();
       appStateSubscription?.remove();
     };
-  }, []);
+  }, [localIdentity, localIdentityLoading]);
 
   useEffect(() => {
     if (Platform.OS === "web") return;
@@ -258,6 +302,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }
 
   async function isCurrentUser(userId: string) {
+    if (localIdentity) return localIdentity.ownerId === userId;
     if (!supabase) return false;
     const result = await supabase.auth.getSession();
     if (result.error) throw result.error;
@@ -265,8 +310,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }
 
   async function signOut() {
-    setLocalPreview(false);
     setCallbackError("");
+    if (localIdentity) {
+      await clearLocalDevelopmentIdentity();
+      setLocalIdentity(null);
+      setSession(null);
+      await clearPrivatePlatformState();
+      return;
+    }
     setSession(null);
     if (!supabase) {
       await clearPrivatePlatformState();
@@ -277,6 +328,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
     if (result.error) throw result.error;
   }
 
+  async function signInLocally(email: string) {
+    const identity = await createLocalDevelopmentIdentity(email);
+    await saveLocalDevelopmentIdentity(identity);
+    setCallbackError("");
+    setSession(null);
+    setLocalIdentity(identity);
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -285,13 +344,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
         configurationIssue: supabaseConfigurationIssue,
         configured: isSupabaseConfigured,
         isCurrentUser,
-        loading,
+        loading: sessionLoading || localIdentityLoading,
+        localDevelopmentEnabled: localDevelopmentAuthEnabled,
+        localEmail: localIdentity?.email ?? null,
         localPreview,
+        ownerId,
         oauthProviders,
         oauthProvidersLoading,
-        session,
-        user: session?.user ?? null,
-        startLocalPreview: () => setLocalPreview(true),
+        session: visibleSession,
+        user: visibleSession?.user ?? null,
+        signInLocally,
         signInWithOAuth,
         sendEmailCode,
         verifyEmailCode,

@@ -453,7 +453,7 @@ function createStyles(theme: OrganaTheme) {
       gap: 20,
       justifyContent: "space-between",
       marginBottom: 13,
-      marginTop: 30,
+      marginTop: 38,
     },
     noteHeadingCompact: {
       alignItems: "stretch",

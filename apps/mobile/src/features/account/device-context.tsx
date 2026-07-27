@@ -62,9 +62,7 @@ export function DeviceProvider({ children }: PropsWithChildren) {
     string | null
   >(null);
   const localErasureHandled = useRef(false);
-  const notificationOwnerId = auth.localPreview
-    ? "local-preview"
-    : auth.user?.id;
+  const notificationOwnerId = auth.ownerId ?? undefined;
 
   useEffect(
     () =>

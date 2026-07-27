@@ -693,7 +693,7 @@ function createStyles(theme: OrganaTheme) {
       alignItems: "flex-end",
       flexDirection: "row",
       justifyContent: "space-between",
-      marginBottom: 28,
+      marginBottom: 32,
     },
     heroCompact: { alignItems: "stretch", flexDirection: "column", gap: 20 },
     heroCopy: { flex: 1 },
@@ -737,7 +737,7 @@ function createStyles(theme: OrganaTheme) {
       flexDirection: "row",
       flexWrap: "wrap",
       gap: 12,
-      marginBottom: 22,
+      marginBottom: 28,
     },
     search: {
       backgroundColor: theme.surface,
@@ -777,7 +777,7 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_700Bold",
       fontSize: 12,
     },
-    grid: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
+    grid: { flexDirection: "row", flexWrap: "wrap", gap: 20 },
     gridCompact: { flexDirection: "column" },
     card: {
       backgroundColor: theme.surface,

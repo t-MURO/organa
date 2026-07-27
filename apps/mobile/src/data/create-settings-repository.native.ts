@@ -1,6 +1,6 @@
 import type { UserSettings } from "@organa/domain";
-import * as SQLite from "expo-sqlite";
 
+import { openOrganaDatabase } from "./organa-database.native";
 import type { SettingsRepository } from "./settings-repository.types";
 
 interface SettingsRow {
@@ -10,18 +10,10 @@ interface SettingsRow {
 export function createSettingsRepository(
   namespace = "local",
 ): SettingsRepository {
-  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
+  const databasePromise = openOrganaDatabase(namespace);
   return {
     async initialize() {
-      const database = await databasePromise;
-      await database.execAsync(`
-        PRAGMA journal_mode = WAL;
-        CREATE TABLE IF NOT EXISTS user_settings (
-          id TEXT PRIMARY KEY NOT NULL,
-          payload TEXT NOT NULL,
-          updated_at TEXT NOT NULL
-        );
-      `);
+      await databasePromise;
     },
     async get() {
       const database = await databasePromise;
@@ -44,8 +36,4 @@ export function createSettingsRepository(
       );
     },
   };
-}
-
-function databaseName(namespace: string) {
-  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

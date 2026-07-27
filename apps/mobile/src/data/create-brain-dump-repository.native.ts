@@ -1,7 +1,7 @@
 import type { BrainDumpBullet } from "@organa/domain";
-import * as SQLite from "expo-sqlite";
 
 import type { BrainDumpRepository } from "./brain-dump-repository.types";
+import { openOrganaDatabase } from "./organa-database.native";
 
 interface BrainDumpRow {
   payload: string;
@@ -10,20 +10,11 @@ interface BrainDumpRow {
 export function createBrainDumpRepository(
   namespace = "local",
 ): BrainDumpRepository {
-  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
+  const databasePromise = openOrganaDatabase(namespace);
 
   return {
     async initialize() {
-      const database = await databasePromise;
-      await database.execAsync(`
-        PRAGMA journal_mode = WAL;
-        CREATE TABLE IF NOT EXISTS brain_dump_bullets (
-          id TEXT PRIMARY KEY NOT NULL,
-          payload TEXT NOT NULL,
-          rank REAL NOT NULL,
-          updated_at TEXT NOT NULL
-        );
-      `);
+      await databasePromise;
     },
     async list() {
       const database = await databasePromise;
@@ -55,8 +46,4 @@ export function createBrainDumpRepository(
       );
     },
   };
-}
-
-function databaseName(namespace: string) {
-  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

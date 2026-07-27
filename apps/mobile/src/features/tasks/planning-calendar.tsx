@@ -230,7 +230,7 @@ function createStyles(theme: OrganaTheme) {
       borderColor: theme.border,
       borderRadius: 22,
       borderWidth: 1,
-      marginBottom: 28,
+      marginBottom: 32,
       padding: 18,
     },
     header: {

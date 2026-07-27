@@ -135,7 +135,7 @@ export function FocusScreen() {
   }
 
   async function snooze(minutes: number) {
-    const ownerId = auth.localPreview ? "local-preview" : auth.user?.id;
+    const ownerId = auth.ownerId;
     if (
       !task ||
       !ownerId ||

@@ -77,7 +77,7 @@ export function CheckInProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
   const security = useSecurity();
   const sync = useSync();
-  const namespace = auth.user?.id ?? "local-preview";
+  const namespace = auth.ownerId ?? "signed-out";
   const repository = useMemo(
     () => createCheckInRepository(namespace),
     [namespace],

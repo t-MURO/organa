@@ -673,7 +673,7 @@ function createStyles(theme: OrganaTheme) {
       flexWrap: "wrap",
       gap: 18,
       justifyContent: "space-between",
-      marginBottom: 18,
+      marginBottom: 24,
       padding: 17,
     },
     reminderCopy: {
@@ -736,7 +736,7 @@ function createStyles(theme: OrganaTheme) {
     },
     reminderThumbActive: { alignSelf: "flex-end" },
     topGrid: {
-      gap: 18,
+      gap: 22,
     },
     topGridWide: {
       alignItems: "stretch",
@@ -994,7 +994,7 @@ function createStyles(theme: OrganaTheme) {
       gap: 20,
       justifyContent: "space-between",
       marginBottom: 13,
-      marginTop: 30,
+      marginTop: 38,
     },
     historyHeadingCompact: {
       alignItems: "stretch",

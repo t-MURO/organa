@@ -22,9 +22,7 @@ import { useSecurity } from "./security-context";
 
 export function SecurityBoundary({ children }: PropsWithChildren) {
   const auth = useAuth();
-  const ownerId = auth.localPreview
-    ? "local-preview"
-    : (auth.user?.id ?? "signed-out");
+  const ownerId = auth.ownerId ?? "signed-out";
   return (
     <AccountSecurityBoundary key={ownerId}>{children}</AccountSecurityBoundary>
   );

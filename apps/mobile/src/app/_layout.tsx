@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
 
 function AccountApp() {
   const auth = useAuth();
-  const ownerId = auth.user?.id ?? "local-preview";
+  const ownerId = auth.ownerId ?? "signed-out";
 
   return (
     <AppLockProvider key={ownerId}>

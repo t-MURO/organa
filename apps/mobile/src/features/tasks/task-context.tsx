@@ -193,7 +193,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
   const sync = useSync();
   const devices = useDevices();
   const feedback = useInteractionFeedback();
-  const namespace = auth.user?.id ?? "local-preview";
+  const namespace = auth.ownerId ?? "signed-out";
   const repository = useMemo(
     () => createTaskRepository(namespace),
     [namespace],
@@ -466,6 +466,10 @@ export function TaskProvider({ children }: PropsWithChildren) {
       return;
     }
 
+    completeActiveTask(task, task);
+  }
+
+  function completeActiveTask(task: Task, previousValue: Task) {
     const existingOccurrence = state.tasks.find(
       (item) => item.previousOccurrenceId === task.id,
     );
@@ -497,7 +501,7 @@ export function TaskProvider({ children }: PropsWithChildren) {
     void sync.commit([
       {
         operation: "upsert",
-        previousValue: task,
+        previousValue,
         recordId: result.completedTask.id,
         recordType: "task",
         value: result.completedTask,
@@ -518,6 +522,14 @@ export function TaskProvider({ children }: PropsWithChildren) {
   function toggleSubtask(task: Task, subtaskId: string) {
     const nextTask = toggleSubtaskCompletion(task, subtaskId);
     if (nextTask === task) return;
+
+    if (
+      nextTask.subtasks.length > 0 &&
+      nextTask.subtasks.every((subtask) => Boolean(subtask.completedAt))
+    ) {
+      completeActiveTask(nextTask, task);
+      return;
+    }
 
     rememberLocalChange(nextTask.id);
     dispatch({ type: "upserted", task: nextTask });

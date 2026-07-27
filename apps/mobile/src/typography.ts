@@ -14,15 +14,16 @@ type TypographyAwareStyle = NamedStyle & {
 
 function readableFontSize(size: number) {
   if (Platform.OS === "web") {
-    if (size <= 9) return size + 3;
-    if (size <= 13) return size + 2;
-    if (size <= 20) return size + 1;
-    return Math.round(size * 1.04);
+    if (size <= 9) return size + 4;
+    if (size <= 13) return size + 3;
+    if (size <= 20) return size + 2;
+    return Math.round(size * 1.06);
   }
 
-  if (size <= 7) return size + 2;
-  if (size <= 13) return size + 1;
-  return size;
+  if (size <= 9) return size + 3;
+  if (size <= 13) return size + 2;
+  if (size <= 20) return size + 1;
+  return Math.round(size * 1.03);
 }
 
 function applyReadableType(style: TypographyAwareStyle): NamedStyle {

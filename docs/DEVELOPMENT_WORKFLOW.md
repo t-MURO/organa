@@ -21,6 +21,11 @@ During iteration:
 pnpm dev:web
 ```
 
+For frontend testing, enter any test email on the sign-in screen and select
+`Continue locally`. This skips email delivery and Supabase synchronization.
+The local account survives reloads, and each email opens a separate local data
+space. This option exists only in development builds.
+
 Before committing:
 
 ```sh

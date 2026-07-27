@@ -5,63 +5,26 @@ import type {
   TaskTemplate,
   UserSettings,
 } from "@organa/domain";
-import * as SQLite from "expo-sqlite";
+import type { SQLiteDatabase } from "expo-sqlite";
 
 import {
   assertDurableRecordWrites,
   type DurableRecordWriter,
   type LocalRecordType,
 } from "./durable-record-writer.types";
+import { openOrganaDatabase } from "./organa-database.native";
 
 export function createDurableRecordWriter(
   namespace = "local",
 ): DurableRecordWriter {
-  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
-  const initialization = databasePromise.then((database) =>
-    database.execAsync(`
-      PRAGMA journal_mode = WAL;
-      CREATE TABLE IF NOT EXISTS tasks (
-        id TEXT PRIMARY KEY NOT NULL,
-        payload TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS brain_dump_bullets (
-        id TEXT PRIMARY KEY NOT NULL,
-        payload TEXT NOT NULL,
-        rank REAL NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS check_ins (
-        id TEXT PRIMARY KEY NOT NULL,
-        entry_date TEXT UNIQUE NOT NULL,
-        payload TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS task_templates (
-        id TEXT PRIMARY KEY NOT NULL,
-        payload TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS user_settings (
-        id TEXT PRIMARY KEY NOT NULL,
-        payload TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS sync_outbox (
-        id TEXT PRIMARY KEY NOT NULL,
-        payload TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      );
-    `),
-  );
+  const databasePromise = openOrganaDatabase(namespace);
 
   return {
     async initialize() {
-      await initialization;
+      await databasePromise;
     },
     async commit(writes) {
       assertDurableRecordWrites(namespace, writes);
-      await initialization;
       const database = await databasePromise;
       await database.withExclusiveTransactionAsync(async (transaction) => {
         for (const write of writes) {
@@ -96,7 +59,7 @@ export function createDurableRecordWriter(
 }
 
 async function deleteLocalRecord(
-  transaction: SQLite.SQLiteDatabase,
+  transaction: SQLiteDatabase,
   recordType: LocalRecordType,
   recordId: string,
 ) {
@@ -124,7 +87,7 @@ async function deleteLocalRecord(
 }
 
 async function upsertLocalRecord(
-  transaction: SQLite.SQLiteDatabase,
+  transaction: SQLiteDatabase,
   recordType:
     | "task"
     | "brain_dump_bullet"
@@ -207,8 +170,4 @@ async function upsertLocalRecord(
       settings.updatedAt,
     );
   }
-}
-
-function databaseName(namespace: string) {
-  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

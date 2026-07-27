@@ -1,4 +1,8 @@
-import { getTaskTimingState, type Task } from "@organa/domain";
+import {
+  formatLocalDate,
+  getTaskTimingState,
+  type Task,
+} from "@organa/domain";
 
 export type InboxFilter = "upcoming" | "overdue" | "completed";
 
@@ -26,8 +30,16 @@ export function taskMatchesInboxFilter(
 ) {
   const status = getTaskTimingState(task, now).status;
   if (filter === "completed") return status === "completed";
-  if (filter === "overdue") return status === "overdue";
-  return status === "active";
+  if (filter === "overdue") return isTaskOverdueForDisplay(task, now);
+  return status === "active" && !isTaskOverdueForDisplay(task, now);
+}
+
+export function isTaskOverdueForDisplay(task: Task, now = new Date()) {
+  if (task.completedAt) return false;
+  if (getTaskTimingState(task, now).status === "overdue") return true;
+  return Boolean(
+    task.plannedFor && task.plannedFor < formatLocalDate(now),
+  );
 }
 
 function taskSortKey(task: Task) {

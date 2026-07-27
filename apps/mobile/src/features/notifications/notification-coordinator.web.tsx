@@ -28,9 +28,7 @@ import {
 export function NotificationCoordinator() {
   const router = useRouter();
   const auth = useAuth();
-  const ownerId = auth.localPreview
-    ? "local-preview"
-    : (auth.user?.id ?? "signed-out");
+  const ownerId = auth.ownerId ?? "signed-out";
   const { tasks } = useTasks();
   const { entries } = useCheckIns();
   const devices = useDevices();

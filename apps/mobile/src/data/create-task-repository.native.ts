@@ -1,6 +1,6 @@
 import type { Task } from "@organa/domain";
-import * as SQLite from "expo-sqlite";
 
+import { openOrganaDatabase } from "./organa-database.native";
 import type { TaskRepository } from "./task-repository.types";
 
 interface TaskRow {
@@ -8,19 +8,11 @@ interface TaskRow {
 }
 
 export function createTaskRepository(namespace = "local"): TaskRepository {
-  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
+  const databasePromise = openOrganaDatabase(namespace);
 
   return {
     async initialize() {
-      const database = await databasePromise;
-      await database.execAsync(`
-        PRAGMA journal_mode = WAL;
-        CREATE TABLE IF NOT EXISTS tasks (
-          id TEXT PRIMARY KEY NOT NULL,
-          payload TEXT NOT NULL,
-          updated_at TEXT NOT NULL
-        );
-      `);
+      await databasePromise;
     },
     async list() {
       const database = await databasePromise;
@@ -47,8 +39,4 @@ export function createTaskRepository(namespace = "local"): TaskRepository {
       await database.runAsync("DELETE FROM tasks WHERE id = ?", id);
     },
   };
-}
-
-function databaseName(namespace: string) {
-  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

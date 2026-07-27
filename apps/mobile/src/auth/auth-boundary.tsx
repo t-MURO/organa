@@ -97,6 +97,10 @@ function SignInScreen() {
     );
   }
 
+  async function signInLocally() {
+    await run("local", () => auth.signInLocally(email));
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
@@ -136,63 +140,77 @@ function SignInScreen() {
 
             <View
               accessibilityLabel={
-                auth.configured ? "Sign in to Organa" : "Backend setup required"
+                auth.configured
+                  ? "Sign in to Organa"
+                  : auth.localDevelopmentEnabled
+                    ? "Local development sign in"
+                    : "Backend setup required"
               }
               role="region"
               style={styles.authCard}
             >
               <Text style={styles.cardEyebrow}>
-                {auth.configured ? "YOUR PRIVATE SPACE" : "SETUP REQUIRED"}
+                {auth.configured
+                  ? "YOUR PRIVATE SPACE"
+                  : auth.localDevelopmentEnabled
+                    ? "LOCAL DEVELOPMENT"
+                    : "SETUP REQUIRED"}
               </Text>
               <Text
                 {...secondaryHeadingProps}
                 role="heading"
                 style={styles.cardTitle}
               >
-                {auth.configured ? "Come in gently." : "Connect the backend."}
+                {auth.configured
+                  ? "Come in gently."
+                  : auth.localDevelopmentEnabled
+                    ? "Test without waiting."
+                    : "Connect the backend."}
               </Text>
               <Text style={styles.cardText}>
                 {auth.configured
                   ? auth.oauthProviders.length > 0
                     ? "Choose a sign-in method. Organa does not require a password."
                     : "Enter your email and Organa will send a one-time verification code."
+                  : auth.localDevelopmentEnabled
+                    ? "Enter any test email to open a local-only account instantly."
                   : auth.configurationIssue}
               </Text>
 
-              {auth.configured ? (
+              {auth.oauthProviders.length > 0 ? (
                 <>
-                  {auth.oauthProviders.length > 0 ? (
-                    <>
-                      <View style={styles.providerGrid}>
-                        {auth.oauthProviders.map((provider) => (
-                          <Pressable
-                            key={provider}
-                            accessibilityLabel={`Continue with ${provider}`}
-                            accessibilityRole="button"
-                            disabled={Boolean(busy)}
-                            style={styles.providerButton}
-                            onPress={() =>
-                              void run(provider, () =>
-                                auth.signInWithOAuth(provider),
-                              )
-                            }
-                          >
-                            <View style={styles.providerGlyph} />
-                            <Text style={styles.providerText}>
-                              {capitalize(provider)}
-                            </Text>
-                          </Pressable>
-                        ))}
-                      </View>
+                  <View style={styles.providerGrid}>
+                    {auth.oauthProviders.map((provider) => (
+                      <Pressable
+                        key={provider}
+                        accessibilityLabel={`Continue with ${provider}`}
+                        accessibilityRole="button"
+                        disabled={Boolean(busy)}
+                        style={styles.providerButton}
+                        onPress={() =>
+                          void run(provider, () =>
+                            auth.signInWithOAuth(provider),
+                          )
+                        }
+                      >
+                        <View style={styles.providerGlyph} />
+                        <Text style={styles.providerText}>
+                          {capitalize(provider)}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
 
-                      <View style={styles.dividerRow}>
-                        <View style={styles.divider} />
-                        <Text style={styles.dividerText}>OR USE EMAIL</Text>
-                        <View style={styles.divider} />
-                      </View>
-                    </>
-                  ) : null}
+                  <View style={styles.dividerRow}>
+                    <View style={styles.divider} />
+                    <Text style={styles.dividerText}>OR USE EMAIL</Text>
+                    <View style={styles.divider} />
+                  </View>
+                </>
+              ) : null}
 
+              {auth.configured || auth.localDevelopmentEnabled ? (
+                <>
                   <Text style={styles.fieldLabel}>Email address</Text>
                   <TextInput
                     accessibilityLabel="Email address"
@@ -205,77 +223,99 @@ function SignInScreen() {
                     value={email}
                     onChangeText={setEmail}
                   />
-                  {codeSent ? (
-                    <>
-                      <Text style={styles.sentText}>
-                        A verification code is on its way. It may take a minute.
-                      </Text>
-                      <Text style={styles.fieldLabel}>Verification code</Text>
-                      <TextInput
-                        accessibilityLabel="Verification code"
-                        autoComplete="one-time-code"
-                        inputMode="numeric"
-                        placeholder="123456"
-                        placeholderTextColor={theme.textMuted}
-                        style={styles.input}
-                        value={code}
-                        onChangeText={setCode}
-                        onSubmitEditing={() => void verifyCode()}
-                      />
-                      <Pressable
-                        accessibilityRole="button"
-                        disabled={Boolean(busy)}
-                        style={styles.primaryButton}
-                        onPress={() => void verifyCode()}
-                      >
-                        <Text style={styles.primaryButtonText}>
-                          {busy === "verify" ? "Checking..." : "Verify code"}
-                        </Text>
-                      </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        style={styles.linkButton}
-                        onPress={() => void sendCode()}
-                      >
-                        <Text style={styles.linkText}>Send another code</Text>
-                      </Pressable>
-                    </>
-                  ) : (
+                </>
+              ) : null}
+
+              {auth.configured ? (
+                codeSent ? (
+                  <>
+                    <Text style={styles.sentText}>
+                      A verification code is on its way. It may take a minute.
+                    </Text>
+                    <Text style={styles.fieldLabel}>Verification code</Text>
+                    <TextInput
+                      accessibilityLabel="Verification code"
+                      autoComplete="one-time-code"
+                      inputMode="numeric"
+                      placeholder="123456"
+                      placeholderTextColor={theme.textMuted}
+                      style={styles.input}
+                      value={code}
+                      onChangeText={setCode}
+                      onSubmitEditing={() => void verifyCode()}
+                    />
                     <Pressable
                       accessibilityRole="button"
                       disabled={Boolean(busy)}
                       style={styles.primaryButton}
-                      onPress={() => void sendCode()}
+                      onPress={() => void verifyCode()}
                     >
                       <Text style={styles.primaryButtonText}>
-                        {busy === "email"
-                          ? "Sending..."
-                          : "Send verification code"}
+                        {busy === "verify" ? "Checking..." : "Verify code"}
                       </Text>
                     </Pressable>
-                  )}
-                </>
-              ) : (
+                    <Pressable
+                      accessibilityRole="button"
+                      style={styles.linkButton}
+                      onPress={() => void sendCode()}
+                    >
+                      <Text style={styles.linkText}>Send another code</Text>
+                    </Pressable>
+                  </>
+                ) : (
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={Boolean(busy)}
+                    style={styles.primaryButton}
+                    onPress={() => void sendCode()}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      {busy === "email"
+                        ? "Sending..."
+                        : "Send verification code"}
+                    </Text>
+                  </Pressable>
+                )
+              ) : null}
+
+              {auth.localDevelopmentEnabled ? (
+                <View style={styles.localDevelopmentBox}>
+                  <Text style={styles.localDevelopmentEyebrow}>
+                    FRONTEND TESTING
+                  </Text>
+                  <Text style={styles.localDevelopmentText}>
+                    Skip email delivery and keep this account entirely on this
+                    device. Each test email gets separate local data.
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={Boolean(busy)}
+                    style={styles.previewButton}
+                    onPress={() => void signInLocally()}
+                  >
+                    <Text style={styles.previewButtonText}>
+                      {busy === "local"
+                        ? "Opening local account..."
+                        : "Continue locally"}
+                    </Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {!auth.configured ? (
                 <View style={styles.configBox}>
+                  <Text style={styles.configHint}>
+                    Cloud sign-in remains unavailable until these values are
+                    configured:
+                  </Text>
                   <Text style={styles.configKey}>
                     EXPO_PUBLIC_SUPABASE_URL
                   </Text>
                   <Text style={styles.configKey}>
                     EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
                   </Text>
-                  {__DEV__ ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      style={styles.previewButton}
-                      onPress={auth.startLocalPreview}
-                    >
-                      <Text style={styles.previewButtonText}>
-                        Explore local development preview
-                      </Text>
-                    </Pressable>
-                  ) : null}
                 </View>
-              )}
+              ) : null}
 
               {displayedError ? (
                 <Text accessibilityRole="alert" style={styles.error}>
@@ -535,16 +575,43 @@ function stylesFor(theme: OrganaTheme) {
       marginTop: 20,
       padding: 14,
     },
+    configHint: {
+      color: theme.textMuted,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 9,
+      lineHeight: 14,
+    },
     configKey: {
       color: theme.text,
       fontFamily: "Manrope_600SemiBold",
       fontSize: 9,
     },
+    localDevelopmentBox: {
+      backgroundColor: theme.shouldSoft,
+      borderColor: theme.border,
+      borderRadius: 14,
+      borderWidth: 1,
+      marginTop: 18,
+      padding: 14,
+    },
+    localDevelopmentEyebrow: {
+      color: theme.accentStrong,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 8,
+      letterSpacing: 1.2,
+    },
+    localDevelopmentText: {
+      color: theme.text,
+      fontFamily: "Manrope_400Regular",
+      fontSize: 9,
+      lineHeight: 14,
+      marginTop: 6,
+    },
     previewButton: {
       alignItems: "center",
-      backgroundColor: theme.shouldSoft,
+      backgroundColor: theme.surface,
       borderRadius: 11,
-      marginTop: 6,
+      marginTop: 12,
       padding: 11,
     },
     previewButtonText: {

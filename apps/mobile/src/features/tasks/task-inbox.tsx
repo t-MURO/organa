@@ -9,6 +9,7 @@ import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
 import {
   filterTasksForInbox,
+  isTaskOverdueForDisplay,
   taskMatchesInboxFilter,
   type InboxFilter,
 } from "./task-inbox-model";
@@ -129,14 +130,23 @@ export function TaskInbox({
                   ]}
                 />
                 <View style={styles.taskCopy}>
-                  <Text
-                    style={[
-                      styles.taskTitle,
-                      task.completedAt ? styles.taskTitleCompleted : undefined,
-                    ]}
-                  >
-                    {task.title}
-                  </Text>
+                  <View style={styles.taskTitleRow}>
+                    <Text
+                      style={[
+                        styles.taskTitle,
+                        task.completedAt
+                          ? styles.taskTitleCompleted
+                          : undefined,
+                      ]}
+                    >
+                      {task.title}
+                    </Text>
+                    {isTaskOverdueForDisplay(task, now) ? (
+                      <View style={styles.overdueTag}>
+                        <Text style={styles.overdueTagText}>Overdue</Text>
+                      </View>
+                    ) : null}
+                  </View>
                   <Text style={styles.taskMeta}>
                     {inboxTaskMeta(task, now)}
                   </Text>
@@ -221,13 +231,13 @@ function createStyles(theme: OrganaTheme) {
     wrap: {
       borderTopColor: theme.border,
       borderTopWidth: 1,
-      marginTop: 30,
-      paddingTop: 24,
+      marginTop: 38,
+      paddingTop: 28,
     },
     heading: {
       alignItems: "flex-end",
       flexDirection: "row",
-      gap: 20,
+      gap: 24,
       justifyContent: "space-between",
     },
     headingCompact: {
@@ -280,8 +290,8 @@ function createStyles(theme: OrganaTheme) {
     filterRow: {
       flexDirection: "row",
       flexWrap: "wrap",
-      gap: 7,
-      marginTop: 14,
+      gap: 9,
+      marginTop: 18,
     },
     filterButton: {
       borderColor: theme.border,
@@ -303,8 +313,8 @@ function createStyles(theme: OrganaTheme) {
       color: theme.should,
     },
     list: {
-      gap: 7,
-      marginTop: 12,
+      gap: 10,
+      marginTop: 16,
     },
     taskRow: {
       alignItems: "center",
@@ -313,8 +323,8 @@ function createStyles(theme: OrganaTheme) {
       borderRadius: 14,
       borderWidth: 1,
       flexDirection: "row",
-      gap: 11,
-      padding: 12,
+      gap: 13,
+      padding: 14,
     },
     kindDot: {
       borderRadius: 5,
@@ -325,6 +335,12 @@ function createStyles(theme: OrganaTheme) {
       flex: 1,
       minWidth: 0,
     },
+    taskTitleRow: {
+      alignItems: "center",
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 7,
+    },
     taskTitle: {
       color: theme.text,
       fontFamily: "Manrope_700Bold",
@@ -333,6 +349,19 @@ function createStyles(theme: OrganaTheme) {
     taskTitleCompleted: {
       color: theme.textMuted,
       textDecorationLine: "line-through",
+    },
+    overdueTag: {
+      backgroundColor: theme.mustSoft,
+      borderRadius: 10,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+    },
+    overdueTagText: {
+      color: theme.must,
+      fontFamily: "Manrope_800ExtraBold",
+      fontSize: 7,
+      letterSpacing: 0.4,
+      textTransform: "uppercase",
     },
     taskMeta: {
       color: theme.textMuted,

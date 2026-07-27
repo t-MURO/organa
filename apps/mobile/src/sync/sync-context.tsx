@@ -146,7 +146,7 @@ const initialSyncCursor = "1970-01-01T00:00:00.000Z";
 export function SyncProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
   const security = useSecurity();
-  const namespace = auth.user?.id ?? "local-preview";
+  const namespace = auth.ownerId ?? "signed-out";
   const repository = useMemo(
     () => createSyncOutboxRepository(namespace),
     [namespace],

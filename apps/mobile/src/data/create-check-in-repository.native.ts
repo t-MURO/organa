@@ -1,7 +1,7 @@
 import type { CheckInEntry } from "@organa/domain";
-import * as SQLite from "expo-sqlite";
 
 import type { CheckInRepository } from "./check-in-repository.types";
+import { openOrganaDatabase } from "./organa-database.native";
 
 interface CheckInRow {
   payload: string;
@@ -10,20 +10,11 @@ interface CheckInRow {
 export function createCheckInRepository(
   namespace = "local",
 ): CheckInRepository {
-  const databasePromise = SQLite.openDatabaseAsync(databaseName(namespace));
+  const databasePromise = openOrganaDatabase(namespace);
 
   return {
     async initialize() {
-      const database = await databasePromise;
-      await database.execAsync(`
-        PRAGMA journal_mode = WAL;
-        CREATE TABLE IF NOT EXISTS check_ins (
-          id TEXT PRIMARY KEY NOT NULL,
-          entry_date TEXT UNIQUE NOT NULL,
-          payload TEXT NOT NULL,
-          updated_at TEXT NOT NULL
-        );
-      `);
+      await databasePromise;
     },
     async list() {
       const database = await databasePromise;
@@ -59,8 +50,4 @@ export function createCheckInRepository(
       });
     },
   };
-}
-
-function databaseName(namespace: string) {
-  return `organa-${namespace.replace(/[^a-zA-Z0-9_-]/g, "-")}.db`;
 }

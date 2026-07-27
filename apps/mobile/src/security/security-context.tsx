@@ -72,17 +72,13 @@ interface ScopedContentKey {
   ownerId: string;
 }
 
-const localPreviewOwnerId = "local-preview";
-
 const SecurityContext = createContext<SecurityContextValue | undefined>(
   undefined,
 );
 
 export function SecurityProvider({ children }: PropsWithChildren) {
   const auth = useAuth();
-  const activeOwnerId = auth.localPreview
-    ? localPreviewOwnerId
-    : (auth.user?.id ?? null);
+  const activeOwnerId = auth.ownerId;
   const activeOwnerRef = useRef(activeOwnerId);
   activeOwnerRef.current = activeOwnerId;
   const [scopedContentKey, setScopedContentKey] =
@@ -105,7 +101,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     let active = true;
     const userId = auth.user?.id;
-    const ownerId = auth.localPreview ? localPreviewOwnerId : userId;
+    const ownerId = auth.ownerId;
 
     async function initialize() {
       setLoading(true);
@@ -119,12 +115,12 @@ export function SecurityProvider({ children }: PropsWithChildren) {
       if (!active) return;
       setDevice(nextDevice);
 
-      if (auth.localPreview) {
+      if (auth.localPreview && ownerId) {
         const hierarchy = await createKeyHierarchy();
         if (!active) return;
         setScopedContentKey({
           key: hierarchy.contentKey,
-          ownerId: localPreviewOwnerId,
+          ownerId,
         });
         setLoading(false);
         return;
@@ -217,7 +213,7 @@ export function SecurityProvider({ children }: PropsWithChildren) {
     return () => {
       active = false;
     };
-  }, [auth.localPreview, auth.user?.id]);
+  }, [auth.localPreview, auth.ownerId, auth.user?.id]);
 
   useEffect(() => {
     if (

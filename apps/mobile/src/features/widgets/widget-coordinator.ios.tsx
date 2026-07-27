@@ -11,7 +11,7 @@ import {
 export function WidgetCoordinator() {
   const auth = useAuth();
   const { loading, tasks } = useTasks();
-  const ownerId = auth.localPreview ? "local-preview" : auth.user?.id;
+  const ownerId = auth.ownerId;
 
   useEffect(
     () => (ownerId ? activateWidgetOwner(ownerId) : undefined),

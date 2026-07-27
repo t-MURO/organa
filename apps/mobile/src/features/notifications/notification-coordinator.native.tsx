@@ -17,7 +17,7 @@ export function NotificationCoordinator() {
   const router = useRouter();
   const devices = useDevices();
   const { loading: tasksLoading, tasks } = useTasks();
-  const ownerId = auth.localPreview ? "local-preview" : auth.user?.id;
+  const ownerId = auth.ownerId;
 
   useEffect(() => {
     function handle(response: Notifications.NotificationResponse) {
