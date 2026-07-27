@@ -19,6 +19,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { AppState } from "react-native";
 
 import { useAuth } from "../../auth/auth-context";
 import { createNotificationScheduler } from "../../data/create-notification-scheduler";
@@ -78,6 +79,7 @@ function syncNotifications(
 ) {
   if (!authorizationReady) return;
   if (!enabled) {
+    report?.("");
     cancelNotifications(task.id, ownerId, report);
     return;
   }
@@ -87,8 +89,7 @@ function syncNotifications(
   })
     .then((result) => {
       if (!result || !hasEnabledReminder(task)) return;
-      const notice = reminderNoticeFor(result);
-      if (notice) report?.(notice);
+      report?.(reminderNoticeFor(result));
     })
     .catch(() => {
       if (hasEnabledReminder(task)) {
@@ -205,6 +206,9 @@ export function TaskProvider({ children }: PropsWithChildren) {
   const [reminderNotice, setReminderNotice] = useState("");
   const hydration = useRef<Promise<void>>(Promise.resolve());
   const localVersions = useRef(new Map<string, number>());
+  const appState = useRef(AppState.currentState);
+  const tasksRef = useRef(state.tasks);
+  tasksRef.current = state.tasks;
   const reminderAuthorizationRef = useRef({
     allowed: devices.remindersAllowed,
     ready: devices.reminderAuthorizationReady,
@@ -285,6 +289,31 @@ export function TaskProvider({ children }: PropsWithChildren) {
         setReminderNotice,
       ),
     );
+  }, [
+    devices.reminderAuthorizationReady,
+    devices.remindersAllowed,
+    namespace,
+  ]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const becameActive =
+        appState.current !== "active" && nextState === "active";
+      appState.current = nextState;
+      if (!becameActive || !devices.reminderAuthorizationReady) return;
+
+      tasksRef.current.forEach((task) =>
+        syncNotifications(
+          task,
+          namespace,
+          false,
+          devices.remindersAllowed,
+          true,
+          setReminderNotice,
+        ),
+      );
+    });
+    return () => subscription.remove();
   }, [
     devices.reminderAuthorizationReady,
     devices.remindersAllowed,

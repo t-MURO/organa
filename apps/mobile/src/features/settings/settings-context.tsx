@@ -13,6 +13,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { AppState } from "react-native";
 
 import { useAuth } from "../../auth/auth-context";
 import { createCheckInReminderScheduler } from "../../data/create-check-in-reminder-scheduler";
@@ -59,9 +60,11 @@ async function syncCheckInReminder(
       return reminderScheduler.sync(settings, requestPermission);
     });
     if (!result) return;
-    if (!settings.checkInReminder.enabled) return;
-    const notice = checkInReminderNoticeFor(result);
-    if (notice) report(notice);
+    if (!settings.checkInReminder.enabled) {
+      report("");
+      return;
+    }
+    report(checkInReminderNoticeFor(result));
   } catch {
     report(
       settings.checkInReminder.enabled
@@ -85,6 +88,7 @@ export function SettingsProvider({ children }: PropsWithChildren) {
   const settingsRef = useRef(settings);
   const hydration = useRef<Promise<void>>(Promise.resolve());
   const localVersion = useRef(0);
+  const appState = useRef(AppState.currentState);
   const [checkInReminderNotice, setCheckInReminderNotice] = useState("");
 
   useEffect(() => {
@@ -132,6 +136,27 @@ export function SettingsProvider({ children }: PropsWithChildren) {
       false,
       setCheckInReminderNotice,
     );
+  }, [
+    devices.reminderAuthorizationReady,
+    devices.remindersAllowed,
+    namespace,
+  ]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextState) => {
+      const becameActive =
+        appState.current !== "active" && nextState === "active";
+      appState.current = nextState;
+      if (!becameActive || !devices.reminderAuthorizationReady) return;
+
+      void syncCheckInReminder(
+        reminderSettings(settingsRef.current, devices.remindersAllowed),
+        namespace,
+        false,
+        setCheckInReminderNotice,
+      );
+    });
+    return () => subscription.remove();
   }, [
     devices.reminderAuthorizationReady,
     devices.remindersAllowed,
