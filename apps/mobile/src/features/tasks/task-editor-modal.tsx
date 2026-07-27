@@ -12,7 +12,6 @@ import {
 import { useEffect, useState } from "react";
 import {
   Modal,
-  ScrollView,
   Text,
   useWindowDimensions,
   View,
@@ -22,8 +21,8 @@ import { AccessiblePressable as Pressable } from "../../accessibility/accessible
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import {
+  KeyboardAwareScrollView,
   KeyboardAvoidingView,
-  keyboardAwareScrollProps,
 } from "../../components/keyboard";
 import { TextInput } from "../../components/themed-text-input";
 import { notificationCapability } from "../../data/create-notification-scheduler";
@@ -35,6 +34,7 @@ import {
   readTaskDeadline,
 } from "./task-editor-model";
 import { DatePickerField } from "./task-date-picker";
+import { TimePickerField } from "./task-time-picker";
 
 const taskKinds: Array<{ value: TaskKind; label: string; hint: string }> = [
   { value: "one_off", label: "One-off", hint: "A task to finish once" },
@@ -373,8 +373,7 @@ export function TaskEditorModal({
             </Pressable>
           </View>
 
-          <ScrollView
-            {...keyboardAwareScrollProps}
+          <KeyboardAwareScrollView
             contentContainerStyle={styles.form}
           >
             <Section
@@ -484,13 +483,10 @@ export function TaskEditorModal({
                     label="Scheduled time"
                     optional
                   />
-                  <TextInput
+                  <TimePickerField
                     accessibilityLabel="Task scheduled time"
-                    placeholder="HH:MM"
-                    placeholderTextColor={theme.textMuted}
-                    style={styles.input}
                     value={scheduledTime}
-                    onChangeText={setScheduledTime}
+                    onChange={setScheduledTime}
                   />
                 </View>
                 <View style={styles.fieldCell}>
@@ -503,13 +499,10 @@ export function TaskEditorModal({
                 </View>
                 <View style={styles.fieldCell}>
                   <FieldLabel styles={styles} label="Due time" optional />
-                  <TextInput
+                  <TimePickerField
                     accessibilityLabel="Task due time"
-                    placeholder="HH:MM"
-                    placeholderTextColor={theme.textMuted}
-                    style={styles.input}
                     value={dueTime}
-                    onChangeText={setDueTime}
+                    onChange={setDueTime}
                   />
                 </View>
               </View>
@@ -820,7 +813,7 @@ export function TaskEditorModal({
                 </Pressable>
               </View>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>

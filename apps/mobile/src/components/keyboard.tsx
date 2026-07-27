@@ -1,7 +1,10 @@
-import type { PropsWithChildren } from "react";
+import { useEffect, useRef, type PropsWithChildren } from "react";
 import {
+  type FocusEvent,
+  Keyboard,
   KeyboardAvoidingView as NativeKeyboardAvoidingView,
   Platform,
+  ScrollView,
   type KeyboardAvoidingViewProps,
   type ScrollViewProps,
 } from "react-native";
@@ -25,7 +28,7 @@ export function KeyboardAvoidingView({ children, ...props }: Props) {
   );
 }
 
-export const keyboardAwareScrollProps = {
+const keyboardAwareScrollProps = {
   automaticallyAdjustKeyboardInsets: true,
   keyboardDismissMode: Platform.OS === "ios" ? "interactive" : "on-drag",
   keyboardShouldPersistTaps: "handled",
@@ -35,3 +38,43 @@ export const keyboardAwareScrollProps = {
   | "keyboardDismissMode"
   | "keyboardShouldPersistTaps"
 >;
+
+export function KeyboardAwareScrollView({
+  onFocus,
+  ...props
+}: ScrollViewProps) {
+  const scrollRef = useRef<ScrollView>(null);
+  const focusedTarget = useRef<FocusEvent["target"] | undefined>(undefined);
+
+  function keepInputVisible(target = focusedTarget.current) {
+    if (Platform.OS === "web" || target === undefined) return;
+    scrollRef.current?.scrollResponderScrollNativeHandleToKeyboard(
+      target,
+      28,
+      true,
+    );
+  }
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const eventName =
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const subscription = Keyboard.addListener(eventName, () => {
+      keepInputVisible();
+    });
+    return () => subscription.remove();
+  }, []);
+
+  return (
+    <ScrollView
+      {...keyboardAwareScrollProps}
+      {...props}
+      ref={scrollRef}
+      onFocus={(event) => {
+        focusedTarget.current = event.target;
+        onFocus?.(event);
+        setTimeout(() => keepInputVisible(event.target), 80);
+      }}
+    />
+  );
+}

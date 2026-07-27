@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   ActivityIndicator,
-  ScrollView,
   Text,
   useWindowDimensions,
   View,
@@ -22,7 +21,7 @@ import { useSecurity } from "../../security/security-context";
 import { useAppLock } from "../../security/app-lock-context";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
-import { keyboardAwareScrollProps } from "../../components/keyboard";
+import { KeyboardAwareScrollView } from "../../components/keyboard";
 import { TextInput } from "../../components/themed-text-input";
 import { useAccountLifecycle } from "./account-lifecycle-context";
 import { useDevices } from "./device-context";
@@ -330,8 +329,7 @@ export function AccountScreen() {
   }
 
   return (
-    <ScrollView
-      {...keyboardAwareScrollProps}
+    <KeyboardAwareScrollView
       contentContainerStyle={[
         styles.page,
         compact ? styles.pageCompact : undefined,
@@ -788,7 +786,7 @@ export function AccountScreen() {
           </Text>
         )}
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

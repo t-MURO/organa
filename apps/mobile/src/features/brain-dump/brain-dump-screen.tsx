@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
-  ScrollView,
   Text,
   useWindowDimensions,
   View,
@@ -15,7 +14,7 @@ import type { TextInput as NativeTextInput } from "react-native";
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
-import { keyboardAwareScrollProps } from "../../components/keyboard";
+import { KeyboardAwareScrollView } from "../../components/keyboard";
 import { TextInput } from "../../components/themed-text-input";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
@@ -69,8 +68,7 @@ export function BrainDumpScreen() {
   }
 
   return (
-    <ScrollView
-      {...keyboardAwareScrollProps}
+    <KeyboardAwareScrollView
       contentContainerStyle={[
         styles.page,
         isCompact ? styles.pageCompact : undefined,
@@ -222,7 +220,7 @@ export function BrainDumpScreen() {
           Changes save automatically on this device
         </Text>
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

@@ -16,7 +16,7 @@ import {
 
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useAppTheme } from "../../components/app-shell";
-import { keyboardAwareScrollProps } from "../../components/keyboard";
+import { KeyboardAwareScrollView } from "../../components/keyboard";
 import { TextInput } from "../../components/themed-text-input";
 import { checkInReminderCapability } from "../../data/create-check-in-reminder-scheduler";
 import type { OrganaTheme } from "../../theme";
@@ -122,8 +122,7 @@ export function CheckInScreen() {
   }
 
   return (
-    <ScrollView
-      {...keyboardAwareScrollProps}
+    <KeyboardAwareScrollView
       contentContainerStyle={[
         styles.page,
         isCompact ? styles.pageCompact : undefined,
@@ -493,7 +492,7 @@ export function CheckInScreen() {
           </View>
         )}
       </View>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

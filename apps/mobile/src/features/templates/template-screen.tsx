@@ -13,7 +13,6 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  ScrollView,
   Text,
   useWindowDimensions,
   View,
@@ -23,8 +22,8 @@ import { AccessiblePressable as Pressable } from "../../accessibility/accessible
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
 import {
+  KeyboardAwareScrollView,
   KeyboardAvoidingView,
-  keyboardAwareScrollProps,
 } from "../../components/keyboard";
 import { TextInput } from "../../components/themed-text-input";
 import type { OrganaTheme } from "../../theme";
@@ -139,8 +138,7 @@ export function TemplateScreen() {
 
   return (
     <>
-      <ScrollView
-        {...keyboardAwareScrollProps}
+      <KeyboardAwareScrollView
         contentContainerStyle={[
           styles.page,
           compact ? styles.pageCompact : undefined,
@@ -232,9 +230,9 @@ export function TemplateScreen() {
             </Text>
           </View>
         ) : null}
-      </ScrollView>
-        <TemplateEditor
-          reducedMotion={reducedMotion}
+      </KeyboardAwareScrollView>
+      <TemplateEditor
+        reducedMotion={reducedMotion}
         template={editingTemplate}
         visible={editorVisible}
         onClose={() => {
@@ -445,8 +443,7 @@ function TemplateEditor({
               <Text style={styles.closeText}>Close</Text>
             </Pressable>
           </View>
-          <ScrollView
-            {...keyboardAwareScrollProps}
+          <KeyboardAwareScrollView
             contentContainerStyle={styles.form}
           >
             <Field
@@ -581,7 +578,7 @@ function TemplateEditor({
                 <Text style={styles.saveText}>Save template</Text>
               </Pressable>
             </View>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </View>
       </KeyboardAvoidingView>
     </Modal>

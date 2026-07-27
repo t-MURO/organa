@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
-  ScrollView,
   Text,
   useWindowDimensions,
   View,
@@ -20,7 +19,7 @@ import { useRouter } from "expo-router";
 import { AccessiblePressable as Pressable } from "../../accessibility/accessible-pressable";
 import { useReducedMotion } from "../../accessibility/use-reduced-motion";
 import { useAppTheme } from "../../components/app-shell";
-import { keyboardAwareScrollProps } from "../../components/keyboard";
+import { KeyboardAwareScrollView } from "../../components/keyboard";
 import { TextInput } from "../../components/themed-text-input";
 import type { OrganaTheme } from "../../theme";
 import { StyleSheet } from "../../typography";
@@ -222,8 +221,7 @@ export function TodayScreen() {
   }
 
   return (
-    <ScrollView
-      {...keyboardAwareScrollProps}
+    <KeyboardAwareScrollView
       contentContainerStyle={[
         styles.page,
         isCompact ? styles.pageCompact : undefined,
@@ -417,7 +415,7 @@ export function TodayScreen() {
         onDelete={deleteFromEditor}
         onSave={saveEditor}
       />
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

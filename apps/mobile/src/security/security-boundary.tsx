@@ -2,7 +2,6 @@ import type { PropsWithChildren } from "react";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  ScrollView,
   Text,
   useColorScheme,
   View,
@@ -12,8 +11,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AccessiblePressable as Pressable } from "../accessibility/accessible-pressable";
 import { useAuth } from "../auth/auth-context";
 import {
+  KeyboardAwareScrollView,
   KeyboardAvoidingView,
-  keyboardAwareScrollProps,
 } from "../components/keyboard";
 import { TextInput } from "../components/themed-text-input";
 import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
@@ -130,8 +129,7 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView style={styles.safeArea}>
-        <ScrollView
-          {...keyboardAwareScrollProps}
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.page}
           role="main"
         >
@@ -310,7 +308,7 @@ function AccountSecurityBoundary({ children }: PropsWithChildren) {
             <Text style={styles.signOutText}>Sign out</Text>
           </Pressable>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

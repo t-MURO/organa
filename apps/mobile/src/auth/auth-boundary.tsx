@@ -3,7 +3,6 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Platform,
-  ScrollView,
   Text,
   useColorScheme,
   View,
@@ -12,8 +11,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AccessiblePressable as Pressable } from "../accessibility/accessible-pressable";
 import {
+  KeyboardAwareScrollView,
   KeyboardAvoidingView,
-  keyboardAwareScrollProps,
 } from "../components/keyboard";
 import { TextInput } from "../components/themed-text-input";
 import { darkTheme, lightTheme, type OrganaTheme } from "../theme";
@@ -106,8 +105,7 @@ function SignInScreen() {
       <KeyboardAvoidingView
         style={styles.safeArea}
       >
-        <ScrollView
-          {...keyboardAwareScrollProps}
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.authPage}
           role="main"
         >
@@ -328,7 +326,7 @@ function SignInScreen() {
               </Text>
             </View>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
