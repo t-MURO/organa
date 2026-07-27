@@ -352,8 +352,15 @@ export function TaskEditorModal({
       transparent
       visible={visible}
     >
-      <KeyboardAvoidingView style={styles.overlay}>
-        <View style={styles.modal}>
+      <KeyboardAvoidingView
+        style={[
+          styles.overlay,
+          compact ? styles.overlayCompact : undefined,
+        ]}
+      >
+        <View
+          style={[styles.modal, compact ? styles.modalCompact : undefined]}
+        >
           <View style={styles.header}>
             <View style={styles.headerCopy}>
               <Text style={styles.eyebrow}>
@@ -997,6 +1004,9 @@ function createStyles(theme: OrganaTheme) {
       justifyContent: "center",
       padding: 18,
     },
+    overlayCompact: {
+      padding: 0,
+    },
     modal: {
       backgroundColor: theme.background,
       borderColor: theme.border,
@@ -1006,6 +1016,12 @@ function createStyles(theme: OrganaTheme) {
       maxWidth: 900,
       overflow: "hidden",
       width: "100%",
+    },
+    modalCompact: {
+      borderRadius: 0,
+      borderWidth: 0,
+      height: "100%",
+      maxHeight: "100%",
     },
     header: {
       alignItems: "center",
