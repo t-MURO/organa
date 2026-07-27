@@ -111,7 +111,14 @@ export function PlanningCalendar({
         </View>
       ) : null}
 
-      <View style={mode === "week" ? styles.weekGrid : styles.monthGrid}>
+      <View
+        style={[
+          mode === "week" ? styles.weekGrid : styles.monthGrid,
+          mode === "week" && compact
+            ? styles.weekGridCompact
+            : undefined,
+        ]}
+      >
         {dates.map((date) => {
           const dateKey = formatLocalDate(date);
           const selectedDay = dateKey === selectedDate;
@@ -132,6 +139,9 @@ export function PlanningCalendar({
               style={[
                 styles.day,
                 mode === "month" ? styles.monthDay : styles.weekDay,
+                mode === "week" && compact
+                  ? styles.weekDayCompact
+                  : undefined,
                 selectedDay ? styles.daySelected : undefined,
                 outsideMonth ? styles.dayOutside : undefined,
               ]}
@@ -139,13 +149,14 @@ export function PlanningCalendar({
             >
               {mode === "week" ? (
                 <Text
+                  numberOfLines={1}
                   style={[
                     styles.dayName,
                     selectedDay ? styles.dayTextSelected : undefined,
                   ]}
                 >
                   {new Intl.DateTimeFormat(undefined, {
-                    weekday: "short",
+                    weekday: compact ? "narrow" : "short",
                   }).format(date)}
                 </Text>
               ) : null}
@@ -322,6 +333,9 @@ function createStyles(theme: OrganaTheme) {
       flexDirection: "row",
       gap: 7,
     },
+    weekGridCompact: {
+      gap: 3,
+    },
     monthGrid: {
       flexDirection: "row",
       flexWrap: "wrap",
@@ -335,7 +349,14 @@ function createStyles(theme: OrganaTheme) {
     weekDay: {
       flex: 1,
       minHeight: 82,
+      minWidth: 0,
       padding: 9,
+    },
+    weekDayCompact: {
+      borderRadius: 9,
+      minHeight: 72,
+      paddingHorizontal: 4,
+      paddingVertical: 8,
     },
     monthDay: {
       borderRadius: 9,

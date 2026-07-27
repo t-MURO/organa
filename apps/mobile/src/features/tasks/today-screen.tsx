@@ -1220,6 +1220,7 @@ function createStyles(theme: OrganaTheme) {
       fontFamily: "Manrope_600SemiBold",
       fontSize: 14,
       minHeight: 48,
+      minWidth: 0,
       paddingHorizontal: 16,
     },
     addButton: {
